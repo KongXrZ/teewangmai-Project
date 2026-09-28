@@ -141,3 +141,6 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Local reference documents are not part of the repository
+/*LocalDocs-dont-commit/
