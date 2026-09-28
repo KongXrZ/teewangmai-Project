@@ -27,7 +27,7 @@ The project uses **Next.js App Router, React, TypeScript, Tailwind CSS, and ESLi
 
 ESLint is kept on version 9 for compatibility with the React/import/accessibility plugins bundled by `eslint-config-next`. npm currently marks ESLint 9 as unsupported; upgrade it when those plugins support ESLint 10.
 
-Use Node.js 22 or newer (Node.js 24 is used for local development) and npm:
+Use **Node.js 24** and npm. The shared development version is **24.14.0**, recorded in `.nvmrc`. Check `node --version` before installing dependencies; `package.json` and the lockfile both target Node.js 24.
 
 ```sh
 npm install
