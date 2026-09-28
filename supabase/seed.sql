@@ -1,0 +1,2 @@
+-- Reserved for local development sample data after the schema is defined.
+-- Keep real user data and credentials out of this file.
