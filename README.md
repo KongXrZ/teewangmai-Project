@@ -35,6 +35,9 @@ development; forms, validation schemas, and Supabase clients are not wired up ye
 | `@hookform/resolvers` | Connect Zod schemas to React Hook Form |
 | `@supabase/supabase-js` | Access Supabase database and Auth APIs |
 | `@supabase/ssr` | Support cookie-based Supabase clients for Next.js |
+| `zustand` | Manage client-side global state (selected zone, map filters) |
+| `@mui/material` & `@mui/icons-material` | Material UI component library and icons |
+| `@mui/material-nextjs` | App Router integration cache provider for MUI |
 
 See `package.json` for version requirements and `package-lock.json` for resolved
 versions. Use `npm ci` for a reproducible install from the committed lockfile.

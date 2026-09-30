@@ -90,8 +90,10 @@ refresh handling when implementing them.
 
 Zod, React Hook Form, and its Zod resolver are installed for future forms and
 validation. Keep schemas in each feature's `schemas.ts` and validate untrusted
-input on the server as well. The Supabase SDK and SSR library are installed;
-their client modules and authentication flow are not configured yet.
+input on the server as well. Zustand is available for client-side state management.
+Material UI (`@mui/material`, `@mui/icons-material`, `@mui/material-nextjs`) is
+integrated with App Router via `AppRouterCacheProvider`. The Supabase SDK and SSR
+library are installed; their client modules and authentication flow are not configured yet.
 
 ## Mobile and map assets
 
