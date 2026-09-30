@@ -25,6 +25,20 @@ The starter includes a responsive landing page, viewport configuration, and a re
 
 The project uses **Next.js App Router, React, TypeScript, Tailwind CSS, and ESLint**.
 
+The following supporting libraries are installed. They are ready for feature
+development; forms, validation schemas, and Supabase clients are not wired up yet.
+
+| Library | Purpose |
+| --- | --- |
+| `zod` | Validate input and infer TypeScript types from schemas |
+| `react-hook-form` | Manage interactive form state and errors |
+| `@hookform/resolvers` | Connect Zod schemas to React Hook Form |
+| `@supabase/supabase-js` | Access Supabase database and Auth APIs |
+| `@supabase/ssr` | Support cookie-based Supabase clients for Next.js |
+
+See `package.json` for version requirements and `package-lock.json` for resolved
+versions. Use `npm ci` for a reproducible install from the committed lockfile.
+
 ESLint is kept on version 9 for compatibility with the React/import/accessibility plugins bundled by `eslint-config-next`. npm currently marks ESLint 9 as unsupported; upgrade it when those plugins support ESLint 10.
 
 Use **Node.js 24** and npm. The shared development version is **24.14.0**, recorded in `.nvmrc`. Check `node --version` before installing dependencies; `package.json` and the lockfile both target Node.js 24.
@@ -74,13 +88,13 @@ The starter currently contains a landing page only. Sign-up/login, verified chec
 
 The planned primary database is **PostgreSQL hosted by Supabase**. See [Supabase's database documentation](https://supabase.com/docs/guides/database/overview).
 
-The latest ER/DBML design has **nine entities**: `Users`, `Locations`, `Location_Hours`, `Checkins`, `Badges`, `User_Badges`, `Rewards`, `Redemptions`, and `Location_Profiles`. `Users.trust_score` is a **float**. This replaces the older presentation's eight-table description.
+The September 30, 2026 ER/DBML baseline has **nine application tables**: `users`, `locations`, `location_hours`, `location_profiles`, `checkins`, `badges`, `user_badges`, `rewards`, and `redemptions`. The latest `users` model does not contain `trust_score` or `current_streak`. Its UUID identity links to Supabase `auth.users`, which owns authentication and is the source of truth for email.
 
-The DBML still labels `Location_Profiles` as NoSQL for flexible JSON details such as menus and charging facilities. Its physical storage has not been finalized. See [the database design](docs/database.md) for the fields, relationships, and remaining decisions.
+`location_profiles` is a weak/dependent entity with a shared location primary/foreign key and PostgreSQL `jsonb` details. `location_hours` is a strong entity with its own primary key and a unique `(location_id, day_of_week)` pair. See [the database design](docs/database.md) for the fields, relationships, constraints, and remaining decisions.
 
 `.env.example` lists the planned connection variables. When a Supabase project is available, copy it to `.env.local` and fill in the project URL and publishable key. The current landing page runs without these values. Keep database passwords and Supabase secret/service-role keys out of browser code and `NEXT_PUBLIC_` variables.
 
-An ER/DBML design exists, but the Supabase SDK, CLI configuration, SQL migrations, and authentication are not installed or configured yet. See [the database folder](supabase/README.md) for the next steps. Local reference files in `*LocalDocs-dont-commit/` are excluded from Git.
+The Supabase SDK and SSR library are installed. Client initialization, CLI configuration, SQL migrations, and authentication flows are not implemented yet. See [the database folder](supabase/README.md) for the next steps. Local reference files in `*LocalDocs-dont-commit/` are excluded from Git.
 
 Setup references: [Next.js installation](https://nextjs.org/docs/app/getting-started/installation) and [Tailwind CSS with Next.js](https://tailwindcss.com/docs/installation/framework-guides/nextjs).
 
@@ -112,7 +126,7 @@ The system aims to:
 - Update density information periodically and show the last update time
 - Help users understand how crowded a location is before visiting
 - Store historical report summaries to show how density changes over time
-- Encourage participation through points, streaks, badges, and reward redemption
+- Encourage participation through points, badges, and reward redemption
 - Support future analysis of campus usage patterns
 
 Prediction and location recommendations are possible future extensions of this core purpose.
@@ -173,7 +187,7 @@ Example:
 ⚪ Unknown   No recent reports
 ```
 
-Reports use a 1–5 scale; the labels above illustrate map summaries, with the exact mapping still to be defined. The presentation proposes a 10–15 minute reporting window and at least two agreeing reports. The precise aggregation, agreement, and expiry rules will be defined before implementation. Zones without sufficient recent reports should show an unknown status.
+Reports use a confirmed 1–5 scale; the labels above illustrate map summaries, with the exact mapping still to be defined. Aggregation windows, agreement thresholds, and expiry rules remain TBD. Older presentation examples are not fixed requirements. Zones without sufficient recent reports should show an unknown status.
 
 ---
 
@@ -181,7 +195,7 @@ Reports use a 1–5 scale; the labels above illustrate map summaries, with the e
 
 The primary data source is **reports submitted by users** about conditions at a selected campus location.
 
-Users will select a location, complete GPS and QR verification, and report a crowd level from **1 (empty) to 5 (very crowded)**. The wireframe includes QR scanning and manual code entry. The backend will validate and timestamp each report, then summarize recent reports for display on the map. Verification and aggregation rules are still being designed.
+Users will select a location, complete GPS and QR verification, and report a crowd level from **1 (empty) to 5 (very crowded)**. The wireframe includes QR scanning and manual code entry. The backend must create a check-in only after **GPS AND QR verification both succeed**; the row itself represents a verified check-in, without separate verification-result columns. Verification parameters, cooldown, and aggregation rules remain TBD.
 
 Example:
 
@@ -212,7 +226,7 @@ Sports Complex ⚪ No recent reports
 
 ### Accounts and Verified Check-ins
 
-The wireframes include sign-up and login. Users will select a location, complete GPS and QR verification, and submit its observed crowd level from 1 to 5. The authentication provider and detailed verification rules remain to be selected.
+The wireframes include sign-up and login through Supabase Auth. Users will select a location, complete GPS and QR verification, and submit its observed crowd level from 1 to 5. Auth integration, access policies, and detailed verification rules still need implementation.
 
 ### Search and Filters
 
@@ -235,7 +249,7 @@ Selecting a location can display additional information such as:
 
 ### Profile, Participation, and Rewards
 
-The planned profile shows points, current streak, floating-point trust score, earned badges, check-in history, and redemption history. Separate screens show available rewards and earned or locked badges. Users will be able to spend points on rewards; detailed earning and redemption rules remain to be defined. Integration with real partner-store databases is outside the current scope.
+The planned profile shows points, earned badges, check-in history, and redemption history. Separate screens show available rewards and earned or locked badges. Users will be able to spend points on rewards; detailed earning and redemption rules remain to be defined. Streak and trust-score behavior from older wireframes remains TBD and adds no fields to the current schema. Integration with real partner-store databases is outside the current scope.
 
 ### Historical Data
 
@@ -309,7 +323,7 @@ rather than:
 
 > "Who is currently at this location?"
 
-Any account information used for report validation should be kept separate from public map data. Keep the verification outcome instead of storing raw personal GPS coordinates. Location reference coordinates belong to the location record. Authentication implementation and report retention policies are still to be decided.
+Any account information used for report validation should be kept separate from public map data. Store a check-in only after both verification steps pass; do not add verification-result columns or raw personal GPS coordinates to the check-in model. Location reference coordinates belong to the location record. Supabase Auth integration, access policies, and report retention policies still need to be defined.
 
 ---
 
@@ -360,9 +374,9 @@ Planned feature scope for these locations:
 - Recent report count and last reported timestamp
 - Unknown status for locations without recent reports
 - Basic report history
-- Profile, points, streaks, trust score, badges, and reward redemption
+- Profile, points, badges, and reward redemption
 
-The implementation order and release boundary for participation and reward features still need to be agreed. Advanced prediction and recommendation features will be considered after enough reliable user reports can be collected.
+The implementation order and release boundary for participation and reward features still need to be agreed. Streak and trust-score behavior remains TBD outside the current schema. Advanced prediction and recommendation features will be considered after enough reliable user reports can be collected.
 
 ---
 
@@ -374,8 +388,8 @@ Current priorities:
 
 1. Define campus zones and choose the custom map format
 2. Prepare the map image or 3D model
-3. Finalize authentication, GPS/QR verification, aggregation, and expiry rules
-4. Map the nine-entity design to storage and define access policies
+3. Implement Supabase Auth integration after defining GPS/QR verification, aggregation, and expiry rules
+4. Prepare migrations for the nine-table PostgreSQL design and define access policies
 5. Build check-in, summary, participation, and reward operations
 6. Connect location summaries to the interactive map
 7. Test report quality, touch interactions, and map performance on mobile devices

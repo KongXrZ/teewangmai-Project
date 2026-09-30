@@ -1,8 +1,8 @@
 # Project Structure
 
 TeeWangMai? is a mobile-first Next.js application. The planned database is
-PostgreSQL hosted by Supabase. The current ER/DBML design has nine entities;
-the storage choice for the flexible `Location_Profiles` data remains open.
+PostgreSQL hosted by Supabase. The current ER/DBML design has nine application
+tables, including flexible `location_profiles.details` stored as PostgreSQL `jsonb`.
 
 ```text
 src/
@@ -51,12 +51,14 @@ not create routes, API endpoints, or working product features.
   tapping a map zone or filling out a report form.
 
 The wireframes also include sign-up/login, a user profile with check-in history,
-points, streaks and badges, and reward redemption. Add `auth/`, `profile/`, and
+points and badges, and reward redemption. Trust/streak behavior remains TBD and
+has no columns in the current `users` model. Add `auth/`, `profile/`, and
 `rewards/` under `features/` when implementation begins. Keep badge displays with
 the profile feature initially; new empty feature folders are not needed yet.
 
-The reports feature owns the check-in flow: GPS and QR verification followed by
-a crowd-level submission from 1 to 5. Map rendering consumes location summaries
+The reports feature owns the check-in flow: insert a row only after GPS AND QR
+verification both succeed, with a crowd-level submission from 1 to 5. No separate
+verification-result columns are needed. Map rendering consumes location summaries
 without depending on the image or 3D format used to display them.
 
 ## Database boundary
@@ -68,16 +70,25 @@ and `server.ts` for request-scoped server code; these are not implemented yet.
 When the schema exists, generate `src/types/database.ts` from the actual database
 and use it to type the clients. Keep UI/view types separate from generated rows.
 
-The current model consists of `Users`, `Locations`, `Location_Hours`, `Checkins`,
-`Badges`, `User_Badges`, `Rewards`, `Redemptions`, and `Location_Profiles`.
-`Users.trust_score` supports floating-point values. Keep badge definitions and
-the records of badges earned by users separate.
+The current model consists of `users`, `locations`, `location_hours`,
+`location_profiles`, `checkins`, `badges`, `user_badges`, `rewards`, and
+`redemptions`. `users.id` is a UUID linked to Supabase `auth.users`; Auth owns
+authentication and is the source of truth for email. `location_profiles` is a
+weak/dependent entity with a shared location primary/foreign key.
+`location_hours` has its own primary key and a unique location/day pair.
+Keep badge definitions separate from ownership, whose primary key is
+`(user_id, badge_id)`. See [the database baseline](database.md) for constraints
+and decisions still awaiting agreement.
 
 Before enabling reports, define database access policies, report validation,
-and the precise rules for aggregation and expiry. Account sign-up and login are
-planned; the authentication implementation remains undecided.
-If Supabase Auth is selected, include cookie-based server clients and Next.js
-session refresh handling as part of that implementation.
+and the precise rules for aggregation and expiry. Supabase Auth sign-up and
+login are planned; include cookie-based server clients and Next.js session
+refresh handling when implementing them.
+
+Zod, React Hook Form, and its Zod resolver are installed for future forms and
+validation. Keep schemas in each feature's `schemas.ts` and validate untrusted
+input on the server as well. The Supabase SDK and SSR library are installed;
+their client modules and authentication flow are not configured yet.
 
 ## Mobile and map assets
 

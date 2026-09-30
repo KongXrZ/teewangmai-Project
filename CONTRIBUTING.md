@@ -106,4 +106,4 @@ npm run build
 > 1. **เคารพ Branching Rules เสมอ:** ตรวจสอบว่ากำลังอยู่บน branch `FE-XXX` หรือ `BE-XXX` ก่อนแก้ไขโค้ด ห้ามแนะนำให้ Push เข้า `main` หรือ `development` โดยตรง
 > 2. **ใช้ Conventional Commits เสมอ:** เขียน Commit message ตามโครงสร้างในข้อ 2
 > 3. **รักษา Mobile-First Layout:** ทุกหน้าจอ UI ที่สร้างต้องคำนึงถึงขนาดหน้าจอมือถือ (320px–430px) และ Safe Area เสมอ
-> 4. **เคารพ Schema 9 ตาราง:** ตารางฐานข้อมูลถูกกำหนดไว้ 9 Entities (พร้อม `trust_score` แบบ float) ห้ามปรับโครงสร้างโดยไม่ได้รับความเห็นชอบจากเจ้าของโปรเจกต์
+> 4. **เคารพ Schema 9 ตาราง:** ยึด [Database Design](docs/database.md) ที่สรุป ER/DBML และมติล่าสุด โดย `users` ยังไม่มี `trust_score` และ `current_streak` และ `crowd_level` อยู่ในช่วง 1–5 ห้ามปรับโครงสร้างโดยไม่ได้รับความเห็นชอบจากเจ้าของโปรเจกต์
