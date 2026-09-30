@@ -6,7 +6,7 @@
 
 ## 1. ข้อกำหนดการตั้งและจัดการ Branch (Branching Strategy)
 
-โครงสร้าง Branch ของโปรเจกต์นี้ใช้โมเดลแบบ **Git Feature Branching**:
+โครงสร้าง Branch ของโปรเจกต์นี้กำหนดให้แบ่งลำดับชั้นอย่างชัดเจนดังนี้:
 
 ```text
 main (Production / Deployment)
@@ -15,23 +15,17 @@ main (Production / Deployment)
 development (Integration / Staging)
   ▲
   ├── FE-XXX-<short-desc> (Frontend Features)
-  ├── BE-XXX-<short-desc> (Backend / Database Features)
-  └── CHORE-XXX / DOCS-XXX (Infra, Config, Documentation)
-
-main
-  └── hotfix-XXX-<short-desc> (กรณีแก้บั๊กวิกฤตบน Production)
+  └── BE-XXX-<short-desc> (Backend / Database Features)
 ```
 
 ### รายละเอียดและกฎของแต่ละ Branch:
 
-| Branch                       | แตกกิ่งมาจาก  | Merge กลับเข้า         | คำอธิบายและข้อบังคับ                                                                                                                    |
-| :--------------------------- | :------------ | :--------------------- | :-------------------------------------------------------------------------------------------------------------------------------------- |
-| **`main`**                   | —             | —                      | **สำหรับ Production / Deploy เท่านั้น** นิ่งและเสถียรที่สุด **ห้าม Push ตรงเด็ดขาด** รับ Merge จาก `development` หรือ `hotfix` เท่านั้น |
-| **`development`**            | `main`        | `main`                 | **ศูนย์รวมฟีเจอร์ล่าสุดของทีม** ใช้รับงานที่เสร็จแล้วจาก `FE-XXX` / `BE-XXX` ห้าม Push ตรง ต้องผ่าน Pull Request                        |
-| **`FE-XXX-<desc>`**          | `development` | `development`          | งานพัฒนาฝั่ง Frontend ทั้งหมด **ห้ามแตกจาก main และห้าม Merge เข้า main เด็ดขาด**                                                       |
-| **`BE-XXX-<desc>`**          | `development` | `development`          | งานพัฒนาฝั่ง Backend, API, Supabase Database **ห้ามแตกจาก main และห้าม Merge เข้า main เด็ดขาด**                                        |
-| **`hotfix-XXX-<desc>`**      | `main`        | `main` & `development` | ใช้เฉพาะกรณีพบบั๊กวิกฤตบน Production แก้เสร็จแล้วต้อง Merge เข้าทั้งสองกิ่ง                                                             |
-| **`CHORE-XXX` / `DOCS-XXX`** | `development` | `development`          | งานจิปาถะ, CI/CD Pipeline, Config รวม หรืออัปเดตเอกสาร                                                                                  |
+| Branch | แตกกิ่งมาจาก | Merge กลับเข้า | คำอธิบายและข้อบังคับ |
+| :--- | :--- | :--- | :--- |
+| **`main`** | — | — | **สำหรับ Production / Deploy เท่านั้น** นิ่งและเสถียรที่สุด **ห้าม Push ตรงเด็ดขาด** รับ Merge จาก `development` เท่านั้น |
+| **`development`** | `main` | `main` | **ศูนย์รวมฟีเจอร์ล่าสุดของทีม** ใช้รับงานที่เสร็จแล้วจาก `FE-XXX` / `BE-XXX` ห้าม Push ตรง ต้องผ่าน Pull Request |
+| **`FE-XXX-<desc>`** | `development` | `development` | งานพัฒนาฝั่ง Frontend ทั้งหมด **ห้ามแตกจาก main และห้าม Merge เข้า main เด็ดขาด** |
+| **`BE-XXX-<desc>`** | `development` | `development` | งานพัฒนาฝั่ง Backend, API, Supabase Database **ห้ามแตกจาก main และห้าม Merge เข้า main เด็ดขาด** |
 
 ### รูปแบบการตั้งชื่อ Branch ย่อย (Sub-branches):
 
@@ -41,38 +35,33 @@ main
 - `FE-002-crowd-report-slider`
 - `BE-001-supabase-schema-migration`
 - `BE-002-qr-gps-verification`
-- `DOCS-001-update-architecture-guide`
 
 ---
 
-## 2. มาตรฐานการตั้งชื่อ Commit (Conventional Commits)
+## 2. มาตรฐานการตั้งชื่อ Commit (Commit Naming)
 
-โปรเจกต์นี้ใช้มาตรฐาน **Conventional Commits** เพื่อให้ประวัติ Git อ่านเข้าใจง่ายและสามารถสร้าง Release Notes ได้อัตโนมัติ
+การตั้งชื่อ Commit ใช้รูปแบบที่สั้น กระชับ และเข้าใจง่าย ไม่จำเป็นต้องเขียนอธิบายเพิ่มเติม (body) ยาวๆ สามารถตั้งชื่อในบรรทัดเดียวได้เลย
 
 ### โครงสร้างคำสั่ง Commit:
 
 ```text
-<type>(<scope>): <คำอธิบายสั้นๆ เป็นภาษาอังกฤษ>
+<type>: <คำอธิบายสั้นๆ>
 ```
+
+*(ตัวอย่าง: `feat: lorem ipsum`, `fix: lorem ipsum`, `chore: lorem ipsum`)*
 
 ### ประเภทของ Commit (Types):
 
-- **`feat`**: เพิ่มฟีเจอร์ใหม่ให้กับผู้ใช้ (เช่น `feat(map): render campus mockup zones`)
-- **`fix`**: แก้ไขบั๊กหรือปัญหาการทำงาน (เช่น `fix(auth): handle missing GPS permission`)
-- **`docs`**: เขียนหรืออัปเดตเอกสาร (เช่น `docs: update 9-entity database schema guide`)
-- **`style`**: ปรับแต่ง formatting, จัดหน้า, เว้นวรรค ที่ไม่มีผลต่อ logic การทำงาน
-- **`refactor`**: ปรับปรุงโครงสร้างโค้ดภายในโดยไม่เพิ่มฟีเจอร์และไม่แก้บั๊กเดิม
-- **`perf`**: ปรับปรุงประสิทธิภาพความเร็ว (Performance)
-- **`test`**: เพิ่มหรือแก้ไข Unit Test / Integration Test
-- **`chore`**: งานตั้งค่าระบบ, Build tool, Config, ติดตั้ง Package, อัปเดต `.gitignore`
+- **`feat`**: เพิ่มฟีเจอร์ใหม่ (เช่น `feat: add campus map zone component`)
+- **`fix`**: แก้ไขบั๊ก (เช่น `fix: handle missing GPS permission`)
+- **`docs`**: เอกสาร (เช่น `docs: update database schema guide`)
+- **`style`**: ปรับแต่ง formatting, จัดหน้า, เว้นวรรค
+- **`refactor`**: ปรับปรุงโครงสร้างโค้ดภายใน
+- **`perf`**: ปรับปรุงประสิทธิภาพความเร็ว
+- **`test`**: เพิ่มหรือแก้ไข Test
+- **`chore`**: งานตั้งค่าระบบ, Config, ติดตั้ง Package, อัปเดต dependencies
 
-### กฎสำคัญในการเขียน Description:
-
-1. **ใช้ Imperative Mood (คำกริยาช่อง 1):** ใช้ `add`, `fix`, `update`, `remove` (ห้ามใช้ `added`, `fixing`)
-2. **ตัวพิมพ์เล็กหลังเครื่องหมายโคลอน:** เช่น `feat: add ...` ไม่ใช้ `feat: Add ...`
-3. **ห้ามใส่จุด (`.`) ปิดท้ายประโยค**
-4. **ความยาวกระชับ:** แนะนำไม่เกิน 50–72 ตัวอักษร
-5. **Scope (ตัวเลือกเสริมแต่แนะนำ):** สามารถระบุโมดูล `(map)`, `(checkin)`, `(ui)` หรือระบุ Ticket ID เช่น `feat(FE-001): create location card`
+> **หมายเหตุ:** สามารถใส่ Scope ในวงเล็บได้หากต้องการ เช่น `feat(map): lorem ipsum` หรือ `feat(FE-001): lorem ipsum` แต่ไม่บังคับ และไม่ต้องใส่คำอธิบายเพิ่มเติมยาวๆ เน้นเขียนสั้นกระชับให้สื่อความหมายในบรรทัดเดียว
 
 ---
 
@@ -109,6 +98,6 @@ npm run build
 > หากคุณเป็นโมเดล AI ที่กำลังช่วยผู้พัฒนาในโปรเจกต์นี้:
 >
 > 1. **เคารพ Branching Rules เสมอ:** ตรวจสอบว่ากำลังอยู่บน branch `FE-XXX` หรือ `BE-XXX` ก่อนแก้ไขโค้ด ห้ามแนะนำให้ Push เข้า `main` หรือ `development` โดยตรง
-> 2. **ใช้ Conventional Commits เสมอ:** เขียน Commit message ตามโครงสร้างในข้อ 2
+> 2. **ใช้ Commit Naming ตามข้อ 2:** เขียนข้อความสั้นๆ กระชับ เช่น `feat: lorem ipsum` ไม่ต้องใส่ body เพิ่มเติม
 > 3. **รักษา Mobile-First Layout:** ทุกหน้าจอ UI ที่สร้างต้องคำนึงถึงขนาดหน้าจอมือถือ (320px–430px) และ Safe Area เสมอ
 > 4. **เคารพ Schema 9 ตาราง:** ยึด [Database Design](docs/database.md) ที่สรุป ER/DBML และมติล่าสุด โดย `users` ยังไม่มี `trust_score` และ `current_streak` และ `crowd_level` อยู่ในช่วง 1–5 ห้ามปรับโครงสร้างโดยไม่ได้รับความเห็นชอบจากเจ้าของโปรเจกต์
