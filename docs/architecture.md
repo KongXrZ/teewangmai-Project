@@ -27,8 +27,11 @@ public/
     ├── images/                 Custom map images
     └── models/                 3D map assets, if selected
 supabase/
+├── config.toml                Shared local Supabase configuration
 ├── migrations/                Versioned PostgreSQL schema and RLS changes
 └── seed.sql                   Future local development sample data
+scripts/
+└── generate-database-types.mjs Safe local database type generation
 docs/
 └── architecture.md            Structure and implementation conventions
 .env.example                   Documented environment variables, without values
@@ -103,10 +106,12 @@ only install a 3D library when it is needed.
 ## Current scope
 
 The landing page is functional. The feature folders, database connection,
-and API folders are scaffolding. An ER/DBML design exists, but no SQL migration,
-database, or authentication service is configured. The app still starts without
-Supabase credentials. Local source presentations and diagrams are excluded from
-Git; their confirmed requirements are summarized in the repository documentation.
+and API folders are scaffolding. Supabase CLI and shared local configuration are
+ready; see [Backend Development Setup](backend-setup.md). Application migrations,
+RLS, client modules, and authentication flows are not implemented. No hosted
+project is configured. The app still starts without Supabase credentials. Local
+source presentations and diagrams are excluded from Git; their confirmed
+requirements are summarized in the repository documentation.
 
 References: [Supabase PostgreSQL database](https://supabase.com/docs/guides/database/overview),
 [Next.js Supabase clients](https://supabase.com/docs/guides/auth/server-side/nextjs),

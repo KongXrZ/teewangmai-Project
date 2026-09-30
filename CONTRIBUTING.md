@@ -93,6 +93,11 @@ npm run build
 
 ### ข้อควรระวังด้านความปลอดภัย:
 
+สำหรับงาน BE ให้อ่าน [Backend Development Setup](docs/backend-setup.md) ก่อนเริ่ม:
+ใช้ Supabase CLI เวอร์ชันที่ล็อกในโปรเจกต์ ทดสอบ migrations กับฐานข้อมูล local
+ตรวจ constraints/RLS ตาม scope และ generate types ใหม่ก่อนส่ง PR
+คำสั่ง `npm run db:reset` จะล้างข้อมูล local และสร้างใหม่จาก migrations/seed
+
 - **ห้าม Commit Secret Key หรือรหัสผ่านเด็ดขาด:** ตรวจสอบให้แน่ใจว่าไฟล์ `.env.local` ไม่ถูก Track เข้า Git
 - **โฟลเดอร์เอกสารภายใน:** โฟลเดอร์ `/*LocalDocs-dont-commit/` ถูกกำหนดไว้ใน `.gitignore` ห้ามบังคับ Force add (`git add -f`) เข้ามาเด็ดขาด
 

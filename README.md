@@ -61,6 +61,10 @@ npm start
 
 `npm start` serves the production build after `npm run build` completes.
 
+For BE work, follow [Backend Development Setup](docs/backend-setup.md). Supabase
+CLI is pinned as a dev dependency and local configuration is included. With
+Docker running, use `npm run db:start`; stop it with `npm run db:stop`.
+
 ## Project Structure
 
 ```text
@@ -94,7 +98,7 @@ The September 30, 2026 ER/DBML baseline has **nine application tables**: `users`
 
 `.env.example` lists the planned connection variables. When a Supabase project is available, copy it to `.env.local` and fill in the project URL and publishable key. The current landing page runs without these values. Keep database passwords and Supabase secret/service-role keys out of browser code and `NEXT_PUBLIC_` variables.
 
-The Supabase SDK and SSR library are installed. Client initialization, CLI configuration, SQL migrations, and authentication flows are not implemented yet. See [the database folder](supabase/README.md) for the next steps. Local reference files in `*LocalDocs-dont-commit/` are excluded from Git.
+The Supabase SDK, SSR library, and CLI are installed, and local CLI configuration is included. Client initialization, application SQL migrations, and authentication flows are not implemented yet. See [Backend Development Setup](docs/backend-setup.md) for local startup, migrations, and generated types. Local reference files in `*LocalDocs-dont-commit/` are excluded from Git.
 
 Setup references: [Next.js installation](https://nextjs.org/docs/app/getting-started/installation) and [Tailwind CSS with Next.js](https://tailwindcss.com/docs/installation/framework-guides/nextjs).
 

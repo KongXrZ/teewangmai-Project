@@ -1,15 +1,18 @@
 # PostgreSQL / Supabase
 
-This folder prepares the repository for PostgreSQL hosted by Supabase.
-It does not initialize a Supabase project or create database tables.
+This folder contains the shared local setup for PostgreSQL and Supabase.
+It does not provision a hosted project or create the nine application tables.
 
+- `config.toml`: CLI-generated local settings, using project ID `teewangmai`
+  and the Next.js development URL. Remaining Auth settings are development defaults.
 - `migrations/`: versioned SQL schema changes, indexes, constraints, and RLS
   policies. Use timestamped files such as `YYYYMMDDHHMMSS_create_locations.sql`.
 - `seed.sql`: local development sample data once the schema is defined.
 
-When database development begins, initialize the Supabase CLI configuration
-here from the repository root. The CLI will create `supabase/config.toml`.
-Local Supabase development also requires a compatible container runtime.
+Supabase CLI is pinned in `devDependencies`. Run `npm ci` and start Docker, then
+use `npm run db:start` from the repository root. Do not initialize the project
+again. See [Backend Development Setup](../docs/backend-setup.md) for the complete
+startup, migration, type-generation, and review workflow.
 
 The September 30 baseline has nine application tables: `users`, `locations`,
 `location_hours`, `location_profiles`, `checkins`, `badges`, `user_badges`,
@@ -31,8 +34,8 @@ DBML's required fields, defaults, checks, and indexes explicitly in SQL.
 Keep migrations in Git and generate TypeScript types from the implemented
 PostgreSQL schema into `src/types/database.ts`.
 
-The Supabase SDK and SSR library are installed. The CLI, connection, SQL
-migrations, authentication flows, and local database are not set up yet.
+The SDK, SSR library, CLI, and local configuration are ready. Application
+migrations, RLS, connection modules, and authentication flows remain to be built.
 No remote database changes have been made.
 
 See [database migrations](https://supabase.com/docs/guides/local-development/database-migrations)
