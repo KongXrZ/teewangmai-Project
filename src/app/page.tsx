@@ -18,7 +18,7 @@ export default function Home() {
         className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6"
       >
         <h2 id="project-status" className="text-xl font-semibold">
-          อยู่ระหว่างพัฒนา
+          อยู่ระหว่างพัฒนา ;-;
         </h2>
         <p className="mt-3 leading-7 text-slate-600">
           เตรียมพบกับแผนที่จำลองของมหาวิทยาลัยและระบบรายงานความหนาแน่น
