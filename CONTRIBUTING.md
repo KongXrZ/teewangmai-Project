@@ -73,12 +73,20 @@ development (Integration / Staging)
 # 1. ตรวจสอบ Lint (ต้องไม่มี Error และ Warning)
 npm run lint
 
-# 2. ตรวจสอบ TypeScript Types
+# 2. รัน Unit Tests
+npm test
+
+# 3. ตรวจสอบ TypeScript Types
 npm run typecheck
 
-# 3. ทดสอบการ Build Production
+# 4. ทดสอบการ Build Production
 npm run build
 ```
+
+GitHub Actions จะรันชุดตรวจนี้เมื่อ Push ไปยัง branch `FE-*` / `BE-*` และเมื่อ
+เปิดหรืออัปเดต PR เข้า `development` / `main` ให้ตั้ง Ruleset ของสอง branch นี้
+ให้ต้องผ่าน status check ชื่อ `verify` ก่อน Merge ด้วย GitHub ยังอนุญาตให้เปิด PR
+ที่มี check ล้มเหลวได้ แต่จะแสดงสถานะไม่ผ่านและป้องกันการ Merge เมื่อบังคับใช้ Ruleset แล้ว
 
 ### ข้อควรระวังด้านความปลอดภัย:
 
