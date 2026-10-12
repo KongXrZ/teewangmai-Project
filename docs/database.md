@@ -15,7 +15,7 @@ Table and column names below match the lowercase names in the DBML.
 
 | Table | Purpose | Columns |
 | --- | --- | --- |
-| `users` | Application profile linked to Supabase Auth | `id`, `name`, `email`, `avatar_url`, `points`, `created_at` |
+| `users` | Application profile linked to Supabase Auth | `id`, `auth_id`, `name`, `email`, `avatar_url`, `points`, `created_at` |
 | `locations` | Campus locations and verification references | `id`, `name`, `category`, `building`, `floor`, `gps_lat`, `gps_lng`, `qr_code_id`, `image_url`, `is_active` |
 | `location_hours` | Location opening hours | `id`, `location_id`, `day_of_week`, `open_time`, `close_time` |
 | `location_profiles` | Flexible location details in PostgreSQL | `location_id`, `details` |
@@ -27,11 +27,14 @@ Table and column names below match the lowercase names in the DBML.
 
 ## Keys, relationships, and authentication
 
-- `users.id` is a UUID linked to `auth.users.id`. Supabase Auth is responsible
-  for authentication and is the source of truth for email. `users.email`
-  remains in the academic/logical DBML as required and unique; the implementation
-  must define how that representation stays consistent with Auth. Do not add
-  a password column to the application table.
+- `users.id` is an incrementing integer primary key (1, 2, 3...).
+- `users.auth_id` is a UUID linked to `auth.users.id` (`UNIQUE NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE`).
+  Supabase Auth is responsible for authentication credentials and is the source of truth for email.
+  Do not add a password column to the application table.
+- Authenticated users can read only their own profile (auth.uid() = users.auth_id) and
+  can update only their own name and avatar_url; database column grants enforce
+  the editable-field boundary. RLS for the other application tables remains a separate
+  decision.
 - `locations`, `location_hours`, `checkins`, `badges`, `rewards`, and
   `redemptions` have incrementing integer `id` primary keys.
 - `location_hours` is a **strong entity** with its own primary key and a
@@ -44,7 +47,7 @@ Table and column names below match the lowercase names in the DBML.
   for every location still needs an implementation rule. `details` is `jsonb`
   in PostgreSQL, not a separate NoSQL database.
 - A user has many check-ins; a location receives many check-ins. The corresponding
-  foreign keys are `checkins.user_id` (UUID) and `checkins.location_id` (integer).
+  foreign keys are `checkins.user_id` (integer) and `checkins.location_id` (integer).
 - `user_badges` joins users and badge definitions using the composite primary
   key `(user_id, badge_id)`. It has no separate `id`; each badge can be owned
   once per user. Badge definitions and badge ownership remain separate tables.
