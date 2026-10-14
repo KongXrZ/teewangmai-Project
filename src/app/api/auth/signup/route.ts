@@ -34,25 +34,18 @@ export async function POST(request: Request) {
       );
     }
 
-    let profile = null;
-    if (data.user) {
-      const { data: profileData } = await supabase
-        .from('users')
-        .select('*')
-        .eq('auth_id', data.user.id)
-        .single();
-      profile = profileData;
-    }
-
     return NextResponse.json({
       success: true,
-      message: 'สมัครสมาชิกสำเร็จ บัญชีและโปรไฟล์ถูกสร้างเรียบร้อยแล้ว',
-      user: data.user,
-      profile,
-      session: data.session,
+      message: data.session
+        ? 'สมัครสมาชิกสำเร็จและเข้าสู่ระบบเรียบร้อยแล้ว'
+        : 'สมัครสมาชิกสำเร็จ กรุณาตรวจสอบอีเมลเพื่อยืนยันตัวตน',
+      requiresEmailConfirmation: !data.session,
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Internal Server Error';
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    console.error('Signup route failed', err);
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

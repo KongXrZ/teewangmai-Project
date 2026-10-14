@@ -22,14 +22,24 @@ export async function GET() {
       .eq('auth_id', user.id)
       .single();
 
+    if (profileError) {
+      console.error('Current-user profile lookup failed', profileError);
+      return NextResponse.json(
+        { success: false, error: 'Internal server error' },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
       user,
-      profile: profile ?? null,
-      profileError: profileError?.message ?? null,
+      profile,
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Internal Server Error';
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    console.error('Current-user route failed', err);
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

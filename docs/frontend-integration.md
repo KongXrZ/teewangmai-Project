@@ -139,6 +139,8 @@ export function GoogleLoginButton() {
 * `POST /api/auth/logout` : เคลียร์ Session
 * `GET /api/auth/me` : ดึง User ปัจจุบันและ Profile
 
+Signup ตอบกลับเฉพาะ `success`, `message` และ `requiresEmailConfirmation` โดยเก็บ session ผ่าน cookie ของเซิร์ฟเวอร์เมื่อมี session; ไม่ส่ง access token, refresh token หรือข้อมูลผู้ใช้เต็มชุดกลับใน JSON
+
 ---
 
 ## 4. โครงสร้างข้อมูลตาราง (Database Model)

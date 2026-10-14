@@ -33,8 +33,10 @@ Table and column names below match the lowercase names in the DBML.
   Do not add a password column to the application table.
 - Authenticated users can read only their own profile (auth.uid() = users.auth_id) and
   can update only their own name and avatar_url; database column grants enforce
-  the editable-field boundary. RLS for the other application tables remains a separate
-  decision.
+  the editable-field boundary. RLS is enabled on all nine application tables. The
+  other eight tables currently have no policies, so client roles cannot access their
+  rows until feature-specific access rules are defined. The database also permits
+  avatar URLs only when they use HTTP or HTTPS.
 - `locations`, `location_hours`, `checkins`, `badges`, `rewards`, and
   `redemptions` have incrementing integer `id` primary keys.
 - `location_hours` is a **strong entity** with its own primary key and a

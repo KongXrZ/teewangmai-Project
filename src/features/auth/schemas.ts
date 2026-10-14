@@ -43,7 +43,12 @@ export const resendVerificationSchema = z.object({
 
 export const updateProfileSchema = z.object({
   name: z.string().trim().min(2, 'ชื่อต้องมีความยาวอย่างน้อย 2 ตัวอักษร').max(50),
-  avatar_url: z.string().url('รูปแบบ URL รูปภาพไม่ถูกต้อง').optional().nullable(),
+  avatar_url: z
+    .string()
+    .url('รูปแบบ URL รูปภาพไม่ถูกต้อง')
+    .refine((value) => /^https?:\/\//i.test(value), 'URL รูปภาพต้องขึ้นต้นด้วย http:// หรือ https://')
+    .optional()
+    .nullable(),
 });
 
 export type SignUpInput = z.infer<typeof signUpSchema>;

@@ -71,7 +71,7 @@ export async function GET() {
           tags: ['Auth'],
           summary: 'Register new user',
           description:
-            'Create account in Supabase auth.users and trigger public.users profile creation automatically',
+            'Create account in Supabase auth.users and trigger public.users profile creation automatically. Session tokens are stored in cookies and are not returned in the JSON body.',
           requestBody: {
             required: true,
             content: {
@@ -103,6 +103,19 @@ export async function GET() {
           responses: {
             200: {
               description: 'Registration successful',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    required: ['success', 'message', 'requiresEmailConfirmation'],
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      message: { type: 'string' },
+                      requiresEmailConfirmation: { type: 'boolean' },
+                    },
+                  },
+                },
+              },
             },
             400: {
               description: 'Validation failed or email already registered',
@@ -199,7 +212,7 @@ export async function GET() {
     >
       ${JSON.stringify(spec)}
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.73.0"></script>
   </body>
 </html>`;
 

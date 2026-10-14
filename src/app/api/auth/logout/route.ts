@@ -7,8 +7,9 @@ export async function POST() {
     const { error } = await supabase.auth.signOut();
 
     if (error) {
+      console.error('Logout route failed', error);
       return NextResponse.json(
-        { success: false, error: error.message },
+        { success: false, error: 'Internal server error' },
         { status: 500 }
       );
     }
@@ -18,7 +19,10 @@ export async function POST() {
       message: 'ออกจากระบบสำเร็จ',
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Internal Server Error';
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    console.error('Logout route failed', err);
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
