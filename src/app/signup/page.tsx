@@ -12,8 +12,9 @@ export default function SignupPage() {
     <MobileShell>
       <AuthPageLayout
         title="Sign up"
+        switchPrompt="มีบัญชีแล้ว?"
         switchHref="/login"
-        switchLabel="มีบัญชีแล้ว? ไปหน้า Log in"
+        switchLabel="ไปหน้า Log in"
       >
         <SignupForm />
       </AuthPageLayout>
