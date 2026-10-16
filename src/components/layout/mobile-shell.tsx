@@ -7,7 +7,6 @@ const inter = Inter({
   fallback: ["Tahoma", "sans-serif"],
 });
 
-/** Phone-width column used by every page: full width on phones, centered at most 430px on larger screens. */
 export function MobileShell({ children }: { children: ReactNode }) {
   return (
     <div

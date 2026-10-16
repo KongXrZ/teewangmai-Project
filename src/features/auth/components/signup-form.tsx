@@ -11,7 +11,6 @@ import { AuthSubmitButton } from "./auth-submit-button";
 import { AuthTextField } from "./auth-text-field";
 
 type SignupFormProps = {
-  /** Backend hook: called with the validated values. Nothing is sent anywhere yet. */
   onSubmit?: (payload: SignupPayload) => void | Promise<void>;
 };
 

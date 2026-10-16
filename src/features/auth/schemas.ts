@@ -29,5 +29,4 @@ export const signupSchema = z
 export type LoginValues = z.infer<typeof loginSchema>;
 export type SignupValues = z.infer<typeof signupSchema>;
 
-/** What the sign-up form hands over once it is valid (confirmPassword stays in the UI). */
 export type SignupPayload = Omit<SignupValues, "confirmPassword">;
