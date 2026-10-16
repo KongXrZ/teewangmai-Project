@@ -6,7 +6,7 @@ import {
   signupSchema,
   type SignupPayload,
   type SignupValues,
-} from "@/features/auth/schemas";
+} from "@/features/auth/form-schemas";
 import { AuthSubmitButton } from "./auth-submit-button";
 import { AuthTextField } from "./auth-text-field";
 
