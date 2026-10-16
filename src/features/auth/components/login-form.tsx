@@ -43,7 +43,7 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
           label="Password"
           type="password"
           autoComplete="current-password"
-          placeholder="••••••••"
+          placeholder="password"
           error={errors.password?.message}
           {...register("password")}
         />
