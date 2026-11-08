@@ -53,6 +53,21 @@ not create routes, API endpoints, or working product features.
 - Start with Server Components. Use Client Components for interactions such as
   tapping a map zone or filling out a report form.
 
+### Shared mobile components
+
+| Component          | Import                                  | Usage                                                                                                                                                                           |
+| ------------------ | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MobileShell`      | `@/components/layout/mobile-shell`      | Full-height page shell with a 476px maximum width; `variant="app"` applies the app background and lets each screen supply its own padding.                                      |
+| `BottomNavigation` | `@/components/layout/bottom-navigation` | Five-item navigation UI. Use `selected` and `onChange` to control selection, or `defaultSelected` for local state. The caller owns route changes.                               |
+| `SearchInput`      | `@/components/ui/search-input`          | Labeled search input accepting native input props, including `value`, `defaultValue`, and `onChange`. Supply `label`; an accessible input ID is generated when `id` is omitted. |
+| `CrowdLevelFilter` | `@/components/ui/crowd-level-filter`    | Density filter with `selected`, `defaultSelected`, and `onChange`. It adapts to its own available width, so it can also be used outside the map.                                |
+
+These controls own presentation and optional local state. Their callers handle
+data fetching, filtering, and navigation. `HomePage` and its blank
+`MapPlaceholder` remain in `features/home/components` and compose these shared
+controls. Filter values (`all`, `low`, `medium`, `high`) describe UI choices;
+mapping reports on the 1–5 scale to these groups belongs to a later integration task.
+
 The wireframes also include sign-up/login, a user profile with check-in history,
 points and badges, and reward redemption. Trust/streak behavior remains TBD and
 has no columns in the current `users` model. Add `auth/`, `profile/`, and
