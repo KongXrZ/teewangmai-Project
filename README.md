@@ -6,7 +6,13 @@
 
 A web application for monitoring and visualizing student density across locations at **King Mongkut's University of Technology Thonburi (KMUTT)**, including cafeterias, libraries, study spaces, and common areas.
 
-The system collects crowd-level reports through user check-ins and summarizes them by location on a custom campus mockup map. The map will be supplied as an image or a 3D model, with selectable zones representing campus locations. The planned check-in flow verifies presence with GPS and a QR code before users report a crowd level from 1 to 5.
+The system collects crowd-level reports through user check-ins and summarizes them by building and floor on a custom campus mockup map. The map will be supplied as an image or a 3D model, with selectable zones representing campus locations. In the planned flow, QR identifies the building and floor, GPS verifies building proximity, and the user submits an observed crowd level from 1 to 5.
+
+The agreed crowd summary averages the latest **30 minutes** of reports for each
+floor, recalculated **every 10 minutes**. Check-ins have an independent
+**30-minute cooldown per user per floor**. Viewing summaries does not require
+submitting a check-in. These rules are not implemented yet; see
+[Floor check-ins and crowd summaries](docs/check-in-rules.md).
 
 The product is a **mobile-first web application**. Smartphone browsers are the primary target; tablet and desktop layouts will adapt from the mobile experience.
 
@@ -143,10 +149,13 @@ Prediction and location recommendations are possible future extensions of this c
 ## System Concept
 
 ```text
-User Selects a Location
+User Logs In and Scans a Floor QR
     │
     ▼
-Verify Presence with GPS + QR
+Resolve Building and Floor; Show Check-in Details
+    │
+    ▼
+Verify GPS + QR + Per-Floor Cooldown on Submission
     │
     ▼
 User Reports Crowd Level (1–5)
@@ -155,7 +164,7 @@ User Reports Crowd Level (1–5)
 Validate and Store Report
     │
     ▼
-Aggregate Recent Reports by Zone
+Average Each Floor's Latest 30 Minutes Every 10 Minutes
     │
     ▼
 Location Density Summary
@@ -194,7 +203,12 @@ Example:
 ⚪ Unknown   No recent reports
 ```
 
-Reports use a confirmed 1–5 scale; the labels above illustrate map summaries, with the exact mapping still to be defined. Aggregation windows, agreement thresholds, and expiry rules remain TBD. Older presentation examples are not fixed requirements. Zones without sufficient recent reports should show an unknown status.
+Reports use a confirmed 1–5 scale; the labels above illustrate map summaries,
+with the exact mapping still to be defined. Each floor's summary is the mean
+of reports from the last 30 minutes, recalculated every 10 minutes. Floors with
+no reports in that window show an unknown status. Logs remain in history after
+they leave the calculation window; older presentation examples do not override
+[these confirmed rules](docs/check-in-rules.md).
 
 ---
 
@@ -202,13 +216,19 @@ Reports use a confirmed 1–5 scale; the labels above illustrate map summaries, 
 
 The primary data source is **reports submitted by users** about conditions at a selected campus location.
 
-Users will select a location, complete GPS and QR verification, and report a crowd level from **1 (empty) to 5 (very crowded)**. The wireframe includes QR scanning and manual code entry. The backend must create a check-in only after **GPS AND QR verification both succeed**; the row itself represents a verified check-in, without separate verification-result columns. Verification parameters, cooldown, and aggregation rules remain TBD.
+Users will scan a floor's QR, see the resolved building/floor, and report a
+crowd level from **1 (empty) to 5 (very crowded)**. The backend must create a
+check-in only after **GPS AND QR verification both succeed** and the user's
+30-minute cooldown for that floor has elapsed. Other floors have independent
+cooldowns. The row itself represents a verified check-in, without separate
+verification-result columns. GPS radius and accuracy rules remain TBD.
 
-Example:
+Planned stored report shape (server-resolved floor and timestamp; not the
+client submission contract):
 
 ```json
 {
-  "location_id": 2,
+  "floor_id": 2,
   "crowd_level": 3,
   "created_at": "2026-09-28T14:30:00+07:00"
 }
@@ -233,7 +253,10 @@ Sports Complex ⚪ No recent reports
 
 ### Accounts and Verified Check-ins
 
-The wireframes include sign-up and login through Supabase Auth. Users will select a location, complete GPS and QR verification, and submit its observed crowd level from 1 to 5. Auth integration, access policies, and detailed verification rules still need implementation.
+The wireframes include sign-up and login through Supabase Auth. QR resolves the
+building and floor, and users complete GPS verification and submit an observed
+crowd level from 1 to 5. Floor check-ins, access policies, and detailed
+verification rules still need implementation.
 
 ### Search and Filters
 
@@ -241,7 +264,12 @@ Users will be able to search locations, view them as a list, and filter by build
 
 ### Periodic Updates
 
-The map will periodically fetch report summaries and show when a location was last reported. Freshness depends on users submitting new reports.
+The planned summary calculation runs every 10 minutes over each floor's latest
+30 minutes of reports. Lookback and refresh timing should be configurable in
+the backend/admin interface. Display report count, latest included report time,
+and calculation time; freshness depends on users submitting reports. No reports
+means an unknown state rather than an empty location. Scheduling, summary
+storage, and client refresh integration still need implementation.
 
 ### Location Details
 
@@ -344,8 +372,8 @@ Several technical challenges need to be investigated during development:
 - Defining consistent point, streak, trust-score, and reward rules
 - Defining selectable zones on the custom map
 - Choosing an image or 3D representation that works on mobile devices
-- Setting report expiry and handling locations with no recent reports
-- Defining aggregation rules and showing report freshness
+- Implementing the 30-minute lookback and handling floors with no recent reports
+- Scheduling 10-minute summary updates and showing report freshness
 - Collecting enough reports for useful summaries
 - Scaling to many campus locations
 - Privacy and data protection

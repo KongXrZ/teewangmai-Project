@@ -3,7 +3,10 @@
 Baseline: the September 30, 2026 handoff report, updated ER/DBML, and the project
 owner's subsequent confirmations. There are **nine application tables** in
 PostgreSQL hosted by Supabase; Supabase's managed `auth.users` is separate.
-This is a design reference, not an executable migration or a deployed schema.
+The current tables below describe the repository migrations, not a claim that
+they have been applied to a local or hosted database. The agreed floor-based
+check-in model is documented separately in
+[Floor check-ins and crowd summaries](check-in-rules.md) and is not migrated yet.
 
 The owner confirmed **`crowd_level` is 1–5** and that `users` must follow the
 latest DBML **without `trust_score` or `current_streak`**. Earlier documents and
@@ -65,7 +68,7 @@ All primary keys are non-null. Other required fields are:
 | `users` | `name`, `email`, `points`, `created_at` |
 | `locations` | `name`, `category`, `gps_lat`, `gps_lng`, `qr_code_id`, `is_active` |
 | `location_hours` | `location_id`, `day_of_week`, `open_time`, `close_time` |
-| `location_profiles` | None beyond its primary key; `details` is nullable |
+| `location_profiles` | `details` (non-null, defaults to an empty JSON object) |
 | `checkins` | `user_id`, `location_id`, `crowd_level`, `created_at` |
 | `badges` | `name`, `requirement_type`, `requirement_value`, `is_active` |
 | `user_badges` | `earned_at` (both foreign keys form its primary key) |
@@ -108,14 +111,33 @@ policies must enforce this invariant; client-side form validation is insufficien
 Raw personal GPS coordinates are not fields in the check-in model. The custom
 image/3D campus map is a separate presentation layer.
 
-The input scale of 1–5 is confirmed. Aggregation windows, report agreement,
-conflict handling, expiry, and mapping summaries to map labels remain TBD;
-the older presentation's timing and report-count examples are not fixed rules.
+The agreed next model treats `locations` as buildings, adds `floors` with one
+QR identifier per floor, and records `checkins.floor_id` instead of
+`checkins.location_id`. QR resolves the building and floor; users do not select
+the floor manually. These changes still need a migration.
+
+Confirmed behavior as of November 8, 2026:
+
+- Each check-in is one user's 1–5 report and its activity log.
+- `current_crowd_level` is a per-floor arithmetic mean over reports from the
+  latest **30 minutes**, recalculated **every 10 minutes**. These two timing
+  settings should be adjustable through the backend/admin interface.
+- Check-in cooldown is **30 minutes per user per floor**. Other floors/buildings
+  have independent cooldowns and do not clear an existing one.
+- Everyone may read the aggregate without checking in. No recent reports means
+  `null`/unknown, not 0 or low crowding. Old logs remain stored when they leave
+  the calculation window.
+
+See [the check-in rules](check-in-rules.md) for the full flow, examples, unknown
+UI state, configuration requirements, and remaining implementation decisions.
+Current migrations do not implement these aggregation or cooldown rules.
 
 ## Decisions before implementation
 
-- RLS/access policies, server-side GPS/QR verification, and check-in cooldown.
-- Aggregation, expiry, and historical summary storage/query strategy.
+- Floor schema migration, feature RLS/access policies, server-side GPS/QR
+  verification, and atomic enforcement of the agreed cooldown.
+- Scheduled aggregation, configurable timing, exact window boundaries,
+  label/color thresholds, and summary storage/query strategy.
 - Point earning, trust/streak behavior, and badge evaluation/trigger strategy.
   Do not reintroduce removed user columns while these rules are undecided.
 - Transactional point/stock updates, reward eligibility, cancellation,

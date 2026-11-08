@@ -74,34 +74,39 @@ has no columns in the current `users` model. Add `auth/`, `profile/`, and
 `rewards/` under `features/` when implementation begins. Keep badge displays with
 the profile feature initially; new empty feature folders are not needed yet.
 
-The reports feature owns the check-in flow: insert a row only after GPS AND QR
-verification both succeed, with a crowd-level submission from 1 to 5. No separate
-verification-result columns are needed. Map rendering consumes location summaries
-without depending on the image or 3D format used to display them.
+The reports feature owns the check-in flow: resolve the building and floor from
+QR, validate GPS proximity and the per-user/per-floor 30-minute cooldown, then
+insert the user's 1–5 report. No separate verification-result columns are needed.
+The planned public summary averages each floor's latest 30 minutes of reports
+every 10 minutes; viewing it never creates a check-in. Map rendering consumes
+summaries independently of the image or 3D format. See
+[the agreed check-in rules](check-in-rules.md); this floor model and summary
+behavior still need implementation.
 
 ## Database boundary
 
 Use `src/lib/supabase/` for connection infrastructure and `supabase/migrations/`
-for schema changes. The planned client files are `client.ts` for browser code
-and `server.ts` for request-scoped server code; these are not implemented yet.
+for schema changes. `client.ts` supplies the browser client and `server.ts`
+supplies the request-scoped server client.
 
 When the schema exists, generate `src/types/database.ts` from the actual database
 and use it to type the clients. Keep UI/view types separate from generated rows.
 
 The current model consists of `users`, `locations`, `location_hours`,
 `location_profiles`, `checkins`, `badges`, `user_badges`, `rewards`, and
-`redemptions`. `users.id` is a UUID linked to Supabase `auth.users`; Auth owns
-authentication and is the source of truth for email. `location_profiles` is a
+`redemptions`. `users.id` is an integer; `users.auth_id` is the UUID linked to
+Supabase `auth.users`. Auth owns authentication and is the source of truth for
+email. `location_profiles` is a
 weak/dependent entity with a shared location primary/foreign key.
 `location_hours` has its own primary key and a unique location/day pair.
 Keep badge definitions separate from ownership, whose primary key is
 `(user_id, badge_id)`. See [the database baseline](database.md) for constraints
 and decisions still awaiting agreement.
 
-Before enabling reports, define database access policies, report validation,
-and the precise rules for aggregation and expiry. Supabase Auth sign-up and
-login are planned; include cookie-based server clients and Next.js session
-refresh handling when implementing them.
+Before enabling reports, implement the floor migration, database access policies,
+report validation, and the agreed aggregation/cooldown rules. Supabase Auth
+actions/routes, cookie-based clients, and the Next.js session refresh proxy
+already exist; connecting the login/signup UI is a separate integration task.
 
 Zod, React Hook Form, and its Zod resolver are installed for future forms and
 validation. Keep schemas in each feature's `schemas.ts` and validate untrusted
