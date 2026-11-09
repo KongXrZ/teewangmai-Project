@@ -1,17 +1,19 @@
 # Project Structure
 
-TeeWangMai? is a mobile-first Next.js application. The planned database is
-PostgreSQL hosted by Supabase. The current ER/DBML design has nine application
+TeeWangMai? is a mobile-first Next.js application. Its database is
+PostgreSQL hosted by Supabase. The current migration model has ten application
 tables, including flexible `location_profiles.details` stored as PostgreSQL `jsonb`.
 
 ```text
 src/
 ├── app/                        Next.js routes, layouts, and global styles
-│   └── api/                    Future Route Handlers
+│   └── api/                    Route Handlers, including existing Auth endpoints
 ├── components/
 │   ├── ui/                     Shared buttons, inputs, dialogs, etc.
 │   └── layout/                 Shared mobile navigation and page shells
 ├── features/
+│   ├── auth/                   Auth schemas, forms, and server operations
+│   ├── home/                   Home UI and blank map placeholder
 │   ├── campus-map/
 │   │   └── components/         Custom image/3D map and interactive zones
 │   ├── locations/
@@ -20,8 +22,8 @@ src/
 │       └── components/         Crowd-level report forms and summaries
 ├── hooks/                      Hooks reused across multiple features
 ├── lib/
-│   └── supabase/               Future Supabase clients and connection helpers
-└── types/                      Shared types and future generated database types
+│   └── supabase/               Browser/server clients and session helpers
+└── types/                      Shared types and generated database types
 public/
 └── maps/
     ├── images/                 Custom map images
@@ -29,7 +31,8 @@ public/
 supabase/
 ├── config.toml                Shared local Supabase configuration
 ├── migrations/                Versioned PostgreSQL schema and RLS changes
-└── seed.sql                   Future local development sample data
+├── tests/                     SQL schema and access assertions
+└── seed.sql                   Empty until approved reference data is ready
 scripts/
 └── generate-database-types.mjs Safe local database type generation
 docs/
@@ -70,8 +73,8 @@ mapping reports on the 1–5 scale to these groups belongs to a later integratio
 
 The wireframes also include sign-up/login, a user profile with check-in history,
 points and badges, and reward redemption. Trust/streak behavior remains TBD and
-has no columns in the current `users` model. Add `auth/`, `profile/`, and
-`rewards/` under `features/` when implementation begins. Keep badge displays with
+has no columns in the current `users` model. Auth is implemented in `features/auth`;
+add `profile/` and `rewards/` when implementation begins. Keep badge displays with
 the profile feature initially; new empty feature folders are not needed yet.
 
 The reports feature owns the check-in flow: insert a row only after GPS AND QR
@@ -82,39 +85,46 @@ without depending on the image or 3D format used to display them.
 ## Database boundary
 
 Use `src/lib/supabase/` for connection infrastructure and `supabase/migrations/`
-for schema changes. The planned client files are `client.ts` for browser code
-and `server.ts` for request-scoped server code; these are not implemented yet.
+for schema changes. `client.ts` serves browser code and `server.ts` creates
+request-scoped server clients; both already exist.
 
-When the schema exists, generate `src/types/database.ts` from the actual database
+Generate `src/types/database.ts` from the actual database
 and use it to type the clients. Keep UI/view types separate from generated rows.
 
-The current model consists of `users`, `locations`, `location_hours`,
+The current model consists of `users`, `locations`, `floors`, `location_hours`,
 `location_profiles`, `checkins`, `badges`, `user_badges`, `rewards`, and
-`redemptions`. `users.id` is a UUID linked to Supabase `auth.users`; Auth owns
-authentication and is the source of truth for email. `location_profiles` is a
+`redemptions`. `users.id` is an integer application key; `users.auth_id` is a UUID
+linked to Supabase `auth.users`. Auth owns authentication and is the source of
+truth for email. `locations` represents buildings, `floors.location_id` belongs
+to a building, and `checkins.floor_id` belongs to a floor. QR identifiers live
+on floors. `location_profiles` is a
 weak/dependent entity with a shared location primary/foreign key.
 `location_hours` has its own primary key and a unique location/day pair.
 Keep badge definitions separate from ownership, whose primary key is
 `(user_id, badge_id)`. See [the database baseline](database.md) for constraints
 and decisions still awaiting agreement.
 
-Before enabling reports, define database access policies, report validation,
-and the precise rules for aggregation and expiry. Supabase Auth sign-up and
-login are planned; include cookie-based server clients and Next.js session
-refresh handling when implementing them.
+RLS is enabled on all ten tables. Only own-profile read/update policies are
+currently open to clients; column grants restrict updates to name/avatar.
+Auth uses browser-readable cookie sessions and request-scoped server clients.
+Before enabling reports, implement trusted GPS/QR checks and the independent
+30-minute user/floor cooldown. Floor summaries use the latest 30 minutes of
+reports and refresh every 10 minutes; their scheduler and storage remain future
+work. See [Check-in Rules](check-in-rules.md).
 
 Zod, React Hook Form, and its Zod resolver are installed for future forms and
 validation. Keep schemas in each feature's `schemas.ts` and validate untrusted
 input on the server as well. Zustand is available for client-side state management.
 Material UI (`@mui/material`, `@mui/icons-material`, `@mui/material-nextjs`) is
 integrated with App Router via `AppRouterCacheProvider`. The Supabase SDK and SSR
-library are installed; their client modules and authentication flow are not configured yet.
+library are integrated with the existing Auth backend. Database types are generated
+from the local schema.
 
 ## Mobile and map assets
 
 Build for narrow screens and touch first, following the mobile requirements in
 the root README. Keep map rendering separate from report storage: the same
-location ID should connect a zone in an image or model to its report summary.
+building/floor identity should connect a zone in an image or model to its report summary.
 
 Files in `public/` are publicly accessible. Use `public/maps/images/` for map
 images and `public/maps/models/` for models. The rendering format is still open;
@@ -122,11 +132,11 @@ only install a 3D library when it is needed.
 
 ## Current scope
 
-The landing page is functional. The feature folders, database connection,
-and API folders are scaffolding. Supabase CLI and shared local configuration are
-ready; see [Backend Development Setup](backend-setup.md). Application migrations,
-RLS, client modules, and authentication flows are not implemented. No hosted
-project is configured. The app still starts without Supabase credentials. Local
+Home UI, Auth UI/backend, Supabase clients, versioned migrations, and profile RLS
+are present. Home's map remains blank pending its SVG and feature integration.
+The floor schema is applied locally; feature APIs, verified check-ins, scheduled
+summaries, and rewards still need implementation. No hosted deployment is made
+by these local changes. See [Backend Development Setup](backend-setup.md). Local
 source presentations and diagrams are excluded from Git; their confirmed
 requirements are summarized in the repository documentation.
 

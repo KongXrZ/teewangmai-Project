@@ -1,2 +1,3 @@
--- Reserved for local development sample data after the schema is defined.
+-- Reserved for approved building/floor, reward, and badge reference data.
+-- No mock application records are included.
 -- Keep real user data and credentials out of this file.
