@@ -1,24 +1,10 @@
 import { z } from "zod";
+import { signInSchema, signUpSchema } from "./schemas";
 
-const emailSchema = z
-  .string()
-  .trim()
-  .min(1, "กรุณากรอกอีเมล")
-  .pipe(z.email("รูปแบบอีเมลไม่ถูกต้อง"));
+export const loginSchema = signInSchema;
 
-export const loginSchema = z.object({
-  email: emailSchema,
-  password: z.string().min(1, "กรุณากรอกรหัสผ่าน"),
-});
-
-export const signupSchema = z
-  .object({
-    name: z.string().trim().min(1, "กรุณากรอกชื่อ"),
-    email: emailSchema,
-    password: z
-      .string()
-      .min(1, "กรุณากรอกรหัสผ่าน")
-      .min(8, "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร"),
+export const signupSchema = signUpSchema
+  .extend({
     confirmPassword: z.string().min(1, "กรุณายืนยันรหัสผ่าน"),
   })
   .refine((values) => values.password === values.confirmPassword, {
