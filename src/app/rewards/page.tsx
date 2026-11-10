@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { MobileShell } from "@/components/layout/mobile-shell";
-import { RewardsPage } from "@/features/rewards/components/rewards-page";
+import { RewardsCatalogContainer } from "@/features/rewards/components/rewards-catalog-container";
 
 export const metadata: Metadata = {
   title: "แลกรางวัล — TeeWangMai?",
@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 export default function Rewards() {
   return (
     <MobileShell variant="app">
-      <RewardsPage state={{ status: "unavailable" }} />
+      <RewardsCatalogContainer />
     </MobileShell>
   );
 }
