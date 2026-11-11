@@ -17,6 +17,10 @@ export type LocationListState =
   | { status: "loading" }
   | { status: "unavailable" }
   | { status: "error" }
-  | { status: "ready"; buildings: BuildingCardModel[] };
+  | {
+      status: "ready";
+      buildings: BuildingCardModel[];
+      totalCount?: number | null;
+    };
 
 export type BuildingSelectHandler = (id: BuildingId) => void;
