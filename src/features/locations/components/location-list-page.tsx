@@ -11,15 +11,21 @@ import { SearchInput } from "@/components/ui/search-input";
 import type {
   BuildingCardModel,
   BuildingSelectHandler,
+  ExpandedBuildingModel,
+  FloorSelectHandler,
   LocationListState,
 } from "./location-view-models";
 import { BuildingCard } from "./building-card";
+import { ExpandedBuildingCard } from "./expanded-building-card";
 
 export interface LocationListPageProps {
   state: LocationListState;
   onSearchChange?: (query: string) => void;
   onCrowdFilterChange?: (value: CrowdLevelFilterValue) => void;
   onSelectBuilding?: BuildingSelectHandler;
+  expandedBuilding?: ExpandedBuildingModel;
+  onSelectFloor?: FloorSelectHandler;
+  onViewBuildingDetail?: BuildingSelectHandler;
 }
 
 export function LocationListPage({
@@ -27,6 +33,7 @@ export function LocationListPage({
   onSearchChange,
   onCrowdFilterChange,
   onSelectBuilding,
+  ...expandedProps
 }: LocationListPageProps) {
   const [query, setQuery] = useState("");
   const [crowdFilter, setCrowdFilter] = useState<CrowdLevelFilterValue>("all");
@@ -97,6 +104,7 @@ export function LocationListPage({
             state={state}
             isFiltering={isFiltering}
             onSelectBuilding={onSelectBuilding}
+            {...expandedProps}
           />
         </section>
       </main>
@@ -105,15 +113,18 @@ export function LocationListPage({
   );
 }
 
+type BuildingListProps = Pick<
+  LocationListPageProps,
+  | "onSelectBuilding"
+  | "expandedBuilding"
+  | "onSelectFloor"
+  | "onViewBuildingDetail"
+> & { isFiltering: boolean };
+
 function ListContent({
   state,
-  isFiltering,
-  onSelectBuilding,
-}: {
-  state: LocationListState;
-  isFiltering: boolean;
-  onSelectBuilding?: BuildingSelectHandler;
-}) {
+  ...listProps
+}: BuildingListProps & { state: LocationListState }) {
   switch (state.status) {
     case "loading":
       return <ListMessage role="status" title="กำลังโหลดรายการสถานที่..." />;
@@ -133,13 +144,7 @@ function ListContent({
         />
       );
     case "ready":
-      return (
-        <BuildingList
-          buildings={state.buildings}
-          isFiltering={isFiltering}
-          onSelectBuilding={onSelectBuilding}
-        />
-      );
+      return <BuildingList buildings={state.buildings} {...listProps} />;
   }
 }
 
@@ -147,11 +152,10 @@ function BuildingList({
   buildings,
   isFiltering,
   onSelectBuilding,
-}: {
-  buildings: BuildingCardModel[];
-  isFiltering: boolean;
-  onSelectBuilding?: BuildingSelectHandler;
-}) {
+  expandedBuilding,
+  onSelectFloor,
+  onViewBuildingDetail,
+}: BuildingListProps & { buildings: BuildingCardModel[] }) {
   if (buildings.length === 0) {
     return isFiltering ? (
       <ListMessage
@@ -178,7 +182,16 @@ function BuildingList({
     <ul className="m-0 flex list-none flex-col p-0">
       {buildings.map((building) => (
         <li key={building.id}>
-          <BuildingCard building={building} onSelect={onSelectBuilding} />
+          {building.id === expandedBuilding?.buildingId ? (
+            <ExpandedBuildingCard
+              building={building}
+              floors={expandedBuilding.floors}
+              onSelectFloor={onSelectFloor}
+              onViewDetail={onViewBuildingDetail}
+            />
+          ) : (
+            <BuildingCard building={building} onSelect={onSelectBuilding} />
+          )}
         </li>
       ))}
     </ul>
