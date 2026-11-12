@@ -80,7 +80,7 @@ export function LocationListPage({
           <SearchInput
             id="location-list-search"
             label="ค้นหาสถานที่"
-            placeholder="ค้นหาอาคารด้วยชื่อหรือรหัสอาคาร (เช่น N7, S2, N16)"
+            placeholder="ค้นหาอาคารด้วยชื่อหรือรหัสอาคาร (เช่น N7)"
             value={query}
             onChange={(event) => handleQueryChange(event.target.value)}
           />
