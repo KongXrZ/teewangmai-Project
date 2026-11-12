@@ -35,8 +35,9 @@ for the current columns and constraints, including:
 
 Keep shared migrations immutable. The BE-003 forward migration maps legacy
 location floor/QR data into `floors`, then moves reports to `floor_id`; ambiguous
-legacy mappings abort instead of creating invented values. It also repairs old
-public Auth triggers and broad profile grants. Back up existing data and verify
+legacy mappings abort instead of creating invented values. Separate follow-up
+migrations repair legacy Auth/profile permissions and restrict building/floor
+deletion to preserve report history. Back up existing data and verify
 on a separate database before applying with `supabase migration up --local`.
 Generate TypeScript types from the applied schema into `src/types/database.ts`.
 

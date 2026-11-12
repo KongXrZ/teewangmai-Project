@@ -36,9 +36,11 @@ not a separate NoSQL database, and can supply the Location Detail page.
   QR is not an authentication secret or proof of presence by itself.
 - `checkins.floor_id` references `floors.id`; `checkins.user_id` references
   `users.id`. The building is obtained through the floor relationship.
-- All application foreign keys currently use `ON DELETE CASCADE`. Deleting a
-  building/floor therefore deletes related reports; prefer deactivation when
-  preserving history. A different retention policy needs a later migration.
+- `floors.location_id` and `checkins.floor_id` use `ON DELETE RESTRICT`.
+  A building with floors or a floor with check-ins cannot be deleted. Retire
+  buildings/floors with `is_active = false` to preserve report history.
+  Other foreign keys retain their existing cascade behavior, including
+  `checkins.user_id`; account deletion and log retention remain separate decisions.
 
 The intended flow is login → Quick Scan → camera permission → scan QR → show
 the resolved building/floor → choose crowd level → submit. GPS verifies proximity
@@ -128,8 +130,23 @@ removes `checkins.location_id` and the moved building columns. Existing building
 IDs and QR identifiers are preserved. Separate legacy locations are not merged
 automatically. If a legacy building has a missing/blank floor or blank QR, the
 transaction aborts rather than inventing reference data. Resolve that mapping
-before retrying. The migration also replaces old public Auth trigger functions
-and broad profile privileges where older installations have drifted.
+before retrying. Its historical filename retains `align_profile_security`, but
+the SQL now covers only the building/floor model.
+
+`20261112073148_repair_legacy_profile_security.sql` separately repairs older
+installations. The pre-BE-003 Local inspection found an Auth insert trigger
+calling `public.handle_new_user` with `search_path=public`, a remaining
+`public.protect_user_points` trigger/function, and broader profile update grants.
+That database had already recorded the initial migration. Editing its SQL in
+the repository could not update the installed objects. This idempotent forward
+repair installs the private trigger function, removes legacy functions, and
+restricts authenticated updates to name/avatar_url. It is also safe on a fresh
+database whose baseline already contains those restrictions.
+
+`20261112073150_restrict_building_floor_deletion.sql` changes both history-path
+foreign keys to `RESTRICT`. Databases that already applied the original BE-003
+migration run these two new migrations in order; they do not replay the floor
+mapping or reset their data.
 
 Back up existing data and test on a separate database before applying a forward
 migration; do not reset a database containing data you need. Keep shared migration

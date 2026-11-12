@@ -42,13 +42,13 @@ begin
   if not exists (
     select 1 from pg_constraint
     where conrelid = 'public.checkins'::regclass and contype = 'f'
-      and confrelid = 'public.floors'::regclass and convalidated
+      and confrelid = 'public.floors'::regclass and convalidated and confdeltype = 'r'
   ) or not exists (
     select 1 from pg_constraint
     where conrelid = 'public.floors'::regclass and contype = 'f'
-      and confrelid = 'public.locations'::regclass and convalidated
+      and confrelid = 'public.locations'::regclass and convalidated and confdeltype = 'r'
   ) then
-    raise exception 'Building/floor/check-in foreign keys must be valid';
+    raise exception 'Building/floor/check-in foreign keys must be valid and restrict deletion';
   end if;
 
   if not exists (

@@ -119,7 +119,9 @@ Verify reproducibility on a separate disposable local database. Run
 existing database, back up and test restore first, then apply reviewed migrations
 with `npm run supabase -- migration up --local` and check migration history.
 The floor migration refuses missing/blank legacy floor or QR mappings rather
-than creating invented records. Keep `supabase/seed.sql` empty until approved
+than creating invented records. Apply the separate legacy-profile repair and
+building/floor deletion-restriction migrations afterward. Previously migrated
+databases apply only those pending versions. Keep `supabase/seed.sql` empty until approved
 reference data is supplied; do not add mock application records.
 
 After applying migrations, run the SQL assertions (PowerShell):
