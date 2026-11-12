@@ -60,7 +60,20 @@ export function BuildingDetailPage({
     }
   }
 
-  const handleBack = onBack ?? (() => handleNavigate("places"));
+  function handleBackToList() {
+    const current = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams();
+    for (const key of ["q", "level"]) {
+      const value = current.get(key);
+      if (value) {
+        params.set(key, value);
+      }
+    }
+    const search = params.toString();
+    router.push(search ? `/locations?${search}` : "/locations");
+  }
+
+  const handleBack = onBack ?? handleBackToList;
 
   return (
     <>
