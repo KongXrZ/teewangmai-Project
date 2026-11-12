@@ -58,32 +58,36 @@ interface StatItem {
 }
 
 function toStatItems(stats: FloorStatsModel): StatItem[] {
-  const items: StatItem[] = [];
-  if (stats.estimatedPeople !== null) {
-    items.push({
+  return [
+    {
       key: "people",
       icon: Diversity3,
-      value: `~${peopleFormatter.format(stats.estimatedPeople)} คน`,
+      value: `~${
+        stats.estimatedPeople === null
+          ? "000"
+          : peopleFormatter.format(stats.estimatedPeople)
+      } คน`,
       label: "จำนวนคนโดยประมาณ",
-    });
-  }
-  if (stats.densityPercent !== null) {
-    items.push({
+    },
+    {
       key: "density",
       icon: DataUsage,
-      value: `${Math.round(stats.densityPercent)}%`,
+      value:
+        stats.densityPercent === null
+          ? "00%"
+          : `${Math.round(stats.densityPercent)}%`,
       label: "ความหนาแน่น",
-    });
-  }
-  if (stats.openingHours !== null) {
-    items.push({
+    },
+    {
       key: "hours",
       icon: AccessTime,
-      value: `${stats.openingHours.open.slice(0, 5)} - ${stats.openingHours.close.slice(0, 5)}`,
+      value:
+        stats.openingHours === null
+          ? "00:00 - 23:59"
+          : `${stats.openingHours.open.slice(0, 5)} - ${stats.openingHours.close.slice(0, 5)}`,
       label: "ช่วงเวลาเปิด/ปิด",
-    });
-  }
-  return items;
+    },
+  ];
 }
 
 export function toFloorStats(floor: FloorModel): FloorStatsModel {
@@ -93,10 +97,6 @@ export function toFloorStats(floor: FloorModel): FloorStatsModel {
     densityPercent: crowd.status === "ready" ? crowd.densityPercent : null,
     openingHours: floor.openingHours,
   };
-}
-
-export function hasFloorStats(stats: FloorStatsModel) {
-  return toStatItems(stats).length > 0;
 }
 
 export interface FloorStatsProps {

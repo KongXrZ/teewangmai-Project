@@ -13,7 +13,7 @@ import type {
   FloorSelectHandler,
 } from "./location-view-models";
 import { buildingSummaryGridClass, BuildingSummary } from "./building-card";
-import { FloorStats, hasFloorStats, toFloorStats } from "./floor-stats";
+import { FloorStats, toFloorStats } from "./floor-stats";
 
 export interface ExpandedBuildingCardProps {
   building: BuildingCardModel;
@@ -146,13 +146,11 @@ function FloorSummary({
     );
   }
 
-  const stats = toFloorStats(floor);
-
   return (
     <>
-      {hasFloorStats(stats) && (
+      {floor.crowd.status === "ready" && (
         <FloorStats
-          stats={stats}
+          stats={toFloorStats(floor)}
           iconClassName="text-black"
           dividerClassName="border-[#ff5815]"
           labelClassName="text-[#b9b9b9]"

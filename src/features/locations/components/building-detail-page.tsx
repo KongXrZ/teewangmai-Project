@@ -28,7 +28,6 @@ import {
 import {
   crowdThemes,
   FloorStats,
-  hasFloorStats,
   toFloorStats,
 } from "./floor-stats";
 
@@ -271,15 +270,14 @@ function FloorPanel({ floor }: { floor: FloorModel }) {
   const level =
     crowd.status === "ready" ? (crowd.level ?? "unknown") : "unknown";
   const theme = crowdThemes[level];
-  const stats = toFloorStats(floor);
 
   return (
     <div className={`rounded-[10px] px-3 py-3 ${theme.panel}`}>
       <CrowdSummary floor={floor} />
-      {hasFloorStats(stats) && (
+      {crowd.status === "ready" && (
         <div className="mt-3 flex">
           <FloorStats
-            stats={stats}
+            stats={toFloorStats(floor)}
             iconClassName={theme.accent}
             dividerClassName={theme.border}
             labelClassName="text-black"
