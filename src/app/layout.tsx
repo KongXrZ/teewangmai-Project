@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Noto_Sans_Thai } from "next/font/google";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
+import { AuthProvider } from "@/features/auth/components/auth-provider";
 import "./globals.css";
 
 const notoSansThai = Noto_Sans_Thai({
@@ -27,7 +28,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="th" className={notoSansThai.variable}>
       <body>
         <AppRouterCacheProvider options={{ enableCssLayer: true }}>
-          {children}
+          <AuthProvider>{children}</AuthProvider>
         </AppRouterCacheProvider>
       </body>
     </html>

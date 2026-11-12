@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
+  let sessionCookie = 'sb-project-ref-auth-token';
+  try {
+    sessionCookie = `sb-${new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').hostname.split('.')[0]}-auth-token`;
+  } catch { /* The docs can render before the local environment is configured. */ }
   const spec = {
     openapi: '3.0.0',
     info: {
@@ -19,13 +23,8 @@ export async function GET() {
         cookieAuth: {
           type: 'apiKey',
           in: 'cookie',
-          name: 'sb-access-token',
-          description: 'Supabase Auth Session Cookie',
-        },
-        bearerAuth: {
-          type: 'http',
-          scheme: 'bearer',
-          bearerFormat: 'JWT',
+          name: sessionCookie,
+          description: 'Browser-managed Supabase SSR session cookie (may be chunked with .0/.1 suffixes). These routes use same-origin cookies, not Bearer headers. Do not paste tokens into the API explorer.',
         },
       },
     },
@@ -83,16 +82,19 @@ export async function GET() {
                     email: {
                       type: 'string',
                       format: 'email',
-                      example: 'agent.zeztz@kmutt.ac.th',
+                      example: 'student@example.com',
                     },
                     password: {
                       type: 'string',
                       format: 'password',
                       minLength: 8,
-                      example: 'codenumber-7',
+                      maxLength: 100,
+                      example: 'your-password',
                     },
                     name: {
                       type: 'string',
+                      minLength: 2,
+                      maxLength: 50,
                       example: 'โยโรสุ บาคุ',
                     },
                   },
@@ -120,6 +122,9 @@ export async function GET() {
             400: {
               description: 'Validation failed or email already registered',
             },
+            415: { description: 'Content-Type must be application/json' },
+            429: { description: 'Too many requests; retry later' },
+            503: { description: 'Authentication service unavailable; safe error only' },
           },
         },
       },
@@ -127,7 +132,7 @@ export async function GET() {
         post: {
           tags: ['Auth'],
           summary: 'Sign in with credentials',
-          description: 'Sign in using email and password, setting session cookies',
+          description: 'Sign in using email and password, setting browser-readable SSR session cookies. Returns success/message only, never tokens or the raw Auth user.',
           requestBody: {
             required: true,
             content: {
@@ -158,6 +163,10 @@ export async function GET() {
             401: {
               description: 'Invalid email or password',
             },
+            400: { description: 'Invalid input or malformed JSON' },
+            415: { description: 'Content-Type must be application/json' },
+            429: { description: 'Too many requests; retry later' },
+            503: { description: 'Authentication service unavailable; safe error only' },
           },
         },
       },
@@ -165,8 +174,8 @@ export async function GET() {
         get: {
           tags: ['Users'],
           summary: 'Get current user profile',
-          description: 'Fetch authenticated user details and public.users profile',
-          security: [{ cookieAuth: [] }, { bearerAuth: [] }],
+          description: 'Returns a validated user DTO {id, email} and own profile {id, auth_id, name, email, avatar_url, points, created_at}. Does not return Auth metadata or tokens. Response is private/no-store.',
+          security: [{ cookieAuth: [] }],
           responses: {
             200: {
               description: 'User details fetched successfully',
@@ -174,6 +183,7 @@ export async function GET() {
             401: {
               description: 'Unauthorized - Not logged in',
             },
+            503: { description: 'Auth or profile lookup unavailable; retry instead of assuming signed out' },
           },
         },
       },
@@ -181,11 +191,12 @@ export async function GET() {
         post: {
           tags: ['Auth'],
           summary: 'Sign out',
-          description: 'Clear active session and auth cookies',
+          description: 'Clear this browser session and cookies. Repeated/expired-session logout is safe. Other device sessions are not revoked.',
           responses: {
             200: {
               description: 'Signed out successfully',
             },
+            503: { description: 'Sign-out failed; show a safe error and allow retry' },
           },
         },
       },

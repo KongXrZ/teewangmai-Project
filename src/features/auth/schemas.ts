@@ -14,7 +14,7 @@ export const signUpSchema = z.object({
 });
 
 export const signInSchema = z.object({
-  email: z.string().trim().email('รูปแบบอีเมลไม่ถูกต้อง'),
+  email: z.string().trim().min(1, 'กรุณากรอกอีเมล').email('รูปแบบอีเมลไม่ถูกต้อง'),
   password: z.string().min(1, 'กรุณากรอกรหัสผ่าน'),
 });
 

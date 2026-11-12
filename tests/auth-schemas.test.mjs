@@ -16,7 +16,16 @@ test('sign-in schema accepts valid credentials', () => {
 });
 
 test('sign-in schema rejects malformed email and empty password', () => {
-  assert.equal(signInSchema.safeParse({ email: 'not-an-email', password: 'secret' }).success, false);
+  for (const [email, message] of [
+    ['', 'กรุณากรอกอีเมล'],
+    ['   ', 'กรุณากรอกอีเมล'],
+    ['not-an-email', 'รูปแบบอีเมลไม่ถูกต้อง'],
+  ]) {
+    const result = signInSchema.safeParse({ email, password: 'secret' });
+    assert.equal(result.success, false);
+    assert.equal(result.error.issues[0].path[0], 'email');
+    assert.equal(result.error.issues[0].message, message);
+  }
   assert.equal(signInSchema.safeParse({ email: 'student@kmutt.ac.th', password: '' }).success, false);
 });
 
