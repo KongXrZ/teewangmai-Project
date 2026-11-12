@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BottomNavigation } from "@/components/layout/bottom-navigation";
+import { AppBottomNavigation } from "@/components/layout/app-bottom-navigation";
 import { SearchInput } from "@/components/ui/search-input";
 import { MapPlaceholder } from "./map-placeholder";
 
@@ -29,7 +29,7 @@ export function HomePage() {
           <MapPlaceholder />
         </main>
       </div>
-      <BottomNavigation />
+      <AppBottomNavigation selected="home" />
     </>
   );
 }

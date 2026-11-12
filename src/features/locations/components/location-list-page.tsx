@@ -2,11 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import {
-  BottomNavigation,
-  type NavigationItemId,
-} from "@/components/layout/bottom-navigation";
+import { AppBottomNavigation } from "@/components/layout/app-bottom-navigation";
 import {
   CrowdLevelFilter,
   type CrowdLevelFilterValue,
@@ -18,10 +14,6 @@ import type {
   LocationListState,
 } from "./location-view-models";
 import { BuildingCard } from "./building-card";
-
-const navigationRoutes: Partial<Record<NavigationItemId, string>> = {
-  home: "/",
-};
 
 export interface LocationListPageProps {
   state: LocationListState;
@@ -36,17 +28,9 @@ export function LocationListPage({
   onCrowdFilterChange,
   onSelectBuilding,
 }: LocationListPageProps) {
-  const router = useRouter();
   const [query, setQuery] = useState("");
   const [crowdFilter, setCrowdFilter] = useState<CrowdLevelFilterValue>("all");
   const isFiltering = query.trim() !== "" || crowdFilter !== "all";
-
-  function handleNavigate(id: NavigationItemId) {
-    const href = navigationRoutes[id];
-    if (href) {
-      router.push(href);
-    }
-  }
 
   function handleQueryChange(value: string) {
     setQuery(value);
@@ -116,7 +100,7 @@ export function LocationListPage({
           />
         </section>
       </main>
-      <BottomNavigation selected="places" onChange={handleNavigate} />
+      <AppBottomNavigation selected="places" />
     </>
   );
 }
