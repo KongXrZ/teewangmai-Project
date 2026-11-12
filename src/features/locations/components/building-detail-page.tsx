@@ -77,7 +77,13 @@ export function BuildingDetailPage({
 
   return (
     <>
-      <main className="flex min-w-0 flex-1 flex-col px-4 pt-[max(1.625rem,env(safe-area-inset-top,0px))] pb-[calc(7.625rem+env(safe-area-inset-bottom,0px))] text-black min-[400px]:px-6">
+      <main
+        className={`flex min-w-0 flex-1 flex-col px-4 pt-[max(1rem,env(safe-area-inset-top,0px))] text-black min-[400px]:px-6 ${
+          state.status === "ready"
+            ? ""
+            : "pb-[calc(7.625rem+env(safe-area-inset-bottom,0px))]"
+        }`}
+      >
         {state.status === "ready" ? (
           <BuildingDetail
             building={state.building}
@@ -188,14 +194,14 @@ function BuildingDetail({
         <BackButton onClick={onBack} className="absolute top-2 left-2" />
       </div>
 
-      <h1 className="mt-3 flex flex-wrap items-baseline justify-between gap-x-3 font-[family-name:var(--font-noto-sans-thai)] text-[26px] leading-[1.35] font-bold">
+      <h1 className="mt-2 flex flex-wrap items-baseline justify-between gap-x-3 font-[family-name:var(--font-noto-sans-thai)] text-[26px] leading-[1.35] font-bold">
         <span className="min-w-0 wrap-anywhere">{building.name}</span>
         <span className="whitespace-nowrap">( {building.code} )</span>
       </h1>
 
       <section
         aria-label="ข้อมูลรายชั้น"
-        className="mt-1 flex flex-col gap-2.5 rounded-[10px] bg-white p-3"
+        className="mt-1 flex flex-1 flex-col gap-2.5 rounded-t-[10px] bg-white px-3 pt-3 pb-[calc(7.5rem+env(safe-area-inset-bottom,0px))]"
       >
         {selectedFloor ? (
           <>
@@ -288,7 +294,7 @@ function FloorPanel({ floor }: { floor: FloorModel }) {
     <div className={`rounded-[10px] px-3 py-3 ${theme.panel}`}>
       <CrowdSummary floor={floor} />
       {crowd.status === "ready" && (
-        <div className="mt-3 flex">
+        <div className="mt-2 flex">
           <FloorStats
             stats={toFloorStats(floor)}
             iconClassName={theme.accent}
@@ -299,7 +305,7 @@ function FloorPanel({ floor }: { floor: FloorModel }) {
       )}
       <span
         aria-hidden="true"
-        className={`mt-2.5 block h-px ${theme.divider}`}
+        className={`mt-2 block h-px ${theme.divider}`}
       />
       <FloorDetails details={floor.details} />
     </div>
