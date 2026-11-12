@@ -199,7 +199,9 @@ function ListMessage({
   return (
     <div
       role={role}
-      className="flex flex-col items-center px-6 pt-4.5 pb-8 text-center text-black"
+      className={`flex flex-col items-center px-6 pb-8 text-center text-black ${
+        image ? "pt-4.5" : "pt-24"
+      }`}
     >
       {image}
       <p className="mt-2 text-2xl leading-snug font-bold">{title}</p>
