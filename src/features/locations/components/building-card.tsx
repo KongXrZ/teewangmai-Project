@@ -74,8 +74,9 @@ export interface BuildingCardProps {
 }
 
 export function BuildingCard({ building, onSelect }: BuildingCardProps) {
-  const [imageFailed, setImageFailed] = useState(false);
-  const showImage = building.imageUrl !== null && !imageFailed;
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const showImage =
+    building.imageUrl !== null && failedUrl !== building.imageUrl;
   const updatedTime = formatUpdatedTime(building.updatedAt);
 
   return (
@@ -92,10 +93,10 @@ export function BuildingCard({ building, onSelect }: BuildingCardProps) {
             fill
             sizes="112px"
             unoptimized
-            onError={() => setImageFailed(true)}
+            onError={() => setFailedUrl(building.imageUrl)}
             ref={(image) => {
               if (image?.complete && image.naturalWidth === 0) {
-                setImageFailed(true);
+                setFailedUrl(building.imageUrl);
               }
             }}
             className="object-cover"
