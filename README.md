@@ -26,7 +26,7 @@ The starter includes a responsive landing page, viewport configuration, and a re
 The project uses **Next.js App Router, React, TypeScript, Tailwind CSS, and ESLint**.
 
 The following supporting libraries are installed. They are ready for feature
-development; forms, validation schemas, and Supabase clients are not wired up yet.
+development; Auth forms, validation schemas, and Supabase clients already exist.
 
 | Library | Purpose |
 | --- | --- |
@@ -72,36 +72,50 @@ Docker running, use `npm run db:start`; stop it with `npm run db:stop`.
 
 ```text
 src/
-├── app/           Next.js pages, layouts, and future API routes
+├── app/           Next.js pages, layouts, and API routes
 ├── components/    Shared UI and mobile layout components
 ├── features/      Campus map, locations, and crowd reports
 ├── hooks/         Shared React hooks
-├── lib/supabase/  Planned Supabase connection layer
-└── types/         Shared and future generated database types
+├── lib/supabase/  Browser/server Supabase connection layer
+└── types/         Shared and generated database types
 public/maps/
 ├── images/        Custom map images
 └── models/        Optional 3D map assets
 supabase/
-├── migrations/    Future PostgreSQL schema and access policies
-└── seed.sql       Future local development sample data
+├── migrations/    Versioned PostgreSQL schema and access policies
+├── tests/         SQL schema and access assertions
+└── seed.sql       Empty until approved reference data is ready
 docs/              Architecture and development notes
 ```
 
 See [the architecture guide](docs/architecture.md) for folder responsibilities and conventions. Empty folders are tracked with `.gitkeep`; they are preparation for future implementation.
 
-The starter currently contains a landing page only. Sign-up/login, verified check-ins, database integration, report aggregation, the interactive map, and participation/reward features are planned. Add their feature folders when implementation starts. The map format is still undecided; a 3D renderer can be added when a model format is selected.
+Home UI, Auth UI/backend, Supabase clients, and database migrations are present.
+Home's map remains blank pending its SVG and a separate map task. Verified
+check-ins, scheduled crowd aggregation, and participation/reward operations still
+need implementation. No mock application data is included.
 
-## Planned Database
+## Database
 
-The planned primary database is **PostgreSQL hosted by Supabase**. See [Supabase's database documentation](https://supabase.com/docs/guides/database/overview).
+The primary database is **PostgreSQL hosted by Supabase**. See [Supabase's database documentation](https://supabase.com/docs/guides/database/overview).
 
-The September 30, 2026 ER/DBML baseline has **nine application tables**: `users`, `locations`, `location_hours`, `location_profiles`, `checkins`, `badges`, `user_badges`, `rewards`, and `redemptions`. The latest `users` model does not contain `trust_score` or `current_streak`. Its UUID identity links to Supabase `auth.users`, which owns authentication and is the source of truth for email.
+The current migrations define **ten application tables**: `users`, `locations`,
+`floors`, `location_hours`, `location_profiles`, `checkins`, `badges`, `user_badges`,
+`rewards`, and `redemptions`. Locations represent buildings; each floor has its
+own QR identifier, and reports reference `checkins.floor_id`. `users.id` is an
+integer application key; `users.auth_id` links to Supabase `auth.users` by UUID.
+Auth owns credentials and is the email source of truth. The model has no
+`trust_score` or `current_streak` fields.
 
 `location_profiles` is a weak/dependent entity with a shared location primary/foreign key and PostgreSQL `jsonb` details. `location_hours` is a strong entity with its own primary key and a unique `(location_id, day_of_week)` pair. See [the database design](docs/database.md) for the fields, relationships, constraints, and remaining decisions.
 
 `.env.example` lists the planned connection variables. When a Supabase project is available, copy it to `.env.local` and fill in the project URL and publishable key. The current landing page runs without these values. Keep database passwords and Supabase secret/service-role keys out of browser code and `NEXT_PUBLIC_` variables.
 
-The Supabase SDK, SSR library, and CLI are installed, and local CLI configuration is included. Client initialization, application SQL migrations, and authentication flows are not implemented yet. See [Backend Development Setup](docs/backend-setup.md) for local startup, migrations, and generated types. Local reference files in `*LocalDocs-dont-commit/` are excluded from Git.
+Supabase clients, Auth endpoints, versioned migrations, and own-profile access
+policies exist. BE-003 applies the floor schema locally; it does not deploy to
+Cloud or implement report submission/aggregation. See [Backend Development Setup](docs/backend-setup.md)
+for local startup, migrations, SQL assertions, and generated types. Local reference
+files in `*LocalDocs-dont-commit/` are excluded from Git.
 
 Setup references: [Next.js installation](https://nextjs.org/docs/app/getting-started/installation) and [Tailwind CSS with Next.js](https://tailwindcss.com/docs/installation/framework-guides/nextjs).
 
@@ -143,7 +157,7 @@ Prediction and location recommendations are possible future extensions of this c
 ## System Concept
 
 ```text
-User Selects a Location
+User Logs In and Scans a Floor QR
     │
     ▼
 Verify Presence with GPS + QR
@@ -155,7 +169,7 @@ User Reports Crowd Level (1–5)
 Validate and Store Report
     │
     ▼
-Aggregate Recent Reports by Zone
+Aggregate Recent Reports by Floor
     │
     ▼
 Location Density Summary
@@ -167,7 +181,8 @@ Web Application
 Custom Campus Map (Image or 3D)
 ```
 
-Each monitored location at KMUTT is represented as a **Zone**.
+Each monitored building is a `location`, with individual `floors` beneath it.
+Map zones are a presentation layer connected to these records.
 
 For example:
 
@@ -194,7 +209,10 @@ Example:
 ⚪ Unknown   No recent reports
 ```
 
-Reports use a confirmed 1–5 scale; the labels above illustrate map summaries, with the exact mapping still to be defined. Aggregation windows, agreement thresholds, and expiry rules remain TBD. Older presentation examples are not fixed requirements. Zones without sufficient recent reports should show an unknown status.
+Reports use a confirmed 1–5 scale. Each floor's current summary is the arithmetic
+mean of reports from the **latest 30 minutes**, recalculated **every 10 minutes**.
+No reports means null/unknown. Label thresholds and rounding remain undecided;
+the summary scheduler/storage still need implementation. See [Check-in Rules](docs/check-in-rules.md).
 
 ---
 
@@ -202,17 +220,17 @@ Reports use a confirmed 1–5 scale; the labels above illustrate map summaries, 
 
 The primary data source is **reports submitted by users** about conditions at a selected campus location.
 
-Users will select a location, complete GPS and QR verification, and report a crowd level from **1 (empty) to 5 (very crowded)**. The wireframe includes QR scanning and manual code entry. The backend must create a check-in only after **GPS AND QR verification both succeed**; the row itself represents a verified check-in, without separate verification-result columns. Verification parameters, cooldown, and aggregation rules remain TBD.
+Users scan a floor QR, see its building/floor, select a crowd level from
+**1 (empty) to 5 (very crowded)**, and submit. GPS verifies building proximity;
+QR identifies the floor. The backend must accept the report only after **GPS AND
+QR verification both succeed**, using a server timestamp. Raw user coordinates
+and verification flags are not stored. The agreed cooldown is **30 minutes per
+user per floor**, independent across floors/buildings. GPS tolerance and atomic
+submission logic remain to be implemented.
 
-Example:
-
-```json
-{
-  "location_id": 2,
-  "crowd_level": 3,
-  "created_at": "2026-09-28T14:30:00+07:00"
-}
-```
+The stored report contains `user_id`, resolved `floor_id`, `crowd_level`, and
+server-assigned `created_at`. This describes the data model, not an existing
+submission API contract.
 
 ---
 
@@ -233,7 +251,9 @@ Sports Complex ⚪ No recent reports
 
 ### Accounts and Verified Check-ins
 
-The wireframes include sign-up and login through Supabase Auth. Users will select a location, complete GPS and QR verification, and submit its observed crowd level from 1 to 5. Auth integration, access policies, and detailed verification rules still need implementation.
+Supabase Auth endpoints and own-profile policies are implemented. Verified floor
+check-ins still need GPS/QR validation and server-enforced cooldown before reports
+can be accepted.
 
 ### Search and Filters
 
@@ -330,7 +350,11 @@ rather than:
 
 > "Who is currently at this location?"
 
-Any account information used for report validation should be kept separate from public map data. Store a check-in only after both verification steps pass; do not add verification-result columns or raw personal GPS coordinates to the check-in model. Location reference coordinates belong to the location record. Supabase Auth integration, access policies, and report retention policies still need to be defined.
+Any account information used for report validation should be kept separate from
+public map data. Store a check-in only after both verification steps pass; do not
+add verification-result columns or raw personal GPS coordinates. Reference
+coordinates belong to the building. Own-profile access is enforced today;
+feature-specific report access and retention policies still need implementation.
 
 ---
 
@@ -389,14 +413,16 @@ The implementation order and release boundary for participation and reward featu
 
 ## Project Status
 
-**Status:** Project foundation set up; mid-fidelity wireframes and a nine-entity ER/DBML design are available. Product features and database integration are not implemented yet.
+**Status:** Home UI and Auth UI/backend exist. The ten-table floor schema is
+implemented and verified locally; product data APIs and check-in/summary logic
+remain work in progress. Local verification does not imply a Cloud deployment.
 
 Current priorities:
 
 1. Define campus zones and choose the custom map format
 2. Prepare the map image or 3D model
-3. Implement Supabase Auth integration after defining GPS/QR verification, aggregation, and expiry rules
-4. Prepare migrations for the nine-table PostgreSQL design and define access policies
+3. Complete FE pages independently of API integration
+4. Prepare approved reference data and implement catalog APIs/access policies
 5. Build check-in, summary, participation, and reward operations
 6. Connect location summaries to the interactive map
 7. Test report quality, touch interactions, and map performance on mobile devices

@@ -1,129 +1,165 @@
 # Database Design
 
-Baseline: the September 30, 2026 handoff report, updated ER/DBML, and the project
-owner's subsequent confirmations. There are **nine application tables** in
-PostgreSQL hosted by Supabase; Supabase's managed `auth.users` is separate.
-This is a design reference, not an executable migration or a deployed schema.
-
-The owner confirmed **`crowd_level` is 1–5** and that `users` must follow the
-latest DBML **without `trust_score` or `current_streak`**. Earlier documents and
-wireframes mentioning those columns do not override this baseline.
+The versioned SQL in `supabase/migrations/` is the schema source of truth.
+The current model has **ten application tables** in PostgreSQL; Supabase's
+managed `auth.users` is separate. BE-003 introduces building floors and repairs
+legacy profile permissions with a forward migration. It has been applied and
+verified locally; this does not imply a hosted database deployment.
 
 ## Current tables
 
-Table and column names below match the lowercase names in the DBML.
-
 | Table | Purpose | Columns |
 | --- | --- | --- |
-| `users` | Application profile linked to Supabase Auth | `id`, `auth_id`, `name`, `email`, `avatar_url`, `points`, `created_at` |
-| `locations` | Campus locations and verification references | `id`, `name`, `category`, `building`, `floor`, `gps_lat`, `gps_lng`, `qr_code_id`, `image_url`, `is_active` |
-| `location_hours` | Location opening hours | `id`, `location_id`, `day_of_week`, `open_time`, `close_time` |
-| `location_profiles` | Flexible location details in PostgreSQL | `location_id`, `details` |
-| `checkins` | Verified crowd reports and check-in history | `id`, `user_id`, `location_id`, `crowd_level`, `created_at` |
-| `badges` | Configurable badge definitions | `id`, `name`, `description`, `requirement_type`, `requirement_value`, `icon_url`, `is_active` |
-| `user_badges` | Badges earned by users | `user_id`, `badge_id`, `earned_at` |
-| `rewards` | Reward catalog | `id`, `title`, `description`, `points_required`, `stock`, `image_url`, `status`, `starts_at`, `expires_at` |
+| `users` | Application profiles | `id`, `auth_id`, `name`, `email`, `avatar_url`, `points`, `created_at` |
+| `locations` | Buildings and GPS reference coordinates | `id`, `name`, `category`, `building`, `gps_lat`, `gps_lng`, `image_url`, `is_active` |
+| `floors` | Building floors and their printable QR identifiers | `id`, `location_id`, `floor_name`, `qr_code_id`, `is_active` |
+| `location_hours` | Building opening hours | `id`, `location_id`, `day_of_week`, `open_time`, `close_time` |
+| `location_profiles` | Flexible building details | `location_id`, `details` |
+| `checkins` | Individual crowd reports and historical logs | `id`, `user_id`, `floor_id`, `crowd_level`, `created_at` |
+| `badges` | Badge definitions | `id`, `name`, `description`, `requirement_type`, `requirement_value`, `icon_url`, `is_active` |
+| `user_badges` | Earned badges | `user_id`, `badge_id`, `earned_at` |
+| `rewards` | Reward definitions and available stock | `id`, `title`, `description`, `points_required`, `stock`, `image_url`, `status`, `starts_at`, `expires_at` |
 | `redemptions` | Individual reward redemptions | `id`, `user_id`, `reward_id`, `used_points`, `status`, `redeemed_at` |
 
-## Keys, relationships, and authentication
+## Buildings, floors, and reports
 
-- `users.id` is an incrementing integer primary key (1, 2, 3...).
-- `users.auth_id` is a UUID linked to `auth.users.id` (`UNIQUE NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE`).
-  Supabase Auth is responsible for authentication credentials and is the source of truth for email.
-  Do not add a password column to the application table.
-- Authenticated users can read only their own profile (auth.uid() = users.auth_id) and
-  can update only their own name and avatar_url; database column grants enforce
-  the editable-field boundary. RLS is enabled on all nine application tables. The
-  other eight tables currently have no policies, so client roles cannot access their
-  rows until feature-specific access rules are defined. The database also permits
-  avatar URLs only when they use HTTP or HTTPS.
-- `locations`, `location_hours`, `checkins`, `badges`, `rewards`, and
-  `redemptions` have incrementing integer `id` primary keys.
-- `location_hours` is a **strong entity** with its own primary key and a
-  `location_id` foreign key. A location has many hours records;
-  `UNIQUE (location_id, day_of_week)` allows at most one record per day.
-  The stale DBML header calling it weak is superseded by the handoff report.
-- `location_profiles` is a **weak/dependent entity** owned by `locations`.
-  Its `location_id` is both primary key and foreign key, giving at most one
-  profile per location. The ER models this as 1:1; mandatory profile creation
-  for every location still needs an implementation rule. `details` is `jsonb`
-  in PostgreSQL, not a separate NoSQL database.
-- A user has many check-ins; a location receives many check-ins. The corresponding
-  foreign keys are `checkins.user_id` (integer) and `checkins.location_id` (integer).
-- `user_badges` joins users and badge definitions using the composite primary
-  key `(user_id, badge_id)`. It has no separate `id`; each badge can be owned
-  once per user. Badge definitions and badge ownership remain separate tables.
-- `redemptions.user_id` and `redemptions.reward_id` reference users and rewards.
-  Each redemption preserves its spent points, status, and timestamp.
+`locations` represents buildings. The optional legacy `building` column remains
+as a label/code; `locations.id` is the building identity. Each building has many
+`floors`, and each floor has many `checkins`. Opening hours and flexible details
+remain at building level. `location_profiles.details` is PostgreSQL `jsonb`,
+not a separate NoSQL database, and can supply the Location Detail page.
 
-## Types, defaults, and constraints
+- `floors.location_id` references `locations.id`.
+- `floor_name` is non-empty text, supporting labels such as `B1`, `G`, and `2`.
+  `(location_id, floor_name)` is unique within a building.
+- `floors.qr_code_id` is unique and non-empty. It identifies the floor; a printed
+  QR is not an authentication secret or proof of presence by itself.
+- `checkins.floor_id` references `floors.id`; `checkins.user_id` references
+  `users.id`. The building is obtained through the floor relationship.
+- `floors.location_id` and `checkins.floor_id` use `ON DELETE RESTRICT`.
+  A building with floors or a floor with check-ins cannot be deleted. Retire
+  buildings/floors with `is_active = false` to preserve report history.
+  Other foreign keys retain their existing cascade behavior, including
+  `checkins.user_id`; account deletion and log retention remain separate decisions.
 
-All primary keys are non-null. Other required fields are:
+The intended flow is login → Quick Scan → camera permission → scan QR → show
+the resolved building/floor → choose crowd level → submit. GPS verifies proximity
+to the building before acceptance; it does not identify the floor. The floor
+comes from QR resolution, never an unchecked client-supplied building/floor pair.
+Request GPS in the check-in flow before submitting. Raw user coordinates and
+verification-result flags are not stored in `checkins`.
 
-| Table | Required non-key fields |
-| --- | --- |
-| `users` | `name`, `email`, `points`, `created_at` |
-| `locations` | `name`, `category`, `gps_lat`, `gps_lng`, `qr_code_id`, `is_active` |
-| `location_hours` | `location_id`, `day_of_week`, `open_time`, `close_time` |
-| `location_profiles` | None beyond its primary key; `details` is nullable |
-| `checkins` | `user_id`, `location_id`, `crowd_level`, `created_at` |
-| `badges` | `name`, `requirement_type`, `requirement_value`, `is_active` |
-| `user_badges` | `earned_at` (both foreign keys form its primary key) |
-| `rewards` | `title`, `points_required`, `status` |
-| `redemptions` | `user_id`, `reward_id`, `used_points`, `status`, `redeemed_at` |
+The trusted server must validate authentication, active building/floor/QR, GPS,
+and cooldown before inserting a report. **BE-003 supplies the schema and indexes;
+QR provisioning/resolution and the verified submission path remain future work.**
 
-- Counts, points, stock, crowd levels, day numbers, and badge requirement values
-  use integers. Location reference coordinates use `float` in the DBML.
-- `created_at`, `earned_at`, and `redeemed_at` use `timestamptz`, defaulting to
-  `now()`. Reward `starts_at` and `expires_at` are nullable `timestamptz`.
-  Opening and closing times use `time`.
-- `users.points` defaults to `0`; location and badge `is_active` default to
-  `true`. `locations.qr_code_id` is unique.
-- `crowd_level` must be between **1 and 5**, inclusive. `day_of_week` is 1–7;
-  weekday numbering and campus timezone interpretation must be agreed before
-  implementing hours logic.
-- `badges.requirement_value` must be greater than zero. The allowed
-  `requirement_type` values and evaluation mechanism remain TBD.
-- `rewards.points_required` must be nonnegative. `stock` must be nonnegative
-  when present; the meaning of null stock remains a business-rule decision.
-  `expires_at` must be later than `starts_at` when both are set.
-- Reward status is `active` or `inactive`, defaulting to `active`.
-  Redemption status is `pending`, `completed`, or `cancelled`, defaulting to
-  `pending`; `used_points` must be nonnegative.
-- The DBML includes indexes on check-ins by `(location_id, created_at)` and
-  `(user_id, created_at)`, and redemptions by `(user_id, redeemed_at)` and
-  `(reward_id, redeemed_at)`.
+## Identity and access
 
-DBML notes are requirements, not implemented SQL checks. Future migrations must
-explicitly encode the agreed constraints, defaults, and indexes.
+`users.id` is an integer identity used by application relations; `users.auth_id`
+is a unique required UUID referencing `auth.users.id`. Auth owns credentials and
+is the email source of truth. No application password, `trust_score`, or
+`current_streak` column is present.
 
-## Check-in verification and reporting
+The Auth insert trigger invokes `private.handle_new_user()` to create a profile
+from Auth metadata. It is `SECURITY DEFINER` with an empty `search_path` and
+qualified object references. Client roles cannot use the private schema or call
+this function. Existing profiles are not rewritten by the floor migration.
+Email is copied when a profile is created; later Auth email synchronization is
+not implemented by this trigger.
 
-Create a `checkins` row **only after GPS AND QR verification both succeed**.
-The row itself represents a verified check-in. Do not add `verification_method`,
-`gps_verified`, or `qr_verified` columns. The trusted write path and access
-policies must enforce this invariant; client-side form validation is insufficient.
+RLS is enabled on all ten tables. Authenticated clients can read only their own
+profile and update only `name` and `avatar_url`. Both ownership policies and column
+grants enforce this boundary; clients cannot change points, email, or identity.
+Avatar URLs must be null or use HTTP/HTTPS. The other nine tables have no client
+policies yet. In particular, direct client check-in writes must not bypass the
+future GPS/QR/cooldown checks. Feature APIs will introduce reviewed read/write
+policies as their operations are implemented.
 
-`locations.gps_lat`, `gps_lng`, and `qr_code_id` are location reference data.
-Raw personal GPS coordinates are not fields in the check-in model. The custom
-image/3D campus map is a separate presentation layer.
+## Constraints, defaults, and indexes
 
-The input scale of 1–5 is confirmed. Aggregation windows, report agreement,
-conflict handling, expiry, and mapping summaries to map labels remain TBD;
-the older presentation's timing and report-count examples are not fixed rules.
+- Standalone `id` columns are integer `GENERATED ALWAYS AS IDENTITY` primary keys.
+  `location_profiles.location_id` is its shared primary/foreign key;
+  `user_badges` uses `(user_id, badge_id)` as its primary key.
+- `users` requires Auth identity, name, unique email, nonnegative points
+  (default `0`), and creation time.
+- Buildings require name, category, reference latitude/longitude (`double
+  precision`), and active status. Floors require building, name, QR, and active
+  status. Building/floor/badge active status defaults to `true`.
+- `location_hours` requires building, day number `1–7`, and opening/closing
+  times. `(location_id, day_of_week)` is unique. Weekday numbering and timezone
+  interpretation still need agreement before hours logic is implemented.
+- `location_profiles.details` is **NOT NULL**, defaulting to `'{}'::jsonb`.
+  A building may have at most one such record; creation is not automatic.
+- A check-in requires user, floor, integer `crowd_level` **1–5**, and creation
+  time. Creation/earning/redemption timestamps use `timestamptz`, default `now()`.
+  The future submission path must use server time, not a client timestamp.
+- Badge requirement values must be positive; requirement types/evaluation rules
+  remain undecided.
+- Reward points and non-null stock must be nonnegative. Reward status defaults
+  to `active` and permits `active`/`inactive`. Nullable expiry must follow start
+  when both are supplied; null-stock semantics remain undecided.
+- Redemptions preserve nonnegative spent points, status, and timestamp. Status
+  defaults to `pending` and permits `pending`/`completed`/`cancelled`.
+- Check-in indexes support `(floor_id, created_at DESC)` for summaries,
+  `(user_id, floor_id, created_at DESC)` for cooldown checks, and
+  `(user_id, created_at DESC)` for history. Redemption indexes support user/time
+  and reward/time lookups. An index alone does not enforce cooldown.
 
-## Decisions before implementation
+## Derived crowd level and cooldown
 
-- RLS/access policies, server-side GPS/QR verification, and check-in cooldown.
-- Aggregation, expiry, and historical summary storage/query strategy.
-- Point earning, trust/streak behavior, and badge evaluation/trigger strategy.
-  Do not reintroduce removed user columns while these rules are undecided.
-- Transactional point/stock updates, reward eligibility, cancellation,
-  and duplicate-redemption handling.
-- Auth profile lifecycle/email synchronization, foreign-key deletion/cascade
-  behavior, and any additional indexes based on actual access patterns.
+`checkins.crowd_level` is one user's observation. The agreed
+`current_crowd_level` is the arithmetic mean of accepted reports for that floor
+in the **latest 30 minutes**, recalculated **every 10 minutes**. With no reports,
+show null/unknown. Expired contributions remain in historical logs. A viewer
+does not need to check in to read the aggregate.
 
-Create versioned SQL migrations when these implementation decisions are ready,
-then generate `src/types/database.ts` from the implemented PostgreSQL schema.
-The report, ER image, and DBML stay in the ignored local reference folder;
-this tracked guide carries the confirmed baseline for contributors.
+Cooldown is **30 minutes per user per floor**. Checking in elsewhere creates an
+independent cooldown and does not reset earlier ones. Summary lookback and
+refresh interval should be adjustable through the backend/admin interface.
+
+These runtime rules are agreed but **not implemented by this migration**.
+BE-006 owns aggregation/scheduling; BE-008 owns trusted submission and atomic
+cooldown enforcement. No `floors.current_crowd_level` column, summary table,
+scheduler, or settings table is added here. See [Check-in Rules](check-in-rules.md).
+
+## Migration and initial data
+
+`20261109162340_add_floor_checkins_and_align_profile_security.sql` moves legacy
+floor/QR fields from `locations` to `floors`, maps each existing check-in, then
+removes `checkins.location_id` and the moved building columns. Existing building
+IDs and QR identifiers are preserved. Separate legacy locations are not merged
+automatically. If a legacy building has a missing/blank floor or blank QR, the
+transaction aborts rather than inventing reference data. Resolve that mapping
+before retrying. Its historical filename retains `align_profile_security`, but
+the SQL now covers only the building/floor model.
+
+`20261112073148_repair_legacy_profile_security.sql` separately repairs older
+installations. The pre-BE-003 Local inspection found an Auth insert trigger
+calling `public.handle_new_user` with `search_path=public`, a remaining
+`public.protect_user_points` trigger/function, and broader profile update grants.
+That database had already recorded the initial migration. Editing its SQL in
+the repository could not update the installed objects. This idempotent forward
+repair installs the private trigger function, removes legacy functions, and
+restricts authenticated updates to name/avatar_url. It is also safe on a fresh
+database whose baseline already contains those restrictions.
+
+`20261112073150_restrict_building_floor_deletion.sql` changes both history-path
+foreign keys to `RESTRICT`. Databases that already applied the original BE-003
+migration run these two new migrations in order; they do not replay the floor
+mapping or reset their data.
+
+Back up existing data and test on a separate database before applying a forward
+migration; do not reset a database containing data you need. Keep shared migration
+files immutable and regenerate `src/types/database.ts` from the applied schema.
+See [Backend Development Setup](backend-setup.md) for commands and SQL checks.
+
+The team supplies buildings, floors, QR identifiers, opening hours/details, reward
+definitions, and badge definitions. Users produce profiles, reports, earned
+badges, and redemptions; points and reward stock also change during operation.
+Seeds/imports must preserve stable identities and avoid resetting balances or
+consumed stock. No mock application data is included; `supabase/seed.sql` remains
+empty until approved reference data is ready.
+
+Outstanding decisions include GPS tolerance/accuracy, summary storage and time
+boundaries, label thresholds/rounding, building-wide aggregation, admin timing
+settings, retention, points, badges, and transactional reward redemption.

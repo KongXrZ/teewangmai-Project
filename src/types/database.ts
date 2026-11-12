@@ -9,323 +9,471 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      users: {
+      badges: {
         Row: {
+          description: string | null;
+          icon_url: string | null;
           id: number;
-          auth_id: string;
-          name: string;
-          email: string;
-          avatar_url: string | null;
-          points: number;
-          created_at: string;
-        };
-        Insert: {
-          id?: never;
-          auth_id: string;
-          name: string;
-          email: string;
-          avatar_url?: string | null;
-          points?: number;
-          created_at?: string;
-        };
-        Update: {
-          id?: never;
-          auth_id?: string;
-          name?: string;
-          email?: string;
-          avatar_url?: string | null;
-          points?: number;
-          created_at?: string;
-        };
-        Relationships: [];
-      };
-      locations: {
-        Row: {
-          id: number;
-          name: string;
-          category: string;
-          building: string | null;
-          floor: string | null;
-          gps_lat: number;
-          gps_lng: number;
-          qr_code_id: string;
-          image_url: string | null;
           is_active: boolean;
+          name: string;
+          requirement_type: string;
+          requirement_value: number;
         };
         Insert: {
+          description?: string | null;
+          icon_url?: string | null;
           id?: never;
-          name: string;
-          category: string;
-          building?: string | null;
-          floor?: string | null;
-          gps_lat: number;
-          gps_lng: number;
-          qr_code_id: string;
-          image_url?: string | null;
           is_active?: boolean;
+          name: string;
+          requirement_type: string;
+          requirement_value: number;
         };
         Update: {
+          description?: string | null;
+          icon_url?: string | null;
           id?: never;
-          name?: string;
-          category?: string;
-          building?: string | null;
-          floor?: string | null;
-          gps_lat?: number;
-          gps_lng?: number;
-          qr_code_id?: string;
-          image_url?: string | null;
           is_active?: boolean;
+          name?: string;
+          requirement_type?: string;
+          requirement_value?: number;
         };
         Relationships: [];
       };
-      location_hours: {
+      checkins: {
         Row: {
+          created_at: string;
+          crowd_level: number;
+          floor_id: number;
           id: number;
-          location_id: number;
-          day_of_week: number;
-          open_time: string;
-          close_time: string;
+          user_id: number;
         };
         Insert: {
+          created_at?: string;
+          crowd_level: number;
+          floor_id: number;
           id?: never;
-          location_id: number;
-          day_of_week: number;
-          open_time: string;
-          close_time: string;
+          user_id: number;
         };
         Update: {
+          created_at?: string;
+          crowd_level?: number;
+          floor_id?: number;
           id?: never;
-          location_id?: number;
-          day_of_week?: number;
-          open_time?: string;
-          close_time?: string;
+          user_id?: number;
         };
         Relationships: [
           {
-            foreignKeyName: 'location_hours_location_id_fkey';
-            columns: ['location_id'];
+            foreignKeyName: "checkins_floor_id_fkey";
+            columns: ["floor_id"];
             isOneToOne: false;
-            referencedRelation: 'locations';
-            referencedColumns: ['id'];
+            referencedRelation: "floors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "checkins_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      floors: {
+        Row: {
+          floor_name: string;
+          id: number;
+          is_active: boolean;
+          location_id: number;
+          qr_code_id: string;
+        };
+        Insert: {
+          floor_name: string;
+          id?: never;
+          is_active?: boolean;
+          location_id: number;
+          qr_code_id: string;
+        };
+        Update: {
+          floor_name?: string;
+          id?: never;
+          is_active?: boolean;
+          location_id?: number;
+          qr_code_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "floors_location_id_fkey";
+            columns: ["location_id"];
+            isOneToOne: false;
+            referencedRelation: "locations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      location_hours: {
+        Row: {
+          close_time: string;
+          day_of_week: number;
+          id: number;
+          location_id: number;
+          open_time: string;
+        };
+        Insert: {
+          close_time: string;
+          day_of_week: number;
+          id?: never;
+          location_id: number;
+          open_time: string;
+        };
+        Update: {
+          close_time?: string;
+          day_of_week?: number;
+          id?: never;
+          location_id?: number;
+          open_time?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "location_hours_location_id_fkey";
+            columns: ["location_id"];
+            isOneToOne: false;
+            referencedRelation: "locations";
+            referencedColumns: ["id"];
           },
         ];
       };
       location_profiles: {
         Row: {
+          details: NonNullable<Json>;
           location_id: number;
-          details: Json;
         };
         Insert: {
+          details?: NonNullable<Json>;
           location_id: number;
-          details?: Json;
         };
         Update: {
+          details?: NonNullable<Json>;
           location_id?: number;
-          details?: Json;
         };
         Relationships: [
           {
-            foreignKeyName: 'location_profiles_location_id_fkey';
-            columns: ['location_id'];
+            foreignKeyName: "location_profiles_location_id_fkey";
+            columns: ["location_id"];
             isOneToOne: true;
-            referencedRelation: 'locations';
-            referencedColumns: ['id'];
+            referencedRelation: "locations";
+            referencedColumns: ["id"];
           },
         ];
       };
-      checkins: {
+      locations: {
         Row: {
+          building: string | null;
+          category: string;
+          gps_lat: number;
+          gps_lng: number;
           id: number;
-          user_id: number;
-          location_id: number;
-          crowd_level: number;
-          created_at: string;
-        };
-        Insert: {
-          id?: never;
-          user_id: number;
-          location_id: number;
-          crowd_level: number;
-          created_at?: string;
-        };
-        Update: {
-          id?: never;
-          user_id?: number;
-          location_id?: number;
-          crowd_level?: number;
-          created_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'checkins_location_id_fkey';
-            columns: ['location_id'];
-            isOneToOne: false;
-            referencedRelation: 'locations';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'checkins_user_id_fkey';
-            columns: ['user_id'];
-            isOneToOne: false;
-            referencedRelation: 'users';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
-      badges: {
-        Row: {
-          id: number;
-          name: string;
-          description: string | null;
-          requirement_type: string;
-          requirement_value: number;
-          icon_url: string | null;
-          is_active: boolean;
-        };
-        Insert: {
-          id?: never;
-          name: string;
-          description?: string | null;
-          requirement_type: string;
-          requirement_value: number;
-          icon_url?: string | null;
-          is_active?: boolean;
-        };
-        Update: {
-          id?: never;
-          name?: string;
-          description?: string | null;
-          requirement_type?: string;
-          requirement_value?: number;
-          icon_url?: string | null;
-          is_active?: boolean;
-        };
-        Relationships: [];
-      };
-      user_badges: {
-        Row: {
-          user_id: number;
-          badge_id: number;
-          earned_at: string;
-        };
-        Insert: {
-          user_id: number;
-          badge_id: number;
-          earned_at?: string;
-        };
-        Update: {
-          user_id?: number;
-          badge_id?: number;
-          earned_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'user_badges_badge_id_fkey';
-            columns: ['badge_id'];
-            isOneToOne: false;
-            referencedRelation: 'badges';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'user_badges_user_id_fkey';
-            columns: ['user_id'];
-            isOneToOne: false;
-            referencedRelation: 'users';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
-      rewards: {
-        Row: {
-          id: number;
-          title: string;
-          description: string | null;
-          points_required: number;
-          stock: number | null;
           image_url: string | null;
-          status: string;
-          starts_at: string | null;
-          expires_at: string | null;
+          is_active: boolean;
+          name: string;
         };
         Insert: {
+          building?: string | null;
+          category: string;
+          gps_lat: number;
+          gps_lng: number;
           id?: never;
-          title: string;
-          description?: string | null;
-          points_required: number;
-          stock?: number | null;
           image_url?: string | null;
-          status?: string;
-          starts_at?: string | null;
-          expires_at?: string | null;
+          is_active?: boolean;
+          name: string;
         };
         Update: {
+          building?: string | null;
+          category?: string;
+          gps_lat?: number;
+          gps_lng?: number;
           id?: never;
-          title?: string;
-          description?: string | null;
-          points_required?: number;
-          stock?: number | null;
           image_url?: string | null;
-          status?: string;
-          starts_at?: string | null;
-          expires_at?: string | null;
+          is_active?: boolean;
+          name?: string;
         };
         Relationships: [];
       };
       redemptions: {
         Row: {
           id: number;
-          user_id: number;
-          reward_id: number;
-          used_points: number;
-          status: string;
           redeemed_at: string;
+          reward_id: number;
+          status: string;
+          used_points: number;
+          user_id: number;
         };
         Insert: {
           id?: never;
-          user_id: number;
-          reward_id: number;
-          used_points: number;
-          status?: string;
           redeemed_at?: string;
+          reward_id: number;
+          status?: string;
+          used_points: number;
+          user_id: number;
         };
         Update: {
           id?: never;
-          user_id?: number;
-          reward_id?: number;
-          used_points?: number;
-          status?: string;
           redeemed_at?: string;
+          reward_id?: number;
+          status?: string;
+          used_points?: number;
+          user_id?: number;
         };
         Relationships: [
           {
-            foreignKeyName: 'redemptions_reward_id_fkey';
-            columns: ['reward_id'];
+            foreignKeyName: "redemptions_reward_id_fkey";
+            columns: ["reward_id"];
             isOneToOne: false;
-            referencedRelation: 'rewards';
-            referencedColumns: ['id'];
+            referencedRelation: "rewards";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: 'redemptions_user_id_fkey';
-            columns: ['user_id'];
+            foreignKeyName: "redemptions_user_id_fkey";
+            columns: ["user_id"];
             isOneToOne: false;
-            referencedRelation: 'users';
-            referencedColumns: ['id'];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
           },
         ];
       };
+      rewards: {
+        Row: {
+          description: string | null;
+          expires_at: string | null;
+          id: number;
+          image_url: string | null;
+          points_required: number;
+          starts_at: string | null;
+          status: string;
+          stock: number | null;
+          title: string;
+        };
+        Insert: {
+          description?: string | null;
+          expires_at?: string | null;
+          id?: never;
+          image_url?: string | null;
+          points_required: number;
+          starts_at?: string | null;
+          status?: string;
+          stock?: number | null;
+          title: string;
+        };
+        Update: {
+          description?: string | null;
+          expires_at?: string | null;
+          id?: never;
+          image_url?: string | null;
+          points_required?: number;
+          starts_at?: string | null;
+          status?: string;
+          stock?: number | null;
+          title?: string;
+        };
+        Relationships: [];
+      };
+      user_badges: {
+        Row: {
+          badge_id: number;
+          earned_at: string;
+          user_id: number;
+        };
+        Insert: {
+          badge_id: number;
+          earned_at?: string;
+          user_id: number;
+        };
+        Update: {
+          badge_id?: number;
+          earned_at?: string;
+          user_id?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey";
+            columns: ["badge_id"];
+            isOneToOne: false;
+            referencedRelation: "badges";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_badges_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      users: {
+        Row: {
+          auth_id: string;
+          avatar_url: string | null;
+          created_at: string;
+          email: string;
+          id: number;
+          name: string;
+          points: number;
+        };
+        Insert: {
+          auth_id: string;
+          avatar_url?: string | null;
+          created_at?: string;
+          email: string;
+          id?: never;
+          name: string;
+          points?: number;
+        };
+        Update: {
+          auth_id?: string;
+          avatar_url?: string | null;
+          created_at?: string;
+          email?: string;
+          id?: never;
+          name?: string;
+          points?: number;
+        };
+        Relationships: [];
+      };
     };
-    Views: Record<string, never>;
+    Views: {
+      [_ in never]: never;
+    };
     Functions: {
-      handle_new_user: {
-        Args: Record<PropertyKey, never>;
-        Returns: unknown;
-      };
-      protect_user_points: {
-        Args: Record<PropertyKey, never>;
-        Returns: unknown;
-      };
+      [_ in never]: never;
     };
-    Enums: Record<string, never>;
-    CompositeTypes: Record<string, never>;
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
   };
 };
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<
+  keyof Database,
+  "public"
+>];
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R;
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R;
+      }
+      ? R
+      : never
+    : never;
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I;
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I;
+      }
+      ? I
+      : never
+    : never;
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U;
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U;
+      }
+      ? U
+      : never
+    : never;
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never) = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never;
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never) = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never;
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const;
