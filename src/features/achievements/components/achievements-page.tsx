@@ -1,18 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import {
-  BottomNavigation,
-  type NavigationItemId,
-} from "@/components/layout/bottom-navigation";
+import { BottomNavigation } from "@/components/layout/bottom-navigation";
 import type { BadgeModel } from "../types";
 import { BadgeCollection, type BadgeCollectionProps } from "./badge-collection";
 import { BadgeDetailDialog } from "./badge-detail-dialog";
-
-const navigationRoutes: Partial<Record<NavigationItemId, string>> = {
-  home: "/",
-  rewards: "/rewards",
-};
 
 export interface AchievementsPageProps extends BadgeCollectionProps {
   /** Badge whose detail dialog is open; `null` = closed. */
@@ -25,15 +16,6 @@ export function AchievementsPage({
   onCloseBadge,
   ...collectionProps
 }: AchievementsPageProps) {
-  const router = useRouter();
-
-  function handleNavigate(id: NavigationItemId) {
-    const href = navigationRoutes[id];
-    if (href) {
-      router.push(href);
-    }
-  }
-
   return (
     <>
       <main className="flex min-w-0 flex-1 flex-col gap-5 bg-white px-5 pt-[max(1.5rem,env(safe-area-inset-top,0px))] pb-[calc(7.625rem+env(safe-area-inset-bottom,0px))] sm:px-8">
@@ -43,7 +25,7 @@ export function AchievementsPage({
         <BadgeCollection {...collectionProps} />
       </main>
       <BadgeDetailDialog badge={selectedBadge} onClose={onCloseBadge} />
-      <BottomNavigation selected="rewards" onChange={handleNavigate} />
+      <BottomNavigation selected="rewards" />
     </>
   );
 }
