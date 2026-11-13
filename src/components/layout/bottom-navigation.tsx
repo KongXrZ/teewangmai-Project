@@ -5,11 +5,12 @@ import PinDrop from "@mui/icons-material/PinDrop";
 import QrCodeScannerRounded from "@mui/icons-material/QrCodeScannerRounded";
 import StarRounded from "@mui/icons-material/StarRounded";
 import Person from "@mui/icons-material/Person";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 
 const navigationItems = [
-  { id: "home", label: "หน้าหลัก", icon: HomeRounded },
-  { id: "places", label: "สถานที่", icon: PinDrop },
+  { id: "home", label: "หน้าหลัก", icon: HomeRounded, href: "/" },
+  { id: "places", label: "สถานที่", icon: PinDrop, href: "/locations" },
   {
     id: "scan",
     label: "สแกน QR Code",
@@ -36,12 +37,17 @@ export function BottomNavigation({
   const [internalSelected, setInternalSelected] =
     useState<NavigationItemId>(defaultSelected);
   const selected = controlledSelected ?? internalSelected;
+  const router = useRouter();
+  const pathname = usePathname();
 
-  function handleSelect(id: NavigationItemId) {
+  function handleSelect(item: (typeof navigationItems)[number]) {
     if (controlledSelected === undefined) {
-      setInternalSelected(id);
+      setInternalSelected(item.id);
     }
-    onChange?.(id);
+    onChange?.(item.id);
+    if ("href" in item && item.href !== pathname) {
+      router.push(item.href);
+    }
   }
 
   return (
@@ -61,7 +67,7 @@ export function BottomNavigation({
               type="button"
               aria-label={item.label}
               aria-pressed={active}
-              onClick={() => handleSelect(item.id)}
+              onClick={() => handleSelect(item)}
               data-active={active}
               data-primary={primary || undefined}
               className={`group relative flex min-w-0 cursor-pointer touch-manipulation flex-col items-center justify-end rounded border-0 bg-transparent px-0.5 pb-3 transition-colors duration-150 [-webkit-tap-highlight-color:transparent] before:absolute before:top-0 before:left-1/2 before:h-[2.5px] before:w-8 before:-translate-x-1/2 before:bg-[#081828] before:transition-opacity before:duration-150 focus-visible:outline-2 focus-visible:-outline-offset-3 focus-visible:outline-[#081828] ${

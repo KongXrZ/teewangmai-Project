@@ -7,10 +7,7 @@ import ArrowBackIosNewRounded from "@mui/icons-material/ArrowBackIosNewRounded";
 import InfoOutlined from "@mui/icons-material/InfoOutlined";
 import Layers from "@mui/icons-material/Layers";
 import WhereToVoteOutlined from "@mui/icons-material/WhereToVoteOutlined";
-import {
-  BottomNavigation,
-  type NavigationItemId,
-} from "@/components/layout/bottom-navigation";
+import { BottomNavigation } from "@/components/layout/bottom-navigation";
 import { formatUpdatedTime } from "./format-updated-time";
 import type {
   BuildingDetailModel,
@@ -31,11 +28,6 @@ import {
   toFloorStats,
 } from "./floor-stats";
 
-const navigationRoutes: Partial<Record<NavigationItemId, string>> = {
-  home: "/",
-  places: "/locations",
-};
-
 export interface BuildingDetailPageProps {
   state: BuildingDetailState;
   initialFloorId?: FloorId;
@@ -52,13 +44,6 @@ export function BuildingDetailPage({
   onBack,
 }: BuildingDetailPageProps) {
   const router = useRouter();
-
-  function handleNavigate(id: NavigationItemId) {
-    const href = navigationRoutes[id];
-    if (href) {
-      router.push(href);
-    }
-  }
 
   function handleBackToList() {
     const current = new URLSearchParams(window.location.search);
@@ -99,7 +84,7 @@ export function BuildingDetailPage({
           </>
         )}
       </main>
-      <BottomNavigation selected="places" onChange={handleNavigate} />
+      <BottomNavigation selected="places" />
     </>
   );
 }

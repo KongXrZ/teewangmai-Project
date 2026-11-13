@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import Image from "next/image";
-import { AppBottomNavigation } from "@/components/layout/app-bottom-navigation";
+import { BottomNavigation } from "@/components/layout/bottom-navigation";
 import {
   CrowdLevelFilter,
   type CrowdLevelFilterValue,
@@ -108,7 +108,7 @@ export function LocationListPage({
           />
         </section>
       </main>
-      <AppBottomNavigation selected="places" />
+      <BottomNavigation selected="places" />
     </>
   );
 }
