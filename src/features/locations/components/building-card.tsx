@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ComponentType } from "react";
+import { useState, type ComponentType, type ReactNode } from "react";
 import Image from "next/image";
 import type { SvgIconProps } from "@mui/material/SvgIcon";
 import AccessTime from "@mui/icons-material/AccessTime";
@@ -30,25 +30,35 @@ export const crowdLevelLabels: Record<CrowdLevel, string> = {
 
 export const unknownCrowdLabel = "ยังไม่มีข้อมูล";
 
+export const crowdLevelIcons: Record<
+  CrowdLevel | "unknown",
+  ComponentType<SvgIconProps>
+> = {
+  low: Person,
+  medium: PeopleAlt,
+  high: Diversity3,
+  unknown: HelpOutlineRounded,
+};
+
 const crowdTagStyles: Record<CrowdLevel | "unknown", CrowdTagStyle> = {
   low: {
     label: crowdLevelLabels.low,
-    icon: Person,
+    icon: crowdLevelIcons.low,
     className: "bg-[#39a94e]/22 text-[#006b14]",
   },
   medium: {
     label: crowdLevelLabels.medium,
-    icon: PeopleAlt,
+    icon: crowdLevelIcons.medium,
     className: "bg-[#dfdf20]/22 text-[#6b6b00]",
   },
   high: {
     label: crowdLevelLabels.high,
-    icon: Diversity3,
+    icon: crowdLevelIcons.high,
     className: "bg-[#ff0000]/22 text-[#b00000]",
   },
   unknown: {
     label: unknownCrowdLabel,
-    icon: HelpOutlineRounded,
+    icon: crowdLevelIcons.unknown,
     className: "bg-[#b9b9b9]/22 text-[#5f5f5f]",
   },
 };
@@ -73,46 +83,49 @@ export interface BuildingCardProps {
   onSelect?: BuildingSelectHandler;
 }
 
-export function BuildingCard({ building, onSelect }: BuildingCardProps) {
-  const [failedUrl, setFailedUrl] = useState<string | null>(null);
-  const showImage =
-    building.imageUrl !== null && failedUrl !== building.imageUrl;
-  const updatedTime = formatUpdatedTime(building.updatedAt);
+export const buildingSummaryGridClass =
+  "grid w-full grid-cols-[clamp(64px,24%,112px)_minmax(0,1fr)_auto] grid-rows-[auto_auto] items-center gap-x-2.5 gap-y-1 px-1.5 py-2 text-left text-black";
 
+export function BuildingCard({ building, onSelect }: BuildingCardProps) {
   return (
     <button
       type="button"
       onClick={() => onSelect?.(building.id)}
-      className="grid w-full cursor-pointer grid-cols-[clamp(64px,24%,112px)_minmax(0,1fr)_auto] grid-rows-[auto_auto] items-center gap-x-2.5 gap-y-1 rounded-2xl border-0 bg-white px-1.5 py-2 text-left text-black transition-colors duration-150 hover:bg-[#fff7f2] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#ff5815]"
+      className={`${buildingSummaryGridClass} cursor-pointer rounded-2xl border-0 bg-white transition-colors duration-150 hover:bg-[#fff7f2] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#ff5815]`}
     >
-      <span className="relative row-span-2 flex aspect-[112/87] items-center justify-center overflow-hidden rounded-[10px] bg-[#e5e5e5] text-[#b9b9b9]">
-        {showImage ? (
-          <Image
-            src={building.imageUrl!}
-            alt=""
-            fill
-            sizes="112px"
-            unoptimized
-            onError={() => setFailedUrl(building.imageUrl)}
-            ref={(image) => {
-              if (image?.complete && image.naturalWidth === 0) {
-                setFailedUrl(building.imageUrl);
-              }
-            }}
-            className="object-cover"
-          />
-        ) : (
-          <ApartmentRounded aria-hidden="true" sx={{ fontSize: 36 }} />
-        )}
-      </span>
+      <BuildingSummary building={building} />
+    </button>
+  );
+}
+
+export function BuildingSummary({
+  building,
+  floorControl,
+}: {
+  building: BuildingCardModel;
+  floorControl?: ReactNode;
+}) {
+  const updatedTime = formatUpdatedTime(building.updatedAt);
+
+  return (
+    <>
+      <BuildingImage
+        imageUrl={building.imageUrl}
+        sizes="112px"
+        fallbackSize={36}
+        className="row-span-2 aspect-[112/87]"
+      />
       <span className="self-end truncate text-[clamp(1.125rem,5.2vw,1.5rem)] leading-tight font-bold">
         {building.code}
       </span>
       <span className="self-end justify-self-end">
         <CrowdTag level={building.crowdLevel} />
       </span>
-      <span className="self-start truncate text-xs leading-normal">
-        {building.name}
+      <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 self-start">
+        <span className="max-w-full truncate text-xs leading-normal">
+          {building.name}
+        </span>
+        {floorControl}
       </span>
       <span className="flex items-center gap-1 self-start justify-self-end text-xs leading-normal whitespace-nowrap text-[#b9b9b9]">
         {updatedTime && (
@@ -122,6 +135,48 @@ export function BuildingCard({ building, onSelect }: BuildingCardProps) {
           </>
         )}
       </span>
-    </button>
+    </>
+  );
+}
+
+export function BuildingImage({
+  imageUrl,
+  sizes,
+  fallbackSize,
+  preload,
+  className,
+}: {
+  imageUrl: string | null;
+  sizes: string;
+  fallbackSize: number;
+  preload?: boolean;
+  className: string;
+}) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+
+  return (
+    <span
+      className={`relative flex items-center justify-center overflow-hidden rounded-[10px] bg-[#e5e5e5] text-[#b9b9b9] ${className}`}
+    >
+      {imageUrl !== null && failedUrl !== imageUrl ? (
+        <Image
+          src={imageUrl}
+          alt=""
+          fill
+          sizes={sizes}
+          unoptimized
+          preload={preload}
+          onError={() => setFailedUrl(imageUrl)}
+          ref={(image) => {
+            if (image?.complete && image.naturalWidth === 0) {
+              setFailedUrl(imageUrl);
+            }
+          }}
+          className="object-cover"
+        />
+      ) : (
+        <ApartmentRounded aria-hidden="true" sx={{ fontSize: fallbackSize }} />
+      )}
+    </span>
   );
 }
