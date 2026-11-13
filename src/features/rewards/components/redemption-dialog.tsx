@@ -95,7 +95,7 @@ export function RedemptionDialog({
   // itself covers the gap before the caller reports `pending`.
   useEffect(() => {
     submitLockRef.current = false;
-  }, [result, isOpen, reward?.id]);
+  }, [result.status, isOpen, reward?.id]);
 
   useEffect(() => {
     if (isOpen && view.step !== "confirm") {
@@ -155,7 +155,7 @@ export function RedemptionDialog({
               onClick={dismiss}
               aria-label="ปิด"
               aria-disabled={!view.canDismiss || undefined}
-              className="-mt-1 -mr-1.5 flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-[#6b7280] hover:bg-[#f0f1f3] focus-visible:outline-2 focus-visible:outline-[#e0622a] aria-disabled:cursor-not-allowed aria-disabled:opacity-40"
+              className="-mt-2.5 -mr-3 flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-[#6b7280] hover:bg-[#f0f1f3] focus-visible:outline-2 focus-visible:outline-[#e0622a] aria-disabled:cursor-not-allowed aria-disabled:opacity-40"
             >
               <CloseRounded aria-hidden="true" sx={{ fontSize: 22 }} />
             </button>
