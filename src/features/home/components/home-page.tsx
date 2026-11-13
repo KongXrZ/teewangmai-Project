@@ -29,7 +29,7 @@ export function HomePage() {
           <MapPlaceholder />
         </main>
       </div>
-      <BottomNavigation />
+      <BottomNavigation selected="home" />
     </>
   );
 }
