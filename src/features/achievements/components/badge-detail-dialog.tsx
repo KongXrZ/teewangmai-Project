@@ -74,7 +74,7 @@ function BadgeDetail({
           type="button"
           aria-label="ปิด"
           onClick={onClose}
-          className="-mr-1.5 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-[#6b7280] hover:bg-[#f0f1f3] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#e0622a]"
+          className="-mr-2.5 flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-[#6b7280] hover:bg-[#f0f1f3] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#e0622a]"
         >
           <CloseRounded aria-hidden="true" sx={{ fontSize: 22 }} />
         </button>
