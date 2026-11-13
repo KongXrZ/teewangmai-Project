@@ -67,7 +67,7 @@ export function RewardCard({ reward, onSelect, disabled }: RewardCardProps) {
         )}
       </span>
 
-      <div className="min-w-0 flex-1">
+      <div className="w-0 min-w-0 flex-1">
         <h3
           className={`truncate text-[15px] leading-6 font-semibold ${
             locked ? "font-normal text-[#6b7280]" : "text-[#141414]"
@@ -88,7 +88,7 @@ export function RewardCard({ reward, onSelect, disabled }: RewardCardProps) {
         disabled={!canSelect}
         aria-label={`แลก ${reward.title}`}
         onClick={canSelect ? () => onSelect(reward) : undefined}
-        className="h-[34px] min-w-[52px] shrink-0 cursor-pointer touch-manipulation rounded-lg border-0 bg-[#e0622a] px-3.5 text-sm font-semibold text-white transition-colors duration-150 [-webkit-tap-highlight-color:transparent] hover:bg-[#c9531f] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e0622a] active:bg-[#b84a1b] disabled:cursor-not-allowed disabled:bg-[#e2e4e8] disabled:text-[#9ca3af]"
+        className="h-11 min-w-[52px] shrink-0 cursor-pointer touch-manipulation rounded-lg border-0 bg-[#e0622a] px-3.5 text-sm font-semibold text-white transition-colors duration-150 [-webkit-tap-highlight-color:transparent] hover:bg-[#c9531f] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e0622a] active:bg-[#b84a1b] disabled:cursor-not-allowed disabled:bg-[#e2e4e8] disabled:text-[#9ca3af]"
       >
         แลก
       </button>
@@ -107,7 +107,7 @@ export function RewardCardSkeleton() {
         <span className="h-4 w-3/5 animate-pulse rounded bg-[#eceef1]" />
         <span className="h-3 w-1/4 animate-pulse rounded bg-[#eceef1]" />
       </span>
-      <span className="h-[34px] w-[52px] animate-pulse rounded-lg bg-[#eceef1]" />
+      <span className="h-11 w-[52px] animate-pulse rounded-lg bg-[#eceef1]" />
     </div>
   );
 }
