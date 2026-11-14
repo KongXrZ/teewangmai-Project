@@ -1,9 +1,5 @@
 import type { RewardCardModel } from "./types";
 
-/**
- * Redemption outcome, always supplied by the caller (FE-010 phase 2 adapter
- * or a parent component). The dialog never moves to a result on its own.
- */
 export type RedemptionResult =
   | { status: "idle" }
   | { status: "pending" }
@@ -14,7 +10,6 @@ export type RedemptionResult =
 
 export type RedemptionStatus = RedemptionResult["status"];
 
-/** `cancel` = closed before a confirmed result; `done` = closed after success. */
 export type RedemptionCloseReason = "cancel" | "done";
 
 export type RedemptionStep =
@@ -23,7 +18,6 @@ export type RedemptionStep =
 export interface RedemptionView {
   step: RedemptionStep;
   pending: boolean;
-  /** Escape / backdrop / close buttons are ignored while pending. */
   canDismiss: boolean;
   canConfirm: boolean;
   canRetry: boolean;

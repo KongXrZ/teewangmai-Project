@@ -20,10 +20,6 @@ export function isEarned(badge: BadgeModel): boolean {
   return badge.earnedAt !== null;
 }
 
-/**
- * Splits the server catalog for display. Order is kept as received and
- * earned state comes only from `earnedAt`; nothing is computed or awarded.
- */
 export function getBadgeCollectionView(
   badges: readonly BadgeModel[],
   filter: BadgeFilter,
@@ -52,7 +48,6 @@ const earnedDateFormatter = new Intl.DateTimeFormat("th-TH", {
   timeZone: "Asia/Bangkok",
 });
 
-/** Formats the server `earned_at`; returns `null` when absent or invalid. */
 export function formatEarnedDate(earnedAt: string | null): string | null {
   if (earnedAt === null) {
     return null;

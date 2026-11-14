@@ -29,19 +29,11 @@ const pointsFormatter = new Intl.NumberFormat("th-TH");
 
 export interface RedemptionDialogProps {
   open: boolean;
-  /** Reward selected from the catalog (FE-009 `RedemptionFlowProps.reward`). */
   reward: RewardCardModel | null;
-  /** Current balance from the server; `null` hides the balance row. */
   points: number | null;
-  /** Explicit outcome from the caller. The dialog never resolves itself. */
   result: RedemptionResult;
-  /** Fired once per attempt; ignored while a submit is in flight. */
   onConfirm: RedemptionConfirmHandler;
   onClose: (reason: RedemptionCloseReason) => void;
-  /**
-   * QR content for the success state. Pass only backend-confirmed QR
-   * (one-time token + expiry contract from BE-010). Omitted = no QR area.
-   */
   qr?: ReactNode;
 }
 
@@ -91,8 +83,6 @@ export function RedemptionDialog({
 
   useRestoreFocus(isOpen);
 
-  // A new result (or reopening) releases the lock so retry works; the lock
-  // itself covers the gap before the caller reports `pending`.
   useEffect(() => {
     submitLockRef.current = false;
   }, [result.status, isOpen, reward?.id]);
@@ -302,11 +292,6 @@ function ResultIcon({ step }: { step: Exclude<RedemptionStep, "confirm"> }) {
   );
 }
 
-/**
- * Remembers the element focused when the dialog opened (e.g. the "แลก" button)
- * and returns focus to it after the dialog closes or unmounts. Runs in a
- * layout effect so it captures the trigger before MUI moves focus inside.
- */
 function useRestoreFocus(open: boolean) {
   const triggerRef = useRef<HTMLElement | null>(null);
 

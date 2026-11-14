@@ -13,7 +13,6 @@ const LOGIN_ROUTE = "/login";
 
 export interface AchievementsController {
   state: AchievementsState;
-  /** Re-fetch catalog/earned state while keeping the current view on screen. */
   refresh: () => void;
   isRefreshing: boolean;
 }
@@ -55,8 +54,6 @@ export function useAchievements(): AchievementsController {
     return () => controller.abort();
   }, [requestId, router]);
 
-  // Badges are awarded server-side (e.g. after a check-in elsewhere), so
-  // pick up changes when the user returns to this tab.
   useEffect(() => {
     function handleVisibility() {
       if (document.visibilityState === "visible") {

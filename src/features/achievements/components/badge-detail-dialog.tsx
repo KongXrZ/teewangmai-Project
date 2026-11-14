@@ -8,7 +8,6 @@ import { formatEarnedDate, getRequirementText, isEarned } from "../view-model";
 import { BadgeIcon } from "./badge-icon";
 
 export interface BadgeDetailDialogProps {
-  /** Selected badge from the server catalog; `null` keeps the dialog closed. */
   badge: BadgeModel | null;
   onClose: () => void;
 }
@@ -16,7 +15,6 @@ export interface BadgeDetailDialogProps {
 export function BadgeDetailDialog({ badge, onClose }: BadgeDetailDialogProps) {
   const titleId = useId();
   const descriptionId = useId();
-  // Keep the last badge rendered while the dialog fades out.
   const [shownBadge, setShownBadge] = useState(badge);
   if (badge !== null && badge !== shownBadge) {
     setShownBadge(badge);

@@ -8,7 +8,6 @@ import LockRounded from "@mui/icons-material/LockRounded";
 export interface BadgeIconProps {
   iconUrl: string | null;
   earned: boolean;
-  /** Diameter in px. */
   size?: number;
 }
 

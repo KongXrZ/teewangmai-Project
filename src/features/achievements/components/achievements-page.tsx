@@ -6,7 +6,6 @@ import { BadgeCollection, type BadgeCollectionProps } from "./badge-collection";
 import { BadgeDetailDialog } from "./badge-detail-dialog";
 
 export interface AchievementsPageProps extends BadgeCollectionProps {
-  /** Badge whose detail dialog is open; `null` = closed. */
   selectedBadge: BadgeModel | null;
   onCloseBadge: () => void;
 }

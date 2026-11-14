@@ -36,10 +36,6 @@ export type BadgesResult =
 
 const unavailableStatuses = new Set([404, 501, 503]);
 
-/**
- * Inactive badges stay visible only to users who already earned them.
- * The server should already filter; this guards against stale rows.
- */
 export function isVisibleBadge(dto: BadgeDto): boolean {
   return dto.is_active || dto.earned_at !== null;
 }

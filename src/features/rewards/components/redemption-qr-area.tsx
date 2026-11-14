@@ -1,11 +1,5 @@
 import { useId, type ReactNode } from "react";
 
-/**
- * Layout boundary for the redemption QR shown after a confirmed redemption.
- * It renders only what the caller passes in: no token or QR is generated
- * here. Callers must supply QR content only from a backend-confirmed
- * one-time token (BE-010 contract).
- */
 export function RedemptionQrArea({
   children,
   instruction = "ยื่น QR Code นี้ให้พนักงานเพื่อรับสิทธิ์",
