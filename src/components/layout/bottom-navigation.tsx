@@ -17,7 +17,7 @@ const navigationItems = [
     icon: QrCodeScannerRounded,
     primary: true,
   },
-  { id: "rewards", label: "แลกรางวัล", icon: StarRounded },
+  { id: "rewards", label: "แลกรางวัล", icon: StarRounded, href: "/rewards" },
   { id: "profile", label: "โปรไฟล์", icon: Person },
 ] as const;
 
