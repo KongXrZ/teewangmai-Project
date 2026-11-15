@@ -6,7 +6,7 @@
 begin;
 
 set local lock_timeout = '5s';
-lock table public.locations, public.floors in share row exclusive mode;
+lock table public.locations, public.floors, public.floor_hours in share row exclusive mode;
 
 create temporary table building_seed_source (
   source_order integer generated always as identity,
@@ -169,5 +169,44 @@ where not exists (
   where f.location_id = s.location_id and f.floor_name = s.floor_name
 )
 order by s.location_id, s.floor_number;
+
+-- Temporary dummy floor hours (pending real CSV dump): Monday through Friday (1..5), 08:00-17:00, active.
+-- Saturday and Sunday rows remain omitted until per-building schedules are supplied.
+create temporary table expanded_floor_hours_seed on commit drop as
+select
+  f.id as floor_id,
+  d.day_of_week,
+  '08:00:00'::time as open_time,
+  '17:00:00'::time as close_time,
+  true as is_active
+from expanded_floor_seed s
+join public.floors f
+  on f.location_id = s.location_id and f.floor_name = s.floor_name
+cross join generate_series(1, 5) as d(day_of_week);
+
+update public.floor_hours fh
+set
+  open_time = s.open_time,
+  close_time = s.close_time,
+  is_active = s.is_active
+from expanded_floor_hours_seed s
+where fh.floor_id = s.floor_id and fh.day_of_week = s.day_of_week;
+
+do $$
+begin
+  if not exists (select 1 from public.floor_hours) then
+    alter table public.floor_hours alter column id restart with 1;
+  end if;
+end;
+$$;
+
+insert into public.floor_hours (floor_id, day_of_week, open_time, close_time, is_active)
+select s.floor_id, s.day_of_week, s.open_time, s.close_time, s.is_active
+from expanded_floor_hours_seed s
+where not exists (
+  select 1 from public.floor_hours fh
+  where fh.floor_id = s.floor_id and fh.day_of_week = s.day_of_week
+)
+order by s.floor_id, s.day_of_week;
 
 commit;

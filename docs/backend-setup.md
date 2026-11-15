@@ -122,7 +122,9 @@ The floor migration refuses missing/blank legacy floor or QR mappings rather
 than creating invented records. Apply the separate legacy-profile repair and
 building/floor deletion-restriction migrations afterward. Previously migrated
 databases apply only those pending versions. `supabase/seed.sql` contains 35
-approved real buildings and 224 expanded floors; hours/rewards/badges await data.
+approved real buildings, 224 expanded floors, and 1,120 temporary dummy weekday
+`floor_hours` rows (Mon–Fri `08:00:00`–`17:00:00`, active); real floor hours
+from CSV, rewards, and badges await approved data.
 
 The v4 forward migration adds building codes/aliases/details, floor capacity,
 floor hours and voucher expiry/use fields. It rejects ambiguous codes, building
@@ -160,6 +162,8 @@ docker cp supabase/tests/location_seed.sql supabase_db_teewangmai:/tmp/location_
 docker exec supabase_db_teewangmai psql -U postgres -d postgres --no-psqlrc -v ON_ERROR_STOP=1 -f /tmp/location_seed.sql
 docker cp supabase/tests/floor_seed.sql supabase_db_teewangmai:/tmp/floor_seed.sql
 docker exec supabase_db_teewangmai psql -U postgres -d postgres --no-psqlrc -v ON_ERROR_STOP=1 -f /tmp/floor_seed.sql
+docker cp supabase/tests/floor_hours_seed.sql supabase_db_teewangmai:/tmp/floor_hours_seed.sql
+docker exec supabase_db_teewangmai psql -U postgres -d postgres --no-psqlrc -v ON_ERROR_STOP=1 -f /tmp/floor_hours_seed.sql
 ```
 
 `floor_schema.sql` checks relations, indexes, RLS, profile column grants, and the
@@ -176,7 +180,9 @@ real Local checks verify the existing profile trigger/access against Supabase.
 `location_seed.sql` checks the category array type and approved building records,
 including multiple categories, default category, parsed aliases and inactive S7.
 `floor_seed.sql` checks the approved 224-floor expansion, blank-total fallback,
-per-floor capacity/activity and generated QR identifier format. Fresh replay and
+per-floor capacity/activity and generated QR identifier format.
+`floor_hours_seed.sql` checks the 1,120 weekday `floor_hours` rows
+(Monday–Friday `08:00:00`–`17:00:00`, active, with Saturday–Sunday omitted). Fresh replay and
 existing-data import verification also check repeated imports preserve IDs,
 QR identifiers and sequences, and failed imports roll back as a batch.
 

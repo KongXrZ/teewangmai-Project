@@ -1,9 +1,10 @@
 # Backend Handoff
 
 Snapshot: November 15, 2026. Schema v4 plus category-array migration is applied
-to Local. The 35 approved buildings and 224 floors are imported, with database
-types regenerated for the current schema. Hours/reward/badge records remain
-pending. UI implementation and API integration are separate work;
+to Local. The 35 approved buildings and 224 floors are imported along with 1,120
+temporary dummy weekday `floor_hours` rows (Mon–Fri `08:00:00`–`17:00:00`, active),
+with database types regenerated for the current schema. Real floor hours from CSV
+and reward/badge records remain pending. UI implementation and API integration are separate work;
 an existing page does not imply its data API exists. No mock application data is
 provided by this migration.
 
@@ -32,7 +33,7 @@ request/response contracts and update Swagger during implementation.
 
 | Task | Main responsibility / boundary |
 | --- | --- |
-| BE-004 | Approved CSV data import; 35 buildings and 224 floors imported locally, with hour/reward/badge datasets pending |
+| BE-004 | Building/floor/hour CSV import; 35 buildings and 224 floors imported, temporary weekday hours seeded, real hour CSV pending |
 | BE-005 | Building search/list and selected-floor detail; search code/name/category-array members/aliases, building hours derived from floors, floor capacity and metadata |
 | BE-006 | Per-floor crowd summaries: 30-minute lookback, refresh every 10 minutes, unknown when empty; configurable timing |
 | BE-007 | Floor QR generation and printable assets; 224 stable floor identifiers are provisioned in Local |
@@ -42,9 +43,11 @@ request/response contracts and update Swagger during implementation.
 | BE-011 | Rewards catalog, immediate atomic exchange and own voucher history; fixed reward deadline copied at issuance |
 | BE-012 | Authorized voucher QR verification and single atomic consumption before deadline |
 | BE-013 | Badge catalog, requirement evaluation and own earned badges |
+| BE-014 | Approved reward/badge CSV import, preserving catalog identities, balances, stock and existing activity |
 
 Task numbers follow the current plan. BE-004 is In progress because building/floor
-import is verified and hours/reward/badge datasets are still pending. BE-003's
+import is verified and real floor hours are still pending. Reward/badge import
+belongs to BE-014. BE-003's
 floor migration is already complete.
 
 Check-in awarding **+10 points is deferred** for this round. BE-008 must not

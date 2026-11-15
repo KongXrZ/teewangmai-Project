@@ -175,7 +175,9 @@ splits CSV multi-value categories/aliases and stores text details in
 `details.description`. Local now has 35 buildings, with S7 inactive, and retains
 the existing profiles. The approved floor totals expand to 224 rows, defaulting
 blank totals to one floor. New rows receive UUID QR identifiers; repeated imports
-preserve IDs/QRs. Capacity 100 applies per floor as supplied. Hours/reward/badge
+preserve IDs/QRs. Capacity 100 applies per floor as supplied. Temporary dummy weekday `floor_hours` rows (Monday–Friday `08:00:00`–`17:00:00`,
+active) are seeded across all 224 floors (1,120 rows; Saturday–Sunday omitted)
+until the real CSV dump arrives. Approved floor hours, reward and badge
 reference records remain pending.
 
 `src/types/database.ts` has been regenerated from the applied Local schema,

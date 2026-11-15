@@ -9,7 +9,7 @@ or deploy a hosted project.
 - `migrations/`: versioned SQL schema changes, indexes, constraints, and RLS
   policies. Use timestamped files such as `YYYYMMDDHHMMSS_create_locations.sql`.
 - `tests/`: SQL assertions for the floor model and profile permissions.
-- `seed.sql`: approved 35 buildings and 224 floors, preserving IDs/QR identifiers.
+- `seed.sql`: approved 35 buildings and 224 floors, plus 1,120 temporary dummy weekday `floor_hours` pending real CSV, preserving IDs/QR identifiers.
 
 Supabase CLI is pinned in `devDependencies`. Run `npm ci` and start Docker, then
 use `npm run db:start` from the repository root. Do not initialize the project

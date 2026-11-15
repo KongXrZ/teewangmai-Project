@@ -1,8 +1,10 @@
 # Reference Data Contract
 
 The approved dataset of 35 buildings and 224 floors is included in
-`supabase/seed.sql` and imported into Local. Hours, rewards and badges await
-their approved records.
+`supabase/seed.sql` and imported into Local, alongside 1,120 temporary dummy
+weekday `floor_hours` rows (Monday–Friday `08:00:00`–`17:00:00`, active;
+Saturday–Sunday omitted) pending the real CSV dump. Real floor hours, rewards
+and badges await their approved records.
 Schema: [Database Design](database.md).
 Database constraints do not replace CSV validation.
 
@@ -90,10 +92,19 @@ Updates match `(location_id, floor_name)` and preserve the floor ID and QR.
 Only missing records use identity/UUID generation, so repeating the same import
 also preserves sequence values. An empty floor table starts at ID 1.
 
-Imports run transactionally with building/floor write locks. Invalid totals or
+Imports run transactionally with building/floor/hour write locks. Invalid totals or
 missing building references abort the batch. A lower total in future data does
 not delete previously stored floors; retirement remains an explicit active-switch
-operation. Per-floor hours await their own dataset.
+operation.
+
+## Temporary dummy floor hours seed
+
+Until the real CSV dump is supplied, `supabase/seed.sql` provisions five
+active weekday dummy rows (`day_of_week` 1 through 5) for each of the 224 approved
+floors with `open_time = '08:00:00'`, `close_time = '17:00:00'`, and
+`is_active = true` (1,120 rows total). Saturday and Sunday rows (`6`, `7`) are
+intentionally omitted. Re-runs match `(floor_id, day_of_week)`, updating times
+and active status while preserving existing IDs and sequence values.
 
 ## Updates and QR assets
 
