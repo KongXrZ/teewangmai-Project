@@ -100,6 +100,8 @@ Home's map remains blank pending its SVG and a separate map task. Location/rewar
 routes show unavailable states until data integration; the Achievements adapter
 targets a badge API that is not implemented yet. Verified check-ins, scheduled
 aggregation, reward transactions and badge awarding remain future work.
+Building/floor read APIs are implemented separately from FE wiring; see the
+[Location API contract](docs/location-api.md) for search, detail and opening hours.
 No mock application data is included.
 
 ## Database

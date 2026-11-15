@@ -19,12 +19,19 @@ provided by this migration.
 | `GET /auth/callback` | Auth code exchange and safe internal redirect |
 | `GET /api/health` | Application health response; not a database connectivity test |
 | `GET /api/swagger` | API documentation |
+| `GET /api/locations` | Public active building search/list with pagination and derived opening hours |
+| `GET /api/locations/{locationId}` | Active building detail and floor schedules |
+| `GET /api/locations/{locationId}/floors/{floorId}` | Selected active floor belonging to the building |
 
 Auth Server Actions also cover password recovery/reset, resend verification,
 current user, logout and own-profile name/avatar updates. Existing Auth UI/session
 integration is documented in [Frontend Integration](frontend-integration.md).
 Google UI integration is deferred. Keep browser-readable cookie sessions and
 server identity verification; do not implement a second password store.
+
+BE-005's catalog API is implemented locally. See [Location API](location-api.md)
+for DTOs, query rules, Bangkok opening-hours behavior and real-data integration
+tests. FE wiring remains separate; crowd summaries still belong to BE-006.
 
 ## Backend task order
 
