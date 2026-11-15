@@ -32,14 +32,14 @@ begin
   end if;
 
   insert into public.locations (name, category, building, gps_lat, gps_lng)
-    values ('SQL assertion only', 'test', 'N2147483647', 0, 0) returning id into building_id;
+    values ('SQL assertion only', array['test'], 'N2147483647', 0, 0) returning id into building_id;
   if not exists (select 1 from public.locations where id = building_id
     and aliases = '{}'::text[] and details = '{}'::jsonb) then
     raise exception 'Building defaults do not match v4';
   end if;
   begin
     insert into public.locations (name, category, building, gps_lat, gps_lng)
-      values ('SQL assertion only', 'test', 'N2147483647', 0, 0);
+      values ('SQL assertion only', array['test'], 'N2147483647', 0, 0);
     raise exception 'Duplicate building code accepted';
   exception when unique_violation then null;
   end;
