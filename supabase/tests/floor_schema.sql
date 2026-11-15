@@ -8,7 +8,7 @@ declare
   column_name text;
 begin
   foreach relation_name in array array[
-    'users', 'locations', 'floors', 'location_hours', 'location_profiles',
+    'users', 'locations', 'floors', 'floor_hours',
     'checkins', 'badges', 'user_badges', 'rewards', 'redemptions'
   ] loop
     if not exists (
@@ -19,6 +19,11 @@ begin
       raise exception 'Missing table or RLS: %', relation_name;
     end if;
   end loop;
+
+  if to_regclass('public.location_hours') is not null
+    or to_regclass('public.location_profiles') is not null then
+    raise exception 'Legacy building hours/profile tables must be removed';
+  end if;
 
   if exists (
     select 1 from information_schema.columns
