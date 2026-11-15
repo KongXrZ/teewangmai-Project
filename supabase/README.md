@@ -9,7 +9,7 @@ or deploy a hosted project.
 - `migrations/`: versioned SQL schema changes, indexes, constraints, and RLS
   policies. Use timestamped files such as `YYYYMMDDHHMMSS_create_locations.sql`.
 - `tests/`: SQL assertions for the floor model and profile permissions.
-- `seed.sql`: intentionally empty until approved reference data is supplied.
+- `seed.sql`: approved 35 buildings and 224 floors, preserving IDs/QR identifiers.
 
 Supabase CLI is pinned in `devDependencies`. Run `npm ci` and start Docker, then
 use `npm run db:start` from the repository root. Do not initialize the project
@@ -26,7 +26,7 @@ for the current columns and constraints, including:
 - Buildings in `locations`, QR identifiers in `floors`, and individual reports
   linked through `checkins.floor_id`.
 - No `trust_score` or `current_streak` columns in `users`.
-- Required unique canonical building codes, search aliases and `locations.details`
+- Required unique canonical building codes, category arrays, search aliases and `locations.details`
   JSON preserved from the removed `location_profiles` table.
 - Per-floor `floor_hours` with unique floor/day pairs, Monday=1 through Sunday=7,
   08:00–16:00 defaults and an active switch. Optional positive floor capacity.
@@ -44,9 +44,12 @@ deletion to preserve report history. Back up existing data and verify
 on a separate database before applying with `supabase migration up --local`.
 The v4 migration also validates legacy reference mappings before replacing old
 hours/details tables. See [Database Design](../docs/database.md) for blockers.
-Type generation into `src/types/database.ts` is deliberately deferred until
-real-data import; current generated types reflect v3. Regenerate before new
-typed v4 queries. [Reference Data](../docs/reference-data.md) defines CSV inputs.
+`src/types/database.ts` has been regenerated after importing the 35 approved
+buildings and applying the category-array migration. The seed defaults blank
+categories to อาคารเรียน and sets S7 inactive. The 224 floor rows expand approved
+totals with blank counts defaulting to one; new rows receive UUID identifiers.
+Hours/rewards/badges await
+approved data. [Reference Data](../docs/reference-data.md) defines CSV inputs.
 
 RLS is enabled on all nine tables. Authenticated users can read their own profile
 and update only name/avatar; the other eight tables have no client policies yet.

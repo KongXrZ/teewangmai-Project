@@ -140,7 +140,7 @@ activity และ settings ส่วน FE-019 ทำ Forgot/Reset UI และ
 
 งาน integration ใช้ `updateProfileSchema`, `forgotPasswordSchema`,
 `resetPasswordSchema`, `resendVerificationSchema` จาก `features/auth/schemas`
-และ actions เดิม ไม่สร้าง backend ซ้ำ งานอัปโหลดรูปเป็น BE-009 แยกจากการแก้ URL:
+และ actions เดิม ไม่สร้าง backend ซ้ำ งานอัปโหลดรูปเป็น BE-010 แยกจากการแก้ URL:
 
 | Action | Input |
 | --- | --- |

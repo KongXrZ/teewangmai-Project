@@ -36,8 +36,8 @@ implementation; the schema migration alone does not provide those behaviors.
 Check-in point awarding is deferred. Do not add +10 points or an awarding trigger
 in this round. The point balance remains available for reward eligibility.
 
-BE-006 owns printable QR provisioning, BE-007 owns QR resolution and trusted
-submission, BE-005 owns summaries, and BE-008 owns personal check-in history.
+BE-007 owns printable QR provisioning, BE-008 owns QR resolution and trusted
+submission, BE-006 owns summaries, and BE-009 owns personal check-in history.
 These IDs follow the current plan; schema availability alone does not implement
 those APIs. See [Backend Handoff](backend-handoff.md).
 
@@ -130,8 +130,10 @@ also change during use even though reward definitions start as team data.
 
 Keep schema changes in migrations and initial records in seeds. Make repeated
 data imports preserve identities and history, and avoid resetting live balances
-or consumed stock. Stable import keys and the import/update mechanism still
-need implementation. Schema deployment can happen before all seed data is ready.
+or consumed stock. The approved building seed upserts by canonical building code
+and preserves IDs. The 224 floor rows and their UUID identifiers are provisioned;
+QR images and floor hours remain future work. Floor reimports preserve IDs and
+QR identifiers. Schema deployment can happen before all reference data is ready.
 The current reference-data format is in [Reference Data](reference-data.md).
 Floor schedules use Monday=1 through Sunday=7, Bangkok time, with 08:00–16:00
 defaults and `is_active` for closed weekdays. Full day is 00:00:00–23:59:59.
