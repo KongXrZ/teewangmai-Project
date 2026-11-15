@@ -121,8 +121,10 @@ with `npm run supabase -- migration up --local` and check migration history.
 The floor migration refuses missing/blank legacy floor or QR mappings rather
 than creating invented records. Apply the separate legacy-profile repair and
 building/floor deletion-restriction migrations afterward. Previously migrated
-databases apply only those pending versions. Keep `supabase/seed.sql` empty until approved
-reference data is supplied; do not add mock application records.
+databases apply only those pending versions. `supabase/seed.sql` contains 35
+approved real buildings, 224 expanded floors, and 1,120 temporary dummy weekday
+`floor_hours` rows (Mon–Fri `08:00:00`–`17:00:00`, active); real floor hours
+from CSV, rewards, and badges await approved data.
 
 The v4 forward migration adds building codes/aliases/details, floor capacity,
 floor hours and voucher expiry/use fields. It rejects ambiguous codes, building
@@ -131,6 +133,24 @@ redemptions. See [Database Design](database.md) for exact migration mappings.
 November 15 Local migration ran without a backup by explicit owner instruction;
 no reset was performed. That one-time decision is not a shared deployment rule.
 
+The following migration makes building `category` a required `text[]`. The
+approved seed fills blank categories with อาคารเรียน and sets S7 inactive.
+The floor dataset expands total counts to one row per floor, defaulting blank
+totals to one. New floors receive UUID QR identifiers, and existing IDs/QRs are
+preserved. To load/update the approved reference data on an existing Local database:
+
+```powershell
+npm run supabase -- migration up --local
+docker cp supabase/seed.sql supabase_db_teewangmai:/tmp/teewangmai-seed.sql
+docker exec supabase_db_teewangmai psql -U postgres -d postgres --no-psqlrc -v ON_ERROR_STOP=1 -f /tmp/teewangmai-seed.sql
+npm run db:types
+```
+
+The seed is transactional and matches buildings by code and floors by
+`(location_id, floor_name)`, preserving IDs, QR identifiers and
+operational records. It refreshes approved metadata including the active switch
+and description, preserving other detail keys. Source row numbers are not IDs.
+
 After applying migrations, run the SQL assertions (PowerShell):
 
 ```powershell
@@ -138,6 +158,12 @@ docker cp supabase/tests/floor_schema.sql supabase_db_teewangmai:/tmp/floor_sche
 docker exec supabase_db_teewangmai psql -U postgres -d postgres --no-psqlrc -v ON_ERROR_STOP=1 -f /tmp/floor_schema.sql
 docker cp supabase/tests/reference_v4.sql supabase_db_teewangmai:/tmp/reference_v4.sql
 docker exec supabase_db_teewangmai psql -U postgres -d postgres --no-psqlrc -v ON_ERROR_STOP=1 -f /tmp/reference_v4.sql
+docker cp supabase/tests/location_seed.sql supabase_db_teewangmai:/tmp/location_seed.sql
+docker exec supabase_db_teewangmai psql -U postgres -d postgres --no-psqlrc -v ON_ERROR_STOP=1 -f /tmp/location_seed.sql
+docker cp supabase/tests/floor_seed.sql supabase_db_teewangmai:/tmp/floor_seed.sql
+docker exec supabase_db_teewangmai psql -U postgres -d postgres --no-psqlrc -v ON_ERROR_STOP=1 -f /tmp/floor_seed.sql
+docker cp supabase/tests/floor_hours_seed.sql supabase_db_teewangmai:/tmp/floor_hours_seed.sql
+docker exec supabase_db_teewangmai psql -U postgres -d postgres --no-psqlrc -v ON_ERROR_STOP=1 -f /tmp/floor_hours_seed.sql
 ```
 
 `floor_schema.sql` checks relations, indexes, RLS, profile column grants, and the
@@ -151,6 +177,14 @@ data. Identity sequences may advance despite rollback; IDs need not be gapless.
 Voucher-row assertions need an existing account and are explicitly skipped if
 none exists. Disposable fresh replay uses minimal managed-Auth dependencies;
 real Local checks verify the existing profile trigger/access against Supabase.
+`location_seed.sql` checks the category array type and approved building records,
+including multiple categories, default category, parsed aliases and inactive S7.
+`floor_seed.sql` checks the approved 224-floor expansion, blank-total fallback,
+per-floor capacity/activity and generated QR identifier format.
+`floor_hours_seed.sql` checks the 1,120 weekday `floor_hours` rows
+(Monday–Friday `08:00:00`–`17:00:00`, active, with Saturday–Sunday omitted). Fresh replay and
+existing-data import verification also check repeated imports preserve IDs,
+QR identifiers and sequences, and failed imports roll back as a batch.
 
 ## Generated types and review
 
@@ -159,13 +193,12 @@ UTF-8 consistently on Windows/macOS/Linux and preserves the previous output
 when the CLI fails. Do not hand-write placeholder database types or commit types
 from an empty database as though the nine-table design were implemented.
 
-For this v4 handoff, the owner explicitly deferred generation until real-data
-import. `src/types/database.ts` still reflects v3. Existing Auth fields are
-unchanged, but new typed v4 queries must wait for regeneration/review; do not
-manually patch generated types. This deferred step is not part of today's commit.
+The deferred v4 generation step is complete after the approved building import.
+`src/types/database.ts` now includes category arrays and the current nine-table
+schema. Regenerate after future schema changes and review the resulting diff.
 
 Commit migration/SQL checks and relevant docs in reviewable changes. Include
-regenerated types once the deferred import step is complete. Before a BE PR, verify:
+regenerated types after schema changes. Before a BE PR, verify:
 
 - Migrations reproduce the intended schema on a disposable local database and
   upgrade existing data without resetting it.

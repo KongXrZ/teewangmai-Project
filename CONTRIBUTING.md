@@ -36,7 +36,7 @@ development (Integration / Staging)
 ชื่อ branch งานใช้เฉพาะรหัส Ticket/Task ไม่เติมคำอธิบายต่อท้าย:
 
 - `FE-013` — ตัวอย่างงาน UI ตามแผนปัจจุบัน
-- `BE-004` — ตัวอย่างงาน API
+- `BE-005` — ตัวอย่างงาน API
 
 รายละเอียดงานให้ระบุในชื่อและ description ของ PR แทนชื่อ branch
 กติกานี้ใช้กับการตั้งชื่อ branch งานใหม่ ไม่เปลี่ยนชื่อ branch เก่าของทีมโดยอัตโนมัติ
@@ -145,8 +145,8 @@ GitHub Actions จะรันชุดตรวจนี้เมื่อ Push
 สำหรับงาน BE ให้อ่าน [Backend Development Setup](docs/backend-setup.md) ก่อนเริ่ม:
 ใช้ Supabase CLI เวอร์ชันที่ล็อกในโปรเจกต์ ทดสอบ migrations กับฐานข้อมูล local
 ตรวจ constraints/RLS ตาม scope และ generate types ใหม่ก่อนส่ง PR
-ข้อยกเว้น v4 รอบปัจจุบัน: เจ้าของเลื่อน generate types จนกว่านำเข้าข้อมูลจริง
-ไฟล์ types ยังเป็น v3 ต้อง generate/review ก่อนเขียน typed query v4 ใหม่
+นำเข้าอาคารจริง 35 อาคารและ generate types ของ v4 พร้อม category แบบ array แล้ว
+เมื่อแก้ schema รอบถัดไป ให้ generate และ review types ก่อนส่ง PR
 ดู [Database Design](docs/database.md) และ [Reference Data](docs/reference-data.md)
 คำสั่ง `npm run db:reset` จะล้างข้อมูล local และสร้างใหม่จาก migrations/seed
 

@@ -1,7 +1,11 @@
 # Reference Data Contract
 
-Prepare approved real records before import; this document does not implement
-an importer or populate `supabase/seed.sql`. Schema: [Database Design](database.md).
+The approved dataset of 35 buildings and 224 floors is included in
+`supabase/seed.sql` and imported into Local, alongside 1,120 temporary dummy
+weekday `floor_hours` rows (Monday–Friday `08:00:00`–`17:00:00`, active;
+Saturday–Sunday omitted) pending the real CSV dump. Real floor hours, rewards
+and badges await their approved records.
+Schema: [Database Design](database.md).
 Database constraints do not replace CSV validation.
 
 ## Input datasets
@@ -9,7 +13,7 @@ Database constraints do not replace CSV validation.
 | Dataset | Required input | Optional/defaults |
 | --- | --- | --- |
 | Buildings | `building`, `name`, `category`, `gps_lat`, `gps_lng` | `aliases` empty array; `image_url` null; `details` empty object; `is_active` true |
-| Floors | `building`, `floor_name`, `qr_code_id` | `capacity` null; `is_active` true |
+| Floor totals | `building` | `total_floor` 1 when blank; `capacity` null; `is_active` true; leave `qr_code_id` blank for generated identifiers |
 | Floor hours | `building`, `floor_name`, `day_of_week` | `open_time` 08:00:00; `close_time` 16:00:00; `is_active` true |
 | Rewards | `title`, `points_required`, `expires_at` | `description`, `image_url`, `starts_at` null; `stock` 0; `status` active |
 | Badges | `name`, `requirement_type`, `requirement_value` | `description`, `icon_url` null; `is_active` true |
@@ -27,13 +31,17 @@ are not guaranteed unique. Do not add a schema key without agreement.
 - Canonical building code is trimmed uppercase `N` or `S` followed by digits;
   reject duplicates after normalization. Aliases are search terms, not new
   buildings. Use a JSON-array CSV cell, e.g. `["LX","Learning Exchange"]`, with
-  standard CSV quoting/escaped double quotes. `details` is a valid JSON object.
+  standard CSV quoting/escaped double quotes. `category` is also a required
+  `text[]`; normalize multi-value input to an array. For the approved building
+  dataset, blank categories use `["อาคารเรียน"]`. `details` is a valid JSON object.
 - Latitude/longitude must be numeric valid geographic coordinates. They are
-  building reference coordinates, never user GPS. Category vocabulary should be
-  agreed across the team; it is currently text, not an enum.
-- Floor names and QR identifiers are non-empty; floor names are unique per
-  building and QR identifiers globally unique. Capacity is null or a positive
-  integer. Do not infer capacity from crowd reports.
+  building reference coordinates, never user GPS. Category values are text-array
+  members. The vocabulary can be extended with approved reference data.
+- The approved floor CSV supplies one `total_floor` per building. Expand positive
+  integer N into floor names `1` through `N`; blank means one floor. Database
+  floor names and QR identifiers are non-empty and unique within their respective
+  constraints. Capacity is null or a positive integer and applies to each expanded
+  floor. New floors receive generated UUID identifiers; existing ones keep theirs.
 - Floor hours use Monday=1 through Sunday=7 and `Asia/Bangkok` time. One row per
   floor/weekday. Full day is 00:00:00–23:59:59; overnight intervals are allowed.
   Use `is_active = false` for closed days. A missing row means unknown, not closed
@@ -51,6 +59,53 @@ be imported separately. Validate all rows before applying a transactional batch.
 Unknown relationships and duplicates fail with row-specific errors; never
 silently create buildings/floors or truncate existing data.
 
+## Approved building seed
+
+The November 15 dataset contains S1–S15 and N1–N20. Source column mapping is:
+
+| Source column | Database representation |
+| --- | --- |
+| `category(multi value)` | Trimmed, deduplicated comma-separated terms in `category`; 30 blanks become `["อาคารเรียน"]` |
+| `aliases(multi_value)` | Trimmed, deduplicated comma-separated terms in `aliases` |
+| `img_url` | `image_url`, retaining the supplied URL |
+| `detail` | `details.description`; empty values produce an empty object |
+| `id` | Source row number only; PostgreSQL generates the application ID |
+
+S7 is explicitly inactive; the other 34 buildings are active. The seed matches
+by building code, updates existing rows and inserts missing rows, preserving IDs. It updates
+the approved building fields and replaces `details.description`, retaining
+other existing detail keys. Running it repeatedly keeps one row per code.
+Apply it to an existing Local database without reset using the commands in
+[Backend Setup](backend-setup.md).
+
+## Approved floor seed
+
+The floor totals expand into 224 rows across the 35 buildings. S8, S10 and N8
+have blank totals, each producing floor `1`. Every expanded row uses capacity
+100 and the floor activity supplied in the CSV (true for this dataset).
+S7's building remains inactive; service eligibility requires both building and
+floor activity. Floor activation alone cannot enable its parent building.
+
+The import resolves `location_id` by building code. New rows receive a UUID in
+`qr_code_id` via `gen_random_uuid()::text`, ready for the later QR image task.
+Updates match `(location_id, floor_name)` and preserve the floor ID and QR.
+Only missing records use identity/UUID generation, so repeating the same import
+also preserves sequence values. An empty floor table starts at ID 1.
+
+Imports run transactionally with building/floor/hour write locks. Invalid totals or
+missing building references abort the batch. A lower total in future data does
+not delete previously stored floors; retirement remains an explicit active-switch
+operation.
+
+## Temporary dummy floor hours seed
+
+Until the real CSV dump is supplied, `supabase/seed.sql` provisions five
+active weekday dummy rows (`day_of_week` 1 through 5) for each of the 224 approved
+floors with `open_time = '08:00:00'`, `close_time = '17:00:00'`, and
+`is_active = true` (1,120 rows total). Saturday and Sunday rows (`6`, `7`) are
+intentionally omitted. Re-runs match `(floor_id, day_of_week)`, updating times
+and active status while preserving existing IDs and sequence values.
+
 ## Updates and QR assets
 
 Reimports must preserve user profiles, reports, earned badges, vouchers, point
@@ -58,7 +113,7 @@ balances and stock consumed since import. Initial stock and an operational stock
 adjustment are different operations; do not overwrite live stock automatically.
 Changing a catalog deadline must not rewrite already-issued voucher snapshots.
 
-After approved building/floor records exist, BE-006 generates printable floor QR
+After approved building/floor records exist, BE-007 generates printable floor QR
 assets from approved `qr_code_id` values and the agreed scan URL/payload. Each
 printed code must resolve to exactly one floor/building; changing an identifier
 must be coordinated with printed assets. QR is not proof of physical presence.

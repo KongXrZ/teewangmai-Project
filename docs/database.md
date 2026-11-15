@@ -22,8 +22,10 @@ forward migration defines **nine application tables**. Supabase-managed
 
 `locations.id` is the integer relational key. Required unique `building` codes
 match `^[NS][0-9]+$`, e.g. `N16`/`S14`. Importers trim and uppercase codes.
+`category` is a required `text[]` supporting multiple categories per building.
+Blank categories in the approved import become `["อาคารเรียน"]`.
 `aliases` is a non-null `text[]`, default empty. Search should match code, name,
-category and aliases case-insensitively and return each building once. Shared
+category members and aliases case-insensitively and return each building once. Shared
 aliases such as KFC are allowed; trim/deduplicate terms during import.
 
 Building details live in `locations.details` (`jsonb`, not null, default `{}`).
@@ -163,14 +165,24 @@ backup at the owner's explicit request. Hosted databases have not been changed.
 Team data: buildings, floors, hours, reward/badge definitions. Activity data:
 profiles, check-ins, earned badges and vouchers. Balances and stock change during
 operation. Reimports must preserve identities, history, balances and consumed
-stock. Keep `supabase/seed.sql` empty until approved real data arrives. See the
+stock. `supabase/seed.sql` contains 35 approved buildings and 224 floors. See the
 [Reference Data Contract](reference-data.md).
 
-**Type generation is deliberately deferred until real-data import.**
-`src/types/database.ts` still reflects the previous schema, not v4 availability.
-Existing Auth columns are unchanged. Before writing typed v4 queries, generate
-types from the applied Local schema with `npm run db:types`, review and commit
-them. Do not hand-edit generated rows or query removed tables.
+`20261115063746_support_multiple_location_categories.sql` converts `category`
+from text to required text[]. Existing nonblank values become a single member;
+blank legacy values use the approved อาคารเรียน fallback. The approved seed
+splits CSV multi-value categories/aliases and stores text details in
+`details.description`. Local now has 35 buildings, with S7 inactive, and retains
+the existing profiles. The approved floor totals expand to 224 rows, defaulting
+blank totals to one floor. New rows receive UUID QR identifiers; repeated imports
+preserve IDs/QRs. Capacity 100 applies per floor as supplied. Temporary dummy weekday `floor_hours` rows (Monday–Friday `08:00:00`–`17:00:00`,
+active) are seeded across all 224 floors (1,120 rows; Saturday–Sunday omitted)
+until the real CSV dump arrives. Approved floor hours, reward and badge
+reference records remain pending.
+
+`src/types/database.ts` has been regenerated from the applied Local schema,
+including category arrays and the v4 tables/fields. Regenerate and review it
+after subsequent migrations with `npm run db:types`.
 
 See [Backend Setup](backend-setup.md) for validation commands and
 [Backend Handoff](backend-handoff.md) for implemented versus pending APIs/tasks.

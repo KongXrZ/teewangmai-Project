@@ -33,7 +33,7 @@ supabase/
 ├── config.toml                Shared local Supabase configuration
 ├── migrations/                Versioned PostgreSQL schema and RLS changes
 ├── tests/                     SQL schema and access assertions
-└── seed.sql                   Empty until approved reference data is ready
+└── seed.sql                   Approved 35 buildings and 224 floors, preserving IDs/QRs
 scripts/
 └── generate-database-types.mjs Safe local database type generation
 docs/
@@ -93,8 +93,8 @@ request-scoped server clients; both already exist.
 
 Generate `src/types/database.ts` from the actual database
 and use it to type the clients. Keep UI/view types separate from generated rows.
-For v4, regeneration is deliberately deferred until real-data import. Existing
-types describe v3; regenerate before implementing typed queries for new columns.
+Types have been regenerated after the approved building import, including
+category arrays and v4 fields. Regenerate/review after subsequent migrations.
 
 The current model consists of `users`, `locations`, `floors`, `floor_hours`,
 `checkins`, `badges`, `user_badges`, `rewards`, and
@@ -102,7 +102,7 @@ The current model consists of `users`, `locations`, `floors`, `floor_hours`,
 linked to Supabase `auth.users`. Auth owns authentication and is the source of
 truth for email. `locations` represents buildings, `floors.location_id` belongs
 to a building, and `checkins.floor_id` belongs to a floor. QR identifiers live
-on floors. Buildings have unique canonical N/S codes, search aliases and JSON
+on floors. Buildings have unique canonical N/S codes, category arrays, search aliases and JSON
 details. `floor_hours` has its own primary key and a unique floor/day pair.
 Rewards have fixed expiry; successful exchanges and actual voucher use are
 separate. Check-in point awarding is deferred.
@@ -124,7 +124,7 @@ input on the server as well. Zustand is available for client-side state manageme
 Material UI (`@mui/material`, `@mui/icons-material`, `@mui/material-nextjs`) is
 integrated with App Router via `AppRouterCacheProvider`. The Supabase SDK and SSR
 library are integrated with the existing Auth backend. Current generated database
-types reflect v3; the v4 refresh remains deferred as described above.
+types reflect the applied nine-table schema, including category arrays.
 
 ## Mobile and map assets
 
@@ -143,7 +143,9 @@ UI exist, alongside Auth UI/backend, Supabase clients and own-profile RLS.
 Home's map remains blank pending its SVG. Location/reward routes currently pass
 unavailable states; the Achievements adapter targets a badge API not yet implemented.
 These pages do not demonstrate completed data integration or successful exchanges.
-The nine-table v4 schema is applied locally. Product APIs, verified check-ins,
+The nine-table v4 schema and category-array migration are applied locally. The 35
+approved buildings and 224 floors are imported, with S7 inactive. Hours/reward/badge data
+remains pending. Product APIs, verified check-ins,
 scheduled summaries, reward transactions and badge awarding remain separate work.
 Check-in +10 awarding is deferred. No hosted deployment is made by these changes.
 See [Backend Handoff](backend-handoff.md) and [Backend Setup](backend-setup.md). Local

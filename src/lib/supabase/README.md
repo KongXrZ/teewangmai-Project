@@ -20,10 +20,9 @@ local environment using `.env.example`. A running Local or configured hosted
 Supabase service is required for Auth; having client files does not provision it.
 See [Backend Setup](../../../docs/backend-setup.md) for Local startup.
 
-Clients use `Database` from `@/types/database`. Local schema is v4, but generation
-is explicitly deferred until approved real-data import; checked-in types still
-reflect v3. Auth columns are unchanged. Regenerate/review types before adding
-typed v4 queries; do not hand-edit generated types or query removed tables.
+Clients use `Database` from `@/types/database`, regenerated after the approved
+building import. It includes the v4 fields and `locations.category: string[]`.
+Regenerate/review after schema changes; do not hand-edit generated types.
 
 Keep queries specific to a feature in that feature's `server/` directory. Keep
 administrative credentials server-only and enforce database access using RLS.

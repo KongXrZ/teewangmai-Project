@@ -78,8 +78,44 @@ export type Database = {
           },
         ];
       };
+      floor_hours: {
+        Row: {
+          close_time: string;
+          day_of_week: number;
+          floor_id: number;
+          id: number;
+          is_active: boolean;
+          open_time: string;
+        };
+        Insert: {
+          close_time?: string;
+          day_of_week: number;
+          floor_id: number;
+          id?: never;
+          is_active?: boolean;
+          open_time?: string;
+        };
+        Update: {
+          close_time?: string;
+          day_of_week?: number;
+          floor_id?: number;
+          id?: never;
+          is_active?: boolean;
+          open_time?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "floor_hours_floor_id_fkey";
+            columns: ["floor_id"];
+            isOneToOne: false;
+            referencedRelation: "floors";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       floors: {
         Row: {
+          capacity: number | null;
           floor_name: string;
           id: number;
           is_active: boolean;
@@ -87,6 +123,7 @@ export type Database = {
           qr_code_id: string;
         };
         Insert: {
+          capacity?: number | null;
           floor_name: string;
           id?: never;
           is_active?: boolean;
@@ -94,6 +131,7 @@ export type Database = {
           qr_code_id: string;
         };
         Update: {
+          capacity?: number | null;
           floor_name?: string;
           id?: never;
           is_active?: boolean;
@@ -110,65 +148,12 @@ export type Database = {
           },
         ];
       };
-      location_hours: {
-        Row: {
-          close_time: string;
-          day_of_week: number;
-          id: number;
-          location_id: number;
-          open_time: string;
-        };
-        Insert: {
-          close_time: string;
-          day_of_week: number;
-          id?: never;
-          location_id: number;
-          open_time: string;
-        };
-        Update: {
-          close_time?: string;
-          day_of_week?: number;
-          id?: never;
-          location_id?: number;
-          open_time?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "location_hours_location_id_fkey";
-            columns: ["location_id"];
-            isOneToOne: false;
-            referencedRelation: "locations";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      location_profiles: {
-        Row: {
-          details: NonNullable<Json>;
-          location_id: number;
-        };
-        Insert: {
-          details?: NonNullable<Json>;
-          location_id: number;
-        };
-        Update: {
-          details?: NonNullable<Json>;
-          location_id?: number;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "location_profiles_location_id_fkey";
-            columns: ["location_id"];
-            isOneToOne: true;
-            referencedRelation: "locations";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
       locations: {
         Row: {
-          building: string | null;
-          category: string;
+          aliases: string[];
+          building: string;
+          category: string[];
+          details: NonNullable<Json>;
           gps_lat: number;
           gps_lng: number;
           id: number;
@@ -177,8 +162,10 @@ export type Database = {
           name: string;
         };
         Insert: {
-          building?: string | null;
-          category: string;
+          aliases?: string[];
+          building: string;
+          category: string[];
+          details?: NonNullable<Json>;
           gps_lat: number;
           gps_lng: number;
           id?: never;
@@ -187,8 +174,10 @@ export type Database = {
           name: string;
         };
         Update: {
-          building?: string | null;
-          category?: string;
+          aliases?: string[];
+          building?: string;
+          category?: string[];
+          details?: NonNullable<Json>;
           gps_lat?: number;
           gps_lng?: number;
           id?: never;
@@ -200,26 +189,32 @@ export type Database = {
       };
       redemptions: {
         Row: {
+          expires_at: string;
           id: number;
           redeemed_at: string;
           reward_id: number;
           status: string;
+          used_at: string | null;
           used_points: number;
           user_id: number;
         };
         Insert: {
+          expires_at: string;
           id?: never;
           redeemed_at?: string;
           reward_id: number;
           status?: string;
+          used_at?: string | null;
           used_points: number;
           user_id: number;
         };
         Update: {
+          expires_at?: string;
           id?: never;
           redeemed_at?: string;
           reward_id?: number;
           status?: string;
+          used_at?: string | null;
           used_points?: number;
           user_id?: number;
         };
@@ -243,35 +238,35 @@ export type Database = {
       rewards: {
         Row: {
           description: string | null;
-          expires_at: string | null;
+          expires_at: string;
           id: number;
           image_url: string | null;
           points_required: number;
           starts_at: string | null;
           status: string;
-          stock: number | null;
+          stock: number;
           title: string;
         };
         Insert: {
           description?: string | null;
-          expires_at?: string | null;
+          expires_at: string;
           id?: never;
           image_url?: string | null;
           points_required: number;
           starts_at?: string | null;
           status?: string;
-          stock?: number | null;
+          stock?: number;
           title: string;
         };
         Update: {
           description?: string | null;
-          expires_at?: string | null;
+          expires_at?: string;
           id?: never;
           image_url?: string | null;
           points_required?: number;
           starts_at?: string | null;
           status?: string;
-          stock?: number | null;
+          stock?: number;
           title?: string;
         };
         Relationships: [];

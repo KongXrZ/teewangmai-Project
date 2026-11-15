@@ -88,7 +88,7 @@ public/maps/
 supabase/
 ├── migrations/    Versioned PostgreSQL schema and access policies
 ├── tests/         SQL schema and access assertions
-└── seed.sql       Empty until approved reference data is ready
+└── seed.sql       Approved building and floor reference data
 docs/              Architecture and development notes
 ```
 
@@ -114,7 +114,7 @@ integer application key; `users.auth_id` links to Supabase `auth.users` by UUID.
 Auth owns credentials and is the email source of truth. The model has no
 `trust_score` or `current_streak` fields.
 
-Buildings have required unique N/S codes, search aliases and `locations.details`
+Buildings have required unique N/S codes, category arrays, search aliases and `locations.details`
 JSON. `floor_hours` has a unique `(floor_id, day_of_week)` pair; Monday is 1 and
 Sunday is 7. Rewards have fixed voucher deadlines; redemptions record successful
 exchanges separately from use. See [Database Design](docs/database.md),
@@ -128,9 +128,11 @@ Cloud or implement report submission/aggregation. See [Backend Development Setup
 for local startup, migrations, SQL assertions, and generated types. Local reference
 files in `*LocalDocs-dont-commit/` are excluded from Git.
 
-Type generation is deferred until approved real-data import; the checked-in
-database types still reflect v3. Generate them before implementing new typed v4
-queries. Check-in +10 point awarding is deferred for this round.
+Local contains 35 approved buildings and 224 floors, with S7 inactive and blank source categories
+set to อาคารเรียน. Database types have been regenerated for the current schema,
+including `locations.category: string[]`. Floor rows have stable QR identifiers.
+Hours/rewards/badges await their
+reference records. Check-in +10 point awarding is deferred for this round.
 
 Setup references: [Next.js installation](https://nextjs.org/docs/app/getting-started/installation) and [Tailwind CSS with Next.js](https://tailwindcss.com/docs/installation/framework-guides/nextjs).
 
@@ -304,7 +306,7 @@ See [Database Design](docs/database.md) and [Backend Handoff](docs/backend-hando
 ### Historical Data
 
 Individual check-ins remain as historical logs after leaving the summary window.
-Personal check-in history is planned in BE-008. Persisting historical aggregate
+Personal check-in history is planned in BE-009. Persisting historical aggregate
 snapshots and displaying density charts are future extensions; no summary-history
 table, chart or snapshot scheduler is implemented by v4.
 
@@ -440,15 +442,15 @@ The implementation order and release boundary for participation and reward featu
 ## Project Status
 
 **Status:** Home, Location List/Detail, Rewards/Dialog and Achievements UI exist.
-Auth UI/backend is integrated. The nine-table v4 schema is verified locally;
-generated types still reflect v3 until approved real-data import. Product APIs,
+Auth UI/backend is integrated. The nine-table v4 schema with category arrays is
+verified locally, with 35 approved buildings, 224 floors and regenerated types. Product APIs,
 remaining UI and integration, check-in/summary logic and reward/badge operations
 are pending. Local verification does not imply a Cloud deployment.
 
 Current priorities:
 
 1. Complete remaining FE pages independently of API integration, without mock data
-2. Prepare/import approved reference data and regenerate v4 database types
+2. Prepare/import remaining hour/reward/badge reference data
 3. Implement building/floor APIs, summaries and their access rules
 4. Generate approved floor QR assets and implement verified check-ins/history
 5. Implement profile upload, reward/voucher operations and badge APIs
