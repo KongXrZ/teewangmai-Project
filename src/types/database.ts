@@ -339,7 +339,27 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      search_locations: {
+        Args: { category_filter?: string; search_term?: string };
+        Returns: {
+          aliases: string[];
+          building: string;
+          category: string[];
+          details: NonNullable<Json>;
+          gps_lat: number;
+          gps_lng: number;
+          id: number;
+          image_url: string | null;
+          is_active: boolean;
+          name: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "locations";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
     };
     Enums: {
       [_ in never]: never;
