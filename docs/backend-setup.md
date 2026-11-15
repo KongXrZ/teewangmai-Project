@@ -58,6 +58,16 @@ verification used the shared ports listed above.
 Copy `.env.example` to `.env.local` without overwriting an existing local file.
 Run `npm run db:status` on your machine and copy the local API URL and publishable
 key into `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+Set `NEXT_PUBLIC_SITE_URL=http://localhost:3000` for Local signup callbacks.
+The signup action requires this value. For the shared Local configuration:
+
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=replace-with-your-local-publishable-key
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
+Replace the key with the publishable key from your own `db:status` output.
 Restart the Next.js dev server after changing the environment.
 
 Status output contains credentials: do not commit it or paste it into PRs.
@@ -86,6 +96,57 @@ production policies. Test email stays in the local inbox.
 `db:reset` explicitly targets **local** and deletes its current data; preserve
 any local work first. `db:stop` retains data. The project has no remote deployment
 script; do not add `--linked` or a remote connection URL to these local workflows.
+
+## Team database and API check
+
+Use a checkout that includes BE-004. During its review, select the BE-004 branch
+to verify this dataset. After it merges, use the updated development branch as
+the base for new tickets. Complete first start and App environment above, then
+apply pending Local migrations, load reference data and start Next.js:
+
+```powershell
+npm run supabase -- migration up --local
+docker cp supabase/seed.sql supabase_db_teewangmai:/tmp/teewangmai-seed.sql
+docker exec supabase_db_teewangmai psql -U postgres -d postgres --no-psqlrc -v ON_ERROR_STOP=1 -f /tmp/teewangmai-seed.sql
+npm run dev
+```
+
+On a fresh Local database, expected reference counts are 35 locations, 224 floors
+and 1,120 floor-hours rows. The hours currently cover Monday–Friday 08:00–17:00
+as temporary schedules pending the actual per-floor CSV. Inspect these counts in
+Studio (`http://127.0.0.1:54323`) or Dataflare using the PostgreSQL connection
+from your own Local status output. Each developer's accounts are stored in their
+own Local database. Create a Local account through `/signup` or the signup API.
+
+Open `http://localhost:3000/api/swagger` in the same browser used for login.
+Keep `localhost:3000` as the app origin throughout the test. JSON POST requests
+use `Content-Type: application/json`. Auth routes manage the session through
+browser cookies. In Postman or another API client, enable its cookie jar.
+
+| Step | Request | Expected result |
+| --- | --- | --- |
+| 1 | `GET /api/health` | 200 and service status |
+| 2 | `GET /api/auth/me` in a signed-out browser | 401 |
+| 3 | `POST /api/auth/signup` with own `name`, `email`, `password` | 200 and `requiresEmailConfirmation` |
+| 4 | `POST /api/auth/login` with that `email`, `password` | 200 and a browser session cookie |
+| 5 | `GET /api/auth/me` | 200 with the signed-in user and own profile |
+| 6 | `POST /api/auth/logout` | 200 |
+| 7 | `GET /api/auth/me` | 401 |
+
+Names use 2–50 characters and passwords 8–100. The shared Local configuration
+currently has email confirmation disabled. If a developer enables confirmation,
+complete the email link in the Local inbox (`http://127.0.0.1:54324`) before login.
+Use the same browser for signup and its PKCE confirmation link.
+
+`/api/health` reports application availability. Verify DB connectivity through
+reference queries and authenticated profile reads. A 503 from Auth routes means
+the Auth/profile service or configuration needs inspection. Check Docker, the
+three environment values and the server terminal. Signup/login responses are
+documented in [Frontend Integration](frontend-integration.md).
+
+Available product APIs are listed in [Backend Handoff](backend-handoff.md).
+Building/floor reads belong to BE-005 and summaries to BE-006. Those API tasks
+can use the seeded reference data while real schedules are being collected.
 
 ## Schema and migration workflow
 
