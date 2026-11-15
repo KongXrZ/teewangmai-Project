@@ -45,7 +45,7 @@ Local port ตาม shared config คือ API 54321, DB 54322, Studio 54323 �
 ของ Server Actions ซึ่งมีรหัสผ่านลง terminal และฟอร์มระบุ method POST เพื่อไม่ให้
 ข้อมูลรหัสผ่านหลุดเข้า query string หาก submit ก่อน JavaScript พร้อม
 
-## Session และ Logout สำหรับ FE-017/FE-018
+## Session และ Logout สำหรับ Profile integration (FE-018)
 
 `AuthProvider` ครอบ root layout แล้ว ใช้ hook จาก
 `@/features/auth/components/auth-provider`:
@@ -134,9 +134,13 @@ me ที่ไม่มี/หมด session คืน 401; Auth/DB ล้ม�
 
 ## Recovery และ Profile actions ที่มีอยู่
 
-FE-018/FE-019 ใช้ `updateProfileSchema`, `forgotPasswordSchema`,
+ตามแผนปัจจุบัน FE-017 ทำ Edit Profile/Settings UI และ FE-018 เชื่อม Profile,
+activity และ settings ส่วน FE-019 ทำ Forgot/Reset UI และ FE-020 เชื่อม Recovery
+แยกงาน UI กับ API integration ออกจากกัน ไม่ต้องรอ API จึงเริ่ม UI ได้
+
+งาน integration ใช้ `updateProfileSchema`, `forgotPasswordSchema`,
 `resetPasswordSchema`, `resendVerificationSchema` จาก `features/auth/schemas`
-และ actions เดิม ไม่สร้าง backend ซ้ำ:
+และ actions เดิม ไม่สร้าง backend ซ้ำ งานอัปโหลดรูปเป็น BE-009 แยกจากการแก้ URL:
 
 | Action | Input |
 | --- | --- |

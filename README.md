@@ -19,7 +19,11 @@ The product is a **mobile-first web application**. Smartphone browsers are the p
 - Make viewing a location and reporting its crowd level easy to complete on a phone. Plan compact location details and short report forms.
 - Keep map assets lightweight. If a 3D map is chosen, plan a lightweight image or location-list fallback for devices that cannot render it smoothly.
 
-The starter includes a responsive landing page, viewport configuration, and a reusable safe-area padding utility. Map interactions and reporting flows will be implemented with these mobile requirements in mind. The existing wireframes are mid-fidelity references; final colors and icons are not defined yet.
+The app uses a mobile shell with a maximum width of 476 CSS pixels and viewport
+height that follows the device, including safe-area handling. Home, Auth,
+Location List/Detail, Rewards and Achievements UI exist. Orange `#FF5815`, dark
+`#081828` and MUI icons are already used by shared navigation. Follow the supplied
+Figma for each UI task; map interactions and verified check-ins remain future work.
 
 ## Development Setup
 
@@ -90,10 +94,13 @@ docs/              Architecture and development notes
 
 See [the architecture guide](docs/architecture.md) for folder responsibilities and conventions. Empty folders are tracked with `.gitkeep`; they are preparation for future implementation.
 
-Home UI, Auth UI/backend, Supabase clients, and database migrations are present.
-Home's map remains blank pending its SVG and a separate map task. Verified
-check-ins, scheduled crowd aggregation, and participation/reward operations still
-need implementation. No mock application data is included.
+Home, Location List/Detail, Rewards catalog/redemption dialog and Achievements
+UI are present, alongside Auth UI/backend, Supabase clients and migrations.
+Home's map remains blank pending its SVG and a separate map task. Location/reward
+routes show unavailable states until data integration; the Achievements adapter
+targets a badge API that is not implemented yet. Verified check-ins, scheduled
+aggregation, reward transactions and badge awarding remain future work.
+No mock application data is included.
 
 ## Database
 
@@ -154,7 +161,7 @@ The system aims to:
 - Display each location's reported density level on a custom interactive campus map
 - Update density information periodically and show the last update time
 - Help users understand how crowded a location is before visiting
-- Store historical report summaries to show how density changes over time
+- Retain individual check-in history; historical summary charts are a future extension
 - Encourage participation through points, badges, and reward redemption
 - Support future analysis of campus usage patterns
 
@@ -278,19 +285,30 @@ Selecting a location can display additional information such as:
 - Reported density level
 - Number of recent reports
 - Time of the latest report
-- Historical density summaries
+- Historical density summaries, if implemented in a later extension
 - Building, floor, category, and opening hours
 - Flexible details such as Wi-Fi, charging facilities, and food menus
 
 ### Profile, Participation, and Rewards
 
-The planned profile shows points, earned badges, check-in history, and redemption history. Separate screens show available rewards and earned or locked badges. Users will be able to spend points on rewards; detailed earning and redemption rules remain to be defined. Streak and trust-score behavior from older wireframes remains TBD and adds no fields to the current schema. Integration with real partner-store databases is outside the current scope.
+Profile UI remains planned; it will show points, earned badges, check-in history
+and voucher history. Rewards catalog/dialog and earned/locked badge UI already
+exist, while their business APIs remain pending. Agreed exchange behavior is an
+immediate atomic deduction of points and stock with a completed redemption.
+All vouchers for a reward copy its fixed expiry; actual use is recorded separately.
+Check-in +10 point awarding is deferred, and no earning mechanism is introduced
+in this round. Streak/trust-score behavior from older wireframes remains outside
+the current schema. Partner-store database integration is outside this scope.
+See [Database Design](docs/database.md) and [Backend Handoff](docs/backend-handoff.md).
 
 ### Historical Data
 
-The system will store historical report summaries so users can explore how reported crowd levels change over time.
+Individual check-ins remain as historical logs after leaving the summary window.
+Personal check-in history is planned in BE-008. Persisting historical aggregate
+snapshots and displaying density charts are future extensions; no summary-history
+table, chart or snapshot scheduler is implemented by v4.
 
-Example:
+Illustration of a possible future history display:
 
 ```text
 Canteen
@@ -373,11 +391,11 @@ Several technical challenges need to be investigated during development:
 - Handling subjective or conflicting reports
 - Preventing spam and duplicate submissions
 - Verifying GPS and QR check-ins while handling unavailable device permissions
-- Defining consistent point, streak, trust-score, and reward rules
+- Defining point earning and badge requirements; implementing the agreed reward transactions
 - Defining selectable zones on the custom map
 - Choosing an image or 3D representation that works on mobile devices
-- Setting report expiry and handling locations with no recent reports
-- Defining aggregation rules and showing report freshness
+- Implementing the 30-minute lookback, 10-minute refresh and unknown/empty state
+- Deciding summary boundaries, labels/rounding and showing report freshness
 - Collecting enough reports for useful summaries
 - Scaling to many campus locations
 - Privacy and data protection
@@ -421,20 +439,24 @@ The implementation order and release boundary for participation and reward featu
 
 ## Project Status
 
-**Status:** Home UI and Auth UI/backend exist. The nine-table v4 schema is
-implemented and verified locally; product data APIs and check-in/summary logic
-remain work in progress. Local verification does not imply a Cloud deployment.
+**Status:** Home, Location List/Detail, Rewards/Dialog and Achievements UI exist.
+Auth UI/backend is integrated. The nine-table v4 schema is verified locally;
+generated types still reflect v3 until approved real-data import. Product APIs,
+remaining UI and integration, check-in/summary logic and reward/badge operations
+are pending. Local verification does not imply a Cloud deployment.
 
 Current priorities:
 
-1. Define campus zones and choose the custom map format
-2. Prepare the map image or 3D model
-3. Complete FE pages independently of API integration
-4. Prepare approved reference data and implement catalog APIs/access policies
-5. Build check-in, summary, participation, and reward operations
-6. Connect location summaries to the interactive map
-7. Test report quality, touch interactions, and map performance on mobile devices
-8. Expand to additional campus locations
+1. Complete remaining FE pages independently of API integration, without mock data
+2. Prepare/import approved reference data and regenerate v4 database types
+3. Implement building/floor APIs, summaries and their access rules
+4. Generate approved floor QR assets and implement verified check-ins/history
+5. Implement profile upload, reward/voucher operations and badge APIs
+6. Connect UI to APIs as each contract becomes available; add the map SVG separately
+7. Verify the core journey, mobile permissions, transactions and error handling
+
+These priorities describe work streams, not a requirement to wait for every
+earlier item. UI work and APIs with independent inputs can proceed in parallel.
 
 ---
 
