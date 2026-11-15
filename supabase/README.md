@@ -1,7 +1,7 @@
 # PostgreSQL / Supabase
 
 This folder contains the shared local setup for PostgreSQL and Supabase.
-Its migrations define ten application tables; local commands do not provision
+Its migrations define nine application tables; local commands do not provision
 or deploy a hosted project.
 
 - `config.toml`: CLI-generated local settings, using project ID `teewangmai`
@@ -16,8 +16,8 @@ use `npm run db:start` from the repository root. Do not initialize the project
 again. See [Backend Development Setup](../docs/backend-setup.md) for the complete
 startup, migration, type-generation, and review workflow.
 
-The current model has ten application tables: `users`, `locations`, `floors`,
-`location_hours`, `location_profiles`, `checkins`, `badges`, `user_badges`,
+The current model has nine application tables: `users`, `locations`, `floors`,
+`floor_hours`, `checkins`, `badges`, `user_badges`,
 `rewards`, and `redemptions`. Use [the database guide](../docs/database.md)
 for the current columns and constraints, including:
 
@@ -26,9 +26,12 @@ for the current columns and constraints, including:
 - Buildings in `locations`, QR identifiers in `floors`, and individual reports
   linked through `checkins.floor_id`.
 - No `trust_score` or `current_streak` columns in `users`.
-- A weak/dependent `location_profiles` table with `location_id` as primary/foreign
-  key and `jsonb` details in PostgreSQL.
-- A strong `location_hours` entity with its own `id` and unique location/day pair.
+- Required unique canonical building codes, search aliases and `locations.details`
+  JSON preserved from the removed `location_profiles` table.
+- Per-floor `floor_hours` with unique floor/day pairs, Monday=1 through Sunday=7,
+  08:00–16:00 defaults and an active switch. Optional positive floor capacity.
+- Required stock (default zero), upcoming/active/expired reward availability and
+  fixed voucher deadlines. Successful exchanges have separate expiry/use fields.
 - Composite `(user_id, badge_id)` ownership keys, separate from badge definitions.
 - Crowd levels from 1 to 5; insert check-ins only after GPS AND QR validation,
   without verification-result columns.
@@ -39,15 +42,20 @@ legacy mappings abort instead of creating invented values. Separate follow-up
 migrations repair legacy Auth/profile permissions and restrict building/floor
 deletion to preserve report history. Back up existing data and verify
 on a separate database before applying with `supabase migration up --local`.
-Generate TypeScript types from the applied schema into `src/types/database.ts`.
+The v4 migration also validates legacy reference mappings before replacing old
+hours/details tables. See [Database Design](../docs/database.md) for blockers.
+Type generation into `src/types/database.ts` is deliberately deferred until
+real-data import; current generated types reflect v3. Regenerate before new
+typed v4 queries. [Reference Data](../docs/reference-data.md) defines CSV inputs.
 
-RLS is enabled on all ten tables. Authenticated users can read their own profile
-and update only name/avatar; the other nine tables have no client policies yet.
+RLS is enabled on all nine tables. Authenticated users can read their own profile
+and update only name/avatar; the other eight tables have no client policies yet.
 The private Auth trigger, browser/server clients, and Auth endpoints exist.
 Trusted check-in submission (GPS/QR and 30-minute user/floor cooldown) and crowd
 aggregation (30-minute lookback, 10-minute refresh) remain separate tasks.
 This migration adds their data relationships/indexes, not runtime enforcement.
-No remote database changes have been made by BE-003.
+No check-in +10 point awarding is added in this round. No remote database changes
+have been made. See [Backend Handoff](../docs/backend-handoff.md) for pending APIs.
 
 See [database migrations](https://supabase.com/docs/guides/local-development/database-migrations)
 and [the project architecture](../docs/architecture.md).

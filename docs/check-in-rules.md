@@ -1,7 +1,7 @@
 # Floor check-ins and crowd summaries
 
-Product decisions confirmed on November 8, 2026. BE-003 implements the floor
-model in ten application tables: QR identifiers belong to `floors`, and
+Product decisions confirmed on November 8, updated November 15, 2026. The v4
+model has nine application tables: QR identifiers belong to `floors`, and
 `checkins.floor_id` identifies the reported floor. Cooldown, GPS/QR submission
 validation, scheduled summaries, and administrative settings remain future
 implementation; the schema migration alone does not provide those behaviors.
@@ -32,6 +32,14 @@ implementation; the schema migration alone does not provide those behaviors.
 5. A successful submission creates the check-in log. It becomes input to the
    next scheduled crowd-summary calculation, rather than replacing the summary
    directly with this user's score.
+
+Check-in point awarding is deferred. Do not add +10 points or an awarding trigger
+in this round. The point balance remains available for reward eligibility.
+
+BE-006 owns printable QR provisioning, BE-007 owns QR resolution and trusted
+submission, BE-005 owns summaries, and BE-008 owns personal check-in history.
+These IDs follow the current plan; schema availability alone does not implement
+those APIs. See [Backend Handoff](backend-handoff.md).
 
 GPS verifies proximity to the building; QR identifies the floor. Validate GPS
 on the server against building coordinates and an allowed distance. The radius
@@ -115,7 +123,7 @@ and the effect of changing settings on existing cooldowns are not defined yet.
 
 ## Initial data and operational data
 
-The team supplies building/floor/QR records, opening hours, location details,
+The team supplies building/floor/QR records, per-floor opening hours, location details,
 reward definitions, and badge definitions. User profiles, check-ins, earned
 badges, and redemptions arise from use. Reward stock and user point balances
 also change during use even though reward definitions start as team data.
@@ -124,6 +132,9 @@ Keep schema changes in migrations and initial records in seeds. Make repeated
 data imports preserve identities and history, and avoid resetting live balances
 or consumed stock. Stable import keys and the import/update mechanism still
 need implementation. Schema deployment can happen before all seed data is ready.
+The current reference-data format is in [Reference Data](reference-data.md).
+Floor schedules use Monday=1 through Sunday=7, Bangkok time, with 08:00–16:00
+defaults and `is_active` for closed weekdays. Full day is 00:00:00–23:59:59.
 
 ## Remaining implementation decisions
 

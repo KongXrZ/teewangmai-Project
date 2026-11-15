@@ -4,7 +4,7 @@ Use this guide before starting a BE task. The repository pins Supabase CLI
 `2.118.0` as a development dependency and includes `supabase/config.toml`.
 The application SDK and SSR library are already installed.
 
-The migrations now define ten application tables, including building floors.
+The migrations now define nine application tables, including per-floor hours.
 Supabase clients, Auth endpoints, and own-profile policies already exist.
 Feature APIs and report business logic remain separate work. Use
 [Database Design](database.md) for the applied model and remaining decisions.
@@ -46,12 +46,12 @@ shadow database on `54320`. See `supabase/config.toml` if another project uses
 the same ports. Avoid starting multiple copies of this project simultaneously.
 
 On Windows, check `netsh interface ipv4 show excludedportrange protocol=tcp`
-if Docker reports that binding a port is forbidden. This machine currently
-reserves `54322–54421`; the local verification stack uses a separate ignored
-workdir/config with DB `15422`, Studio `15423`, inbox `15424`, and API `54321`.
-The shared config and project ID are unchanged. Pass `--workdir <local-workdir>`
-to CLI commands for a stack started this way; use the same reviewed migration
-files in that workdir. Do not start a second stack with the same project ID.
+if Docker reports that binding a port is forbidden. Excluded ranges can change;
+verify current ports with `docker ps` instead of assuming an old local override.
+If using an ignored workdir/config with different ports, pass
+`--workdir <local-workdir>` consistently and use the same reviewed migrations.
+Do not start a second stack with the same project ID. November 15 Local
+verification used the shared ports listed above.
 
 ## App environment
 
@@ -124,28 +124,48 @@ building/floor deletion-restriction migrations afterward. Previously migrated
 databases apply only those pending versions. Keep `supabase/seed.sql` empty until approved
 reference data is supplied; do not add mock application records.
 
+The v4 forward migration adds building codes/aliases/details, floor capacity,
+floor hours and voucher expiry/use fields. It rejects ambiguous codes, building
+hours without floors, missing reward deadlines and any unmapped legacy
+redemptions. See [Database Design](database.md) for exact migration mappings.
+November 15 Local migration ran without a backup by explicit owner instruction;
+no reset was performed. That one-time decision is not a shared deployment rule.
+
 After applying migrations, run the SQL assertions (PowerShell):
 
 ```powershell
 docker cp supabase/tests/floor_schema.sql supabase_db_teewangmai:/tmp/floor_schema.sql
 docker exec supabase_db_teewangmai psql -U postgres -d postgres --no-psqlrc -v ON_ERROR_STOP=1 -f /tmp/floor_schema.sql
+docker cp supabase/tests/reference_v4.sql supabase_db_teewangmai:/tmp/reference_v4.sql
+docker exec supabase_db_teewangmai psql -U postgres -d postgres --no-psqlrc -v ON_ERROR_STOP=1 -f /tmp/reference_v4.sql
 ```
 
-The assertions check relations, indexes, RLS, profile column grants, and the
+`floor_schema.sql` checks relations, indexes, RLS, profile column grants, and the
 private Auth trigger. They use an existing profile for own-profile access checks
 when available and roll back the no-op update. No account or fixture is created.
 A database without profiles skips that behavioral check and still runs catalog
 assertions. This suite does not test future GPS, cooldown, or aggregation logic.
+`reference_v4.sql` exercises defaults, constraints and new-table grants using
+transactional SQL fixtures that roll back. These are not application seed/mock
+data. Identity sequences may advance despite rollback; IDs need not be gapless.
+Voucher-row assertions need an existing account and are explicitly skipped if
+none exists. Disposable fresh replay uses minimal managed-Auth dependencies;
+real Local checks verify the existing profile trigger/access against Supabase.
 
 ## Generated types and review
 
-After implementing and applying the schema, run `npm run db:types`. It writes
+Normally, after applying the schema, run `npm run db:types`. It writes
 UTF-8 consistently on Windows/macOS/Linux and preserves the previous output
 when the CLI fails. Do not hand-write placeholder database types or commit types
-from an empty database as though the ten-table design were implemented.
+from an empty database as though the nine-table design were implemented.
 
-Commit the migration, relevant SQL checks, regenerated types, and any
-changed design documentation together. Before a BE PR, verify:
+For this v4 handoff, the owner explicitly deferred generation until real-data
+import. `src/types/database.ts` still reflects v3. Existing Auth fields are
+unchanged, but new typed v4 queries must wait for regeneration/review; do not
+manually patch generated types. This deferred step is not part of today's commit.
+
+Commit migration/SQL checks and relevant docs in reviewable changes. Include
+regenerated types once the deferred import step is complete. Before a BE PR, verify:
 
 - Migrations reproduce the intended schema on a disposable local database and
   upgrade existing data without resetting it.

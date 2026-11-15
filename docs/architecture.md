@@ -1,8 +1,8 @@
 # Project Structure
 
 TeeWangMai? is a mobile-first Next.js application. Its database is
-PostgreSQL hosted by Supabase. The current migration model has ten application
-tables, including flexible `location_profiles.details` stored as PostgreSQL `jsonb`.
+PostgreSQL hosted by Supabase. The current migration model has nine application
+tables, including flexible `locations.details` stored as PostgreSQL `jsonb`.
 
 ```text
 src/
@@ -90,21 +90,24 @@ request-scoped server clients; both already exist.
 
 Generate `src/types/database.ts` from the actual database
 and use it to type the clients. Keep UI/view types separate from generated rows.
+For v4, regeneration is deliberately deferred until real-data import. Existing
+types describe v3; regenerate before implementing typed queries for new columns.
 
-The current model consists of `users`, `locations`, `floors`, `location_hours`,
-`location_profiles`, `checkins`, `badges`, `user_badges`, `rewards`, and
+The current model consists of `users`, `locations`, `floors`, `floor_hours`,
+`checkins`, `badges`, `user_badges`, `rewards`, and
 `redemptions`. `users.id` is an integer application key; `users.auth_id` is a UUID
 linked to Supabase `auth.users`. Auth owns authentication and is the source of
 truth for email. `locations` represents buildings, `floors.location_id` belongs
 to a building, and `checkins.floor_id` belongs to a floor. QR identifiers live
-on floors. `location_profiles` is a
-weak/dependent entity with a shared location primary/foreign key.
-`location_hours` has its own primary key and a unique location/day pair.
+on floors. Buildings have unique canonical N/S codes, search aliases and JSON
+details. `floor_hours` has its own primary key and a unique floor/day pair.
+Rewards have fixed expiry; successful exchanges and actual voucher use are
+separate. Check-in point awarding is deferred.
 Keep badge definitions separate from ownership, whose primary key is
 `(user_id, badge_id)`. See [the database baseline](database.md) for constraints
 and decisions still awaiting agreement.
 
-RLS is enabled on all ten tables. Only own-profile read/update policies are
+RLS is enabled on all nine tables. Only own-profile read/update policies are
 currently open to clients; column grants restrict updates to name/avatar.
 Auth uses browser-readable cookie sessions and request-scoped server clients.
 Before enabling reports, implement trusted GPS/QR checks and the independent

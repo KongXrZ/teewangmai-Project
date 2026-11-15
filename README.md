@@ -99,23 +99,31 @@ need implementation. No mock application data is included.
 
 The primary database is **PostgreSQL hosted by Supabase**. See [Supabase's database documentation](https://supabase.com/docs/guides/database/overview).
 
-The current migrations define **ten application tables**: `users`, `locations`,
-`floors`, `location_hours`, `location_profiles`, `checkins`, `badges`, `user_badges`,
+The current migrations define **nine application tables**: `users`, `locations`,
+`floors`, `floor_hours`, `checkins`, `badges`, `user_badges`,
 `rewards`, and `redemptions`. Locations represent buildings; each floor has its
 own QR identifier, and reports reference `checkins.floor_id`. `users.id` is an
 integer application key; `users.auth_id` links to Supabase `auth.users` by UUID.
 Auth owns credentials and is the email source of truth. The model has no
 `trust_score` or `current_streak` fields.
 
-`location_profiles` is a weak/dependent entity with a shared location primary/foreign key and PostgreSQL `jsonb` details. `location_hours` is a strong entity with its own primary key and a unique `(location_id, day_of_week)` pair. See [the database design](docs/database.md) for the fields, relationships, constraints, and remaining decisions.
+Buildings have required unique N/S codes, search aliases and `locations.details`
+JSON. `floor_hours` has a unique `(floor_id, day_of_week)` pair; Monday is 1 and
+Sunday is 7. Rewards have fixed voucher deadlines; redemptions record successful
+exchanges separately from use. See [Database Design](docs/database.md),
+[Reference Data](docs/reference-data.md) and [Backend Handoff](docs/backend-handoff.md).
 
 `.env.example` lists the planned connection variables. When a Supabase project is available, copy it to `.env.local` and fill in the project URL and publishable key. The current landing page runs without these values. Keep database passwords and Supabase secret/service-role keys out of browser code and `NEXT_PUBLIC_` variables.
 
 Supabase clients, Auth endpoints, versioned migrations, and own-profile access
-policies exist. BE-003 applies the floor schema locally; it does not deploy to
+policies exist. Schema v4 is applied locally; it does not deploy to
 Cloud or implement report submission/aggregation. See [Backend Development Setup](docs/backend-setup.md)
 for local startup, migrations, SQL assertions, and generated types. Local reference
 files in `*LocalDocs-dont-commit/` are excluded from Git.
+
+Type generation is deferred until approved real-data import; the checked-in
+database types still reflect v3. Generate them before implementing new typed v4
+queries. Check-in +10 point awarding is deferred for this round.
 
 Setup references: [Next.js installation](https://nextjs.org/docs/app/getting-started/installation) and [Tailwind CSS with Next.js](https://tailwindcss.com/docs/installation/framework-guides/nextjs).
 
@@ -413,7 +421,7 @@ The implementation order and release boundary for participation and reward featu
 
 ## Project Status
 
-**Status:** Home UI and Auth UI/backend exist. The ten-table floor schema is
+**Status:** Home UI and Auth UI/backend exist. The nine-table v4 schema is
 implemented and verified locally; product data APIs and check-in/summary logic
 remain work in progress. Local verification does not imply a Cloud deployment.
 
