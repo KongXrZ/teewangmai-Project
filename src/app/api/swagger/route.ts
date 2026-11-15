@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { locationPaths, locationSchemas } from '@/features/locations/api/openapi';
 
 export async function GET() {
   let sessionCookie = 'sb-project-ref-auth-token';
@@ -19,6 +20,7 @@ export async function GET() {
       },
     ],
     components: {
+      schemas: locationSchemas,
       securitySchemes: {
         cookieAuth: {
           type: 'apiKey',
@@ -29,6 +31,7 @@ export async function GET() {
       },
     },
     tags: [
+      { name: 'Locations', description: 'Public active building and floor catalog' },
       {
         name: 'Auth',
         description: 'Authentication Endpoints',
@@ -43,6 +46,7 @@ export async function GET() {
       },
     ],
     paths: {
+      ...locationPaths,
       '/api/health': {
         get: {
           tags: ['Health'],
