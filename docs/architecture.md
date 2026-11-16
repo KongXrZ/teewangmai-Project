@@ -145,7 +145,10 @@ unavailable states; the Achievements adapter targets a badge API not yet impleme
 These pages do not demonstrate completed data integration or successful exchanges.
 The nine-table v4 schema and category-array migration are applied locally. The 35
 approved buildings and 224 floors are imported, with S7 inactive. Hours/reward/badge data
-remains pending. Product APIs, verified check-ins,
+remains pending. Temporary weekday schedules are seeded. Building/floor catalog
+APIs are implemented in BE-005, with public active-only RLS reads and no public
+QR-column access; see [Location API](location-api.md). FE integration, other
+product APIs, verified check-ins,
 scheduled summaries, reward transactions and badge awarding remain separate work.
 Check-in +10 awarding is deferred. No hosted deployment is made by these changes.
 See [Backend Handoff](backend-handoff.md) and [Backend Setup](backend-setup.md). Local

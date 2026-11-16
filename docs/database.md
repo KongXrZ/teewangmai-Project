@@ -135,12 +135,17 @@ from metadata `name`, then `full_name`, then email prefix. Email is copied at
 creation; later Auth email synchronization is not implemented. Avatar URLs are
 null or HTTP(S). This migration does not modify Auth.
 
-All nine tables have RLS. Clients can read only their own profile and update
+All nine tables have RLS. Clients can read only their own user profile and update
 only name/avatar. Ownership policies and column grants protect points/email/
-identity. Other eight tables have no client policies. New `floor_hours` table/
-sequence grants are revoked from public, anon and authenticated, and granted to
-`service_role` for trusted server use. Never expose that key in browser code.
-Future access rules must not let direct writes bypass trusted business checks.
+identity. BE-005 additionally permits anon/authenticated SELECT on active
+buildings, active floors of active buildings, and their schedules (including
+disabled schedule rows so closed differs from unknown). Floor reads are limited
+to catalog columns; `qr_code_id` is not granted. There are no public catalog
+writes or sequence grants. The other five application tables still have no
+client policies. `search_locations` is a parameterized SECURITY INVOKER function
+subject to the caller's RLS, not a privileged bypass. See [Location API](location-api.md).
+Trusted server access can use `service_role`; never expose that key in browser
+code. Future access rules must not let direct writes bypass business checks.
 
 ## Forward migration and handoff
 
