@@ -29,3 +29,5 @@ export type CrowdReportSubmission =
   | { status: "error"; reason: CrowdReportErrorReason; message?: string };
 
 export type CrowdReportSubmitHandler = (level: CrowdLevel) => void;
+
+export type CrowdLevelConfirmHandler = (level: CrowdLevel) => void;

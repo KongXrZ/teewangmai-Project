@@ -3,9 +3,11 @@ import test from "node:test";
 
 import {
   crowdLevels,
+  decideConfirmLevel,
   decideSubmit,
   formatRecordedAt,
   getCrowdLevelLabel,
+  getCrowdReportStep,
   getCrowdReportView,
   getErrorCopy,
   isCrowdLevel,
@@ -167,4 +169,16 @@ test("unresolved building keeps the level picker editable", () => {
   const view = getCrowdReportView({ status: "idle" }, false);
   assert.equal(view.locked, false);
   assert.equal(view.pending, false);
+});
+
+test("steps go select, then scan after confirming, then ready with context", () => {
+  assert.equal(getCrowdReportStep(false, false), "select");
+  assert.equal(getCrowdReportStep(false, true), "scan");
+  assert.equal(getCrowdReportStep(true, true), "ready");
+  assert.equal(getCrowdReportStep(true, false), "ready");
+});
+
+test("confirming needs a level before scanning", () => {
+  assert.deepEqual(decideConfirmLevel(null), { type: "invalid" });
+  assert.deepEqual(decideConfirmLevel(2), { type: "confirm", level: 2 });
 });

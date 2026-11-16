@@ -1,15 +1,29 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import CircularProgress from "@mui/material/CircularProgress";
 import ErrorOutlineRounded from "@mui/icons-material/ErrorOutlineRounded";
 import RefreshRounded from "@mui/icons-material/RefreshRounded";
 import WhereToVoteOutlined from "@mui/icons-material/WhereToVoteOutlined";
 import { BottomNavigation } from "@/components/layout/bottom-navigation";
 import { BuildingImage } from "@/features/locations/components/building-card";
-import { decideSubmit, getCrowdReportView } from "../crowd-report";
+import {
+  decideConfirmLevel,
+  decideSubmit,
+  getCrowdReportStep,
+  getCrowdReportView,
+  type CrowdReportStep,
+} from "../crowd-report";
 import type {
   CrowdLevel,
+  CrowdLevelConfirmHandler,
   CrowdReportContext,
   CrowdReportSubmission,
   CrowdReportSubmitHandler,
@@ -20,26 +34,38 @@ import { CrowdReportSuccessDialog } from "./crowd-report-success-dialog";
 export interface CrowdReportFormProps {
   context: CrowdReportContext | null;
   submission: CrowdReportSubmission;
+  onConfirmLevel?: CrowdLevelConfirmHandler;
   onSubmit: CrowdReportSubmitHandler;
   onDone: () => void;
   onViewHistory?: () => void;
+  scanner?: ReactNode;
   initialLevel?: CrowdLevel | null;
 }
+
+const primaryButton =
+  "mx-auto flex h-[58px] w-full max-w-[358px] cursor-pointer touch-manipulation items-center justify-center gap-2.5 rounded-[14px] border-0 bg-[#ea580c] px-4 text-lg font-semibold text-white transition-colors duration-150 [-webkit-tap-highlight-color:transparent] hover:bg-[#d24f0b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#081828] active:bg-[#bb460a] aria-disabled:cursor-not-allowed aria-disabled:bg-[#f0a27f] aria-disabled:hover:bg-[#f0a27f]";
+
+const placeholderBox =
+  "flex aspect-[428/300] w-full items-center justify-center rounded-[10px] border border-[#d9d9d9] bg-[#f7f7f7] px-6 text-center text-[13px] leading-5 text-[#878787]";
 
 export function CrowdReportForm({
   context,
   submission,
+  onConfirmLevel,
   onSubmit,
   onDone,
   onViewHistory,
+  scanner,
   initialLevel = null,
 }: CrowdReportFormProps) {
   const [level, setLevel] = useState<CrowdLevel | null>(initialLevel);
+  const [levelConfirmed, setLevelConfirmed] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
   const submitLockRef = useRef(false);
   const levelInputRef = useRef<HTMLInputElement>(null);
   const validationId = useId();
   const contextReady = context !== null;
+  const step = getCrowdReportStep(contextReady, levelConfirmed);
   const view = getCrowdReportView(submission, contextReady);
   const invalid = showValidation && level === null;
 
@@ -52,8 +78,26 @@ export function CrowdReportForm({
     setShowValidation(false);
   }
 
+  function showLevelRequired() {
+    setShowValidation(true);
+    levelInputRef.current?.focus();
+  }
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (step === "scan") {
+      return;
+    }
+    if (step === "select") {
+      const decision = decideConfirmLevel(level);
+      if (decision.type === "invalid") {
+        showLevelRequired();
+        return;
+      }
+      setLevelConfirmed(true);
+      onConfirmLevel?.(decision.level);
+      return;
+    }
     if (submitLockRef.current) {
       return;
     }
@@ -62,8 +106,7 @@ export function CrowdReportForm({
       return;
     }
     if (decision.type === "invalid") {
-      setShowValidation(true);
-      levelInputRef.current?.focus();
+      showLevelRequired();
       return;
     }
     submitLockRef.current = true;
@@ -93,12 +136,7 @@ export function CrowdReportForm({
           aria-busy={!contextReady || undefined}
           className="mt-3 flex flex-col gap-3 px-1.5"
         >
-          <BuildingImage
-            imageUrl={context?.imageUrl ?? null}
-            sizes="(max-width: 476px) 100vw, 432px"
-            fallbackSize={64}
-            className="aspect-[428/300] w-full border border-[#d9d9d9] !bg-[#f7f7f7]"
-          />
+          <StepVisual step={step} context={context} scanner={scanner} />
           {context ? (
             <dl className="flex min-h-[50px] flex-col items-center justify-center rounded-full bg-[#ea580c] px-5 py-2 text-center text-white">
               <dt className="sr-only">อาคาร</dt>
@@ -147,7 +185,7 @@ export function CrowdReportForm({
               role="alert"
               className="-mt-2 text-center text-sm leading-5 text-[#b3261e]"
             >
-              กรุณาเลือกระดับความหนาแน่นก่อนเช็คอิน
+              กรุณาเลือกระดับความหนาแน่น
             </p>
           )}
 
@@ -174,25 +212,33 @@ export function CrowdReportForm({
             {view.pending ? "กำลังส่งข้อมูลความหนาแน่น" : ""}
           </span>
 
-          <button
-            type="submit"
-            aria-disabled={!view.canSubmit || undefined}
-            className="mx-auto flex h-[58px] w-full max-w-[358px] cursor-pointer touch-manipulation items-center justify-center gap-2.5 rounded-[14px] border-0 bg-[#ea580c] px-4 text-lg font-semibold text-white transition-colors duration-150 [-webkit-tap-highlight-color:transparent] hover:bg-[#d24f0b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#081828] active:bg-[#bb460a] aria-disabled:cursor-not-allowed aria-disabled:bg-[#f0a27f] aria-disabled:hover:bg-[#f0a27f]"
-          >
-            {view.pending ? (
-              <CircularProgress
-                aria-hidden="true"
-                size={20}
-                thickness={5}
-                sx={{ color: "white" }}
-              />
-            ) : view.error?.canRetry ? (
-              <RefreshRounded aria-hidden="true" sx={{ fontSize: 24 }} />
-            ) : (
-              <WhereToVoteOutlined aria-hidden="true" sx={{ fontSize: 24 }} />
-            )}
-            {view.submitLabel}
-          </button>
+          {step === "select" && (
+            <button type="submit" className={primaryButton}>
+              ยืนยันความหนาแน่น
+            </button>
+          )}
+
+          {step === "ready" && (
+            <button
+              type="submit"
+              aria-disabled={!view.canSubmit || undefined}
+              className={primaryButton}
+            >
+              {view.pending ? (
+                <CircularProgress
+                  aria-hidden="true"
+                  size={20}
+                  thickness={5}
+                  sx={{ color: "white" }}
+                />
+              ) : view.error?.canRetry ? (
+                <RefreshRounded aria-hidden="true" sx={{ fontSize: 24 }} />
+              ) : (
+                <WhereToVoteOutlined aria-hidden="true" sx={{ fontSize: 24 }} />
+              )}
+              {view.submitLabel}
+            </button>
+          )}
         </form>
       </main>
       <BottomNavigation selected="scan" />
@@ -202,5 +248,36 @@ export function CrowdReportForm({
         onViewHistory={onViewHistory}
       />
     </>
+  );
+}
+
+function StepVisual({
+  step,
+  context,
+  scanner,
+}: {
+  step: CrowdReportStep;
+  context: CrowdReportContext | null;
+  scanner?: ReactNode;
+}) {
+  if (step === "ready") {
+    return (
+      <BuildingImage
+        imageUrl={context?.imageUrl ?? null}
+        sizes="(max-width: 476px) 100vw, 432px"
+        fallbackSize={64}
+        className="aspect-[428/300] w-full border border-[#d9d9d9] !bg-[#f7f7f7]"
+      />
+    );
+  }
+  if (step === "scan" && scanner !== undefined) {
+    return <div className="w-full">{scanner}</div>;
+  }
+  return (
+    <p className={placeholderBox}>
+      {step === "scan"
+        ? "กรุณาสแกน QR Code ประจำชั้น"
+        : "กรุณาเลือกความหนาแน่นก่อนสแกน"}
+    </p>
   );
 }

@@ -164,6 +164,30 @@ export function decideSubmit(
   return { type: "submit", level };
 }
 
+export type CrowdReportStep = "select" | "scan" | "ready";
+
+export function getCrowdReportStep(
+  contextReady: boolean,
+  levelConfirmed: boolean,
+): CrowdReportStep {
+  if (contextReady) {
+    return "ready";
+  }
+  return levelConfirmed ? "scan" : "select";
+}
+
+export type CrowdLevelConfirmDecision =
+  { type: "confirm"; level: CrowdLevel } | { type: "invalid" };
+
+export function decideConfirmLevel(
+  level: CrowdLevel | null,
+): CrowdLevelConfirmDecision {
+  if (level === null) {
+    return { type: "invalid" };
+  }
+  return { type: "confirm", level };
+}
+
 const dateFormatter = new Intl.DateTimeFormat("th-TH", {
   day: "numeric",
   month: "short",
