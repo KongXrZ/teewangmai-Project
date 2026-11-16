@@ -38,7 +38,7 @@ export interface CrowdEstimate {
 }
 
 export interface FloorStatsModel extends CrowdEstimate {
-  openingHours: OpeningHours | null;
+  openingHours: OpeningHours | "closed" | null;
 }
 
 export type FloorCrowdState =
@@ -58,7 +58,7 @@ export interface FloorDetailItem {
 export interface FloorModel {
   id: FloorId;
   label: string;
-  openingHours: OpeningHours | null;
+  openingHours: OpeningHours | "closed" | null;
   crowd: FloorCrowdState;
   details: FloorDetailItem[];
 }

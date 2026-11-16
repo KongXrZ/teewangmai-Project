@@ -24,7 +24,10 @@ interface ApiBuilding {
 interface ApiFloor {
   id: number;
   floor_name: string;
-  availability: { today_intervals: ApiInterval[] };
+  availability: {
+    status: "open" | "closed" | "unknown";
+    today_intervals: ApiInterval[];
+  };
 }
 
 interface ApiPagination {
@@ -53,18 +56,21 @@ export function toBuildingCard(building: ApiBuilding): BuildingCardModel {
   };
 }
 
-function toOpeningHours(intervals: ApiInterval[]): OpeningHours | null {
-  if (intervals.length !== 1) {
-    return null;
+function toOpeningHours({
+  status,
+  today_intervals: intervals,
+}: ApiFloor["availability"]): OpeningHours | "closed" | null {
+  if (intervals.length === 1) {
+    return { open: intervals[0].open_time, close: intervals[0].close_time };
   }
-  return { open: intervals[0].open_time, close: intervals[0].close_time };
+  return intervals.length === 0 && status === "closed" ? "closed" : null;
 }
 
 export function toFloor(floor: ApiFloor): FloorModel {
   return {
     id: String(floor.id),
     label: floor.floor_name,
-    openingHours: toOpeningHours(floor.availability.today_intervals),
+    openingHours: toOpeningHours(floor.availability),
     crowd: {
       status: "ready",
       level: null,
