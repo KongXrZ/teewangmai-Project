@@ -5,9 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { CrowdLevelFilterValue } from "@/components/ui/crowd-level-filter";
 import type {
   BuildingCardModel,
+  BuildingId,
+  ExpandedBuildingModel,
   LocationListState,
 } from "./location-view-models";
 import type { BuildingPage, LocationDataSource } from "./location-data-source";
+import { locationApiSource } from "./location-api-source";
 import { LocationListPage } from "./location-list-page";
 
 const searchDelayMs = 300;
@@ -37,7 +40,7 @@ export interface LocationListContainerProps {
 }
 
 export function LocationListContainer({
-  dataSource,
+  dataSource = locationApiSource,
 }: LocationListContainerProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -52,23 +55,63 @@ export function LocationListContainer({
   const [crowdFilter, setCrowdFilter] = useState(initialCrowdFilter);
   const [listResult, setListResult] = useState<ListResult>();
   const [moreRequest, setMoreRequest] = useState<MoreRequest>();
+  const [expandedBuilding, setExpandedBuilding] =
+    useState<ExpandedBuildingModel>();
   const moreControllerRef = useRef<AbortController | null>(null);
+  const floorsControllerRef = useRef<AbortController | null>(null);
 
   const listKey = JSON.stringify([crowdFilter, debouncedSearch]);
   const crowdLevel = crowdFilter === "all" ? null : crowdFilter;
+  const filterUnavailable =
+    crowdLevel !== null && !dataSource.supportsCrowdFilter;
   const currentPage = listResult?.key === listKey ? listResult.page : null;
   const nextCursor = currentPage?.nextCursor ?? null;
   const moreForPage =
     currentPage && moreRequest?.page === currentPage ? moreRequest : undefined;
   const loadingMore = moreForPage !== undefined && !moreForPage.failed;
 
+  function collapseBuilding() {
+    floorsControllerRef.current?.abort();
+    setExpandedBuilding(undefined);
+  }
+
+  function handleSearchChange(value: string) {
+    setSearch(value);
+    collapseBuilding();
+  }
+
   function handleCrowdFilterChange(value: CrowdLevelFilterValue) {
     setCrowdFilter(value);
     setDebouncedSearch(search.trim());
+    collapseBuilding();
+  }
+
+  function handleSelectBuilding(buildingId: BuildingId) {
+    floorsControllerRef.current?.abort();
+    const controller = new AbortController();
+    floorsControllerRef.current = controller;
+    setExpandedBuilding({ buildingId, floors: { status: "loading" } });
+    Promise.resolve()
+      .then(() => dataSource.listFloors(buildingId, controller.signal))
+      .then(
+        (floors) => {
+          if (!controller.signal.aborted) {
+            setExpandedBuilding({
+              buildingId,
+              floors: { status: "ready", floors },
+            });
+          }
+        },
+        () => {
+          if (!controller.signal.aborted) {
+            setExpandedBuilding({ buildingId, floors: { status: "error" } });
+          }
+        },
+      );
   }
 
   function handleLoadMore() {
-    if (!dataSource || !currentPage || nextCursor === null || moreForPage) {
+    if (filterUnavailable || !currentPage || nextCursor === null || moreForPage) {
       return;
     }
     const fromPage = currentPage;
@@ -114,7 +157,13 @@ export function LocationListContainer({
       );
   }
 
-  useEffect(() => () => moreControllerRef.current?.abort(), []);
+  useEffect(
+    () => () => {
+      moreControllerRef.current?.abort();
+      floorsControllerRef.current?.abort();
+    },
+    [],
+  );
 
   useEffect(() => {
     const timer = setTimeout(
@@ -140,10 +189,10 @@ export function LocationListContainer({
   }, [debouncedSearch, crowdFilter]);
 
   useEffect(() => {
-    if (!dataSource) {
+    moreControllerRef.current?.abort();
+    if (filterUnavailable) {
       return;
     }
-    moreControllerRef.current?.abort();
     const controller = new AbortController();
     const key = listKey;
     Promise.resolve()
@@ -166,10 +215,10 @@ export function LocationListContainer({
         },
       );
     return () => controller.abort();
-  }, [dataSource, listKey, debouncedSearch, crowdLevel]);
+  }, [dataSource, listKey, debouncedSearch, crowdLevel, filterUnavailable]);
 
   function toListState(): LocationListState {
-    if (!dataSource) {
+    if (filterUnavailable) {
       return { status: "unavailable" };
     }
     if (!listResult) {
@@ -194,10 +243,14 @@ export function LocationListContainer({
       state={toListState()}
       initialQuery={initialSearch}
       initialCrowdFilter={initialCrowdFilter}
-      onSearchChange={setSearch}
+      onSearchChange={handleSearchChange}
       onCrowdFilterChange={handleCrowdFilterChange}
-      onSelectBuilding={(id) =>
-        router.push(`/locations/${encodeURIComponent(id)}`)
+      onSelectBuilding={handleSelectBuilding}
+      expandedBuilding={expandedBuilding}
+      onViewBuildingDetail={(id) =>
+        router.push(
+          `/locations/${encodeURIComponent(id)}${window.location.search}`,
+        )
       }
       onLoadMore={
         nextCursor !== null && !moreForPage?.failed ? handleLoadMore : undefined
