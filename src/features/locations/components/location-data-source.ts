@@ -1,4 +1,9 @@
-import type { BuildingCardModel, CrowdLevel } from "./location-view-models";
+import type {
+  BuildingCardModel,
+  BuildingId,
+  CrowdLevel,
+  FloorModel,
+} from "./location-view-models";
 
 export interface BuildingQuery {
   search: string;
@@ -13,8 +18,10 @@ export interface BuildingPage {
 }
 
 export interface LocationDataSource {
+  supportsCrowdFilter: boolean;
   listBuildings(
     query: BuildingQuery,
     signal: AbortSignal,
   ): Promise<BuildingPage>;
+  listFloors(buildingId: BuildingId, signal: AbortSignal): Promise<FloorModel[]>;
 }
