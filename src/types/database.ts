@@ -360,6 +360,20 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      get_crowd_summaries: {
+        Args: { p_floor_id?: number; p_location_id?: number };
+        Returns: {
+          average_score: number;
+          calculated_at: string;
+          capacity: number;
+          density_percent: number;
+          floor_id: number;
+          floor_name: string;
+          latest_report_at: string;
+          location_id: number;
+          report_count: number;
+        }[];
+      };
     };
     Enums: {
       [_ in never]: never;
