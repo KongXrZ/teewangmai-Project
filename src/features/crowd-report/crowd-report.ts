@@ -94,7 +94,16 @@ export interface CrowdReportView {
 
 export function getCrowdReportView(
   submission: CrowdReportSubmission,
+  contextReady = true,
 ): CrowdReportView {
+  const view = getSubmissionView(submission);
+  if (contextReady) {
+    return view;
+  }
+  return { ...view, canSubmit: false };
+}
+
+function getSubmissionView(submission: CrowdReportSubmission): CrowdReportView {
   switch (submission.status) {
     case "idle":
       return {
@@ -144,8 +153,9 @@ export type CrowdReportSubmitDecision =
 export function decideSubmit(
   level: CrowdLevel | null,
   submission: CrowdReportSubmission,
+  contextReady = true,
 ): CrowdReportSubmitDecision {
-  if (!getCrowdReportView(submission).canSubmit) {
+  if (!getCrowdReportView(submission, contextReady).canSubmit) {
     return { type: "blocked" };
   }
   if (level === null) {

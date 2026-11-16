@@ -148,3 +148,23 @@ test("formats the recorded time in Thai Buddhist calendar, Bangkok time", () => 
 test("invalid recorded time is not shown", () => {
   assert.equal(formatRecordedAt("not-a-date"), null);
 });
+
+test("unresolved building blocks submit until the caller sends it", () => {
+  for (const submission of [
+    { status: "idle" },
+    { status: "error", reason: "network" },
+  ]) {
+    assert.equal(getCrowdReportView(submission, false).canSubmit, false);
+    assert.deepEqual(decideSubmit(3, submission, false), { type: "blocked" });
+    assert.deepEqual(decideSubmit(3, submission, true), {
+      type: "submit",
+      level: 3,
+    });
+  }
+});
+
+test("unresolved building keeps the level picker editable", () => {
+  const view = getCrowdReportView({ status: "idle" }, false);
+  assert.equal(view.locked, false);
+  assert.equal(view.pending, false);
+});

@@ -18,7 +18,7 @@ import { CrowdLevelPicker } from "./crowd-level-picker";
 import { CrowdReportSuccessDialog } from "./crowd-report-success-dialog";
 
 export interface CrowdReportFormProps {
-  context: CrowdReportContext;
+  context: CrowdReportContext | null;
   submission: CrowdReportSubmission;
   onSubmit: CrowdReportSubmitHandler;
   onDone: () => void;
@@ -39,7 +39,8 @@ export function CrowdReportForm({
   const submitLockRef = useRef(false);
   const levelInputRef = useRef<HTMLInputElement>(null);
   const validationId = useId();
-  const view = getCrowdReportView(submission);
+  const contextReady = context !== null;
+  const view = getCrowdReportView(submission, contextReady);
   const invalid = showValidation && level === null;
 
   useEffect(() => {
@@ -56,7 +57,7 @@ export function CrowdReportForm({
     if (submitLockRef.current) {
       return;
     }
-    const decision = decideSubmit(level, submission);
+    const decision = decideSubmit(level, submission, contextReady);
     if (decision.type === "blocked") {
       return;
     }
@@ -89,24 +90,40 @@ export function CrowdReportForm({
 
         <section
           aria-label="สถานที่ที่กำลังเช็คอิน"
+          aria-busy={!contextReady || undefined}
           className="mt-3 flex flex-col gap-3 px-1.5"
         >
           <BuildingImage
-            imageUrl={context.imageUrl}
+            imageUrl={context?.imageUrl ?? null}
             sizes="(max-width: 476px) 100vw, 432px"
             fallbackSize={64}
             className="aspect-[428/300] w-full border border-[#d9d9d9] !bg-[#f7f7f7]"
           />
-          <dl className="flex min-h-[50px] flex-col items-center justify-center rounded-full bg-[#ea580c] px-5 py-2 text-center text-white">
-            <dt className="sr-only">อาคาร</dt>
-            <dd className="text-[clamp(1.0625rem,5vw,1.25rem)] leading-snug font-bold break-words">
-              {context.buildingName}
-            </dd>
-            <dt className="sr-only">ชั้น</dt>
-            <dd className="text-sm leading-5 font-medium text-white/90">
-              {context.floorLabel}
-            </dd>
-          </dl>
+          {context ? (
+            <dl className="flex min-h-[50px] flex-col items-center justify-center rounded-full bg-[#ea580c] px-5 py-2 text-center text-white">
+              <dt className="sr-only">อาคาร</dt>
+              <dd className="text-[clamp(1.0625rem,5vw,1.25rem)] leading-snug font-bold break-words">
+                {context.buildingName}
+              </dd>
+              <dt className="sr-only">ชั้น</dt>
+              <dd className="text-sm leading-5 font-medium text-white/90">
+                {context.floorLabel}
+              </dd>
+            </dl>
+          ) : (
+            <p
+              role="status"
+              className="flex min-h-[50px] items-center justify-center gap-2.5 rounded-full bg-[#ff8a5c] px-5 py-2 text-[clamp(1.0625rem,5vw,1.25rem)] leading-snug font-bold text-white"
+            >
+              <CircularProgress
+                aria-hidden="true"
+                size={20}
+                thickness={5}
+                sx={{ color: "white" }}
+              />
+              กำลังตรวจสอบ
+            </p>
+          )}
         </section>
 
         <form
