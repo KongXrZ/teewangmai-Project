@@ -17,3 +17,13 @@ body {
   padding-bottom: max(2rem, env(safe-area-inset-bottom, 0px));
   padding-left: max(1rem, env(safe-area-inset-left, 0px));
 }
+
+@keyframes qr-scan-line {
+  0%,
+  100% {
+    top: 12%;
+  }
+  50% {
+    top: 88%;
+  }
+}
