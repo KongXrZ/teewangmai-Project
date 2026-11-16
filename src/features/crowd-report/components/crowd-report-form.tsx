@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useId,
-  useRef,
-  useState,
-  type FormEvent,
-  type ReactNode,
-} from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import CircularProgress from "@mui/material/CircularProgress";
 import ErrorOutlineRounded from "@mui/icons-material/ErrorOutlineRounded";
 import RefreshRounded from "@mui/icons-material/RefreshRounded";
@@ -38,7 +31,6 @@ export interface CrowdReportFormProps {
   onSubmit: CrowdReportSubmitHandler;
   onDone: () => void;
   onViewHistory?: () => void;
-  scanner?: ReactNode;
   initialLevel?: CrowdLevel | null;
 }
 
@@ -55,7 +47,6 @@ export function CrowdReportForm({
   onSubmit,
   onDone,
   onViewHistory,
-  scanner,
   initialLevel = null,
 }: CrowdReportFormProps) {
   const [level, setLevel] = useState<CrowdLevel | null>(initialLevel);
@@ -136,7 +127,7 @@ export function CrowdReportForm({
           aria-busy={!contextReady || undefined}
           className="mt-3 flex flex-col gap-3 px-1.5"
         >
-          <StepVisual step={step} context={context} scanner={scanner} />
+          <StepVisual step={step} context={context} />
           {context ? (
             <dl className="flex min-h-[50px] flex-col items-center justify-center rounded-full bg-[#ea580c] px-5 py-2 text-center text-white">
               <dt className="sr-only">อาคาร</dt>
@@ -254,11 +245,9 @@ export function CrowdReportForm({
 function StepVisual({
   step,
   context,
-  scanner,
 }: {
   step: CrowdReportStep;
   context: CrowdReportContext | null;
-  scanner?: ReactNode;
 }) {
   if (step === "ready") {
     return (
@@ -269,9 +258,6 @@ function StepVisual({
         className="aspect-[428/300] w-full border border-[#d9d9d9] !bg-[#f7f7f7]"
       />
     );
-  }
-  if (step === "scan" && scanner !== undefined) {
-    return <div className="w-full">{scanner}</div>;
   }
   return (
     <p className={placeholderBox}>
