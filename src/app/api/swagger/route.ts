@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { locationPaths, locationSchemas } from '@/features/locations/api/openapi';
 import { crowdPaths } from '@/features/crowd/openapi';
+import { badgePaths } from '@/features/achievements/server/openapi';
 
 export async function GET() {
   let sessionCookie = 'sb-project-ref-auth-token';
@@ -34,6 +35,7 @@ export async function GET() {
     tags: [
       { name: 'Locations', description: 'Public active building and floor catalog' },
       { name: 'Crowd', description: 'Scheduled floor and building crowd summaries' },
+      { name: 'Badges', description: 'Own badge collection; awarding is server-only' },
       {
         name: 'Auth',
         description: 'Authentication Endpoints',
@@ -50,6 +52,7 @@ export async function GET() {
     paths: {
       ...locationPaths,
       ...crowdPaths,
+      ...badgePaths,
       '/api/health': {
         get: {
           tags: ['Health'],
