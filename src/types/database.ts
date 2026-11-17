@@ -195,8 +195,6 @@ export type Database = {
           redeemed_at: string;
           reward_id: number;
           status: string;
-          use_code: string | null;
-          use_key: string | null;
           used_at: string | null;
           used_points: number;
           user_id: number;
@@ -208,8 +206,6 @@ export type Database = {
           redeemed_at?: string;
           reward_id: number;
           status?: string;
-          use_code?: string | null;
-          use_key?: string | null;
           used_at?: string | null;
           used_points: number;
           user_id: number;
@@ -221,8 +217,6 @@ export type Database = {
           redeemed_at?: string;
           reward_id?: number;
           status?: string;
-          use_code?: string | null;
-          use_key?: string | null;
           used_at?: string | null;
           used_points?: number;
           user_id?: number;
@@ -431,15 +425,6 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
-      };
-      use_voucher: {
-        Args: { p_redemption_id: number; p_use_key: string };
-        Returns: {
-          id: number;
-          outcome: string;
-          use_code: string;
-          used_at: string;
-        }[];
       };
     };
     Enums: {

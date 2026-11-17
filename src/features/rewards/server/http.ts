@@ -11,7 +11,6 @@ const errors = {
   limit_reached: { status: 409, message: "แลกรางวัลนี้ครบจำนวนสิทธิ์แล้ว" },
   upcoming: { status: 409, message: "รางวัลนี้ยังไม่เปิดให้แลก" },
   expired: { status: 409, message: "หมดเขตแล้ว" },
-  already_used: { status: 409, message: "คูปองนี้ใช้ไปแล้ว" },
   key_conflict: { status: 422, message: "Idempotency-Key นี้ถูกใช้กับรางวัลอื่นแล้ว" },
   unavailable: { status: 503, message: "ระบบรางวัลไม่พร้อมใช้งาน โปรดลองใหม่อีกครั้ง" },
 } as const;

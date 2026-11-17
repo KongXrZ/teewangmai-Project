@@ -9,13 +9,7 @@ alter table public.rewards
 
 alter table public.redemptions
   add column idempotency_key uuid not null default gen_random_uuid(),
-  add column use_code text,
-  add column use_key uuid,
-  add constraint redemptions_user_idempotency_key unique (user_id, idempotency_key),
-  add constraint redemptions_use_code_key unique (use_code),
-  add constraint redemptions_use_code_check check (
-    (use_code is null and use_key is null) or (used_at is not null and use_code is not null and use_key is not null)
-  );
+  add constraint redemptions_user_idempotency_key unique (user_id, idempotency_key);
 
 create function private.reward_availability(
   p_reward public.rewards,
@@ -153,59 +147,12 @@ language sql stable security definer set search_path = '' as $$
   order by d.redeemed_at desc, d.id desc;
 $$;
 
-create function public.use_voucher(p_redemption_id integer, p_use_key uuid)
-returns table (outcome text, id integer, used_at timestamptz, use_code text)
-language plpgsql volatile security definer set search_path = '' as $$
-#variable_conflict use_column
-declare
-  v_user_id integer;
-  v_row public.redemptions%rowtype;
-begin
-  if p_redemption_id is null or p_use_key is null then
-    return query select 'validation'::text, null::integer, null::timestamptz, null::text;
-    return;
-  end if;
-
-  select u.id into v_user_id from public.users u
-  where u.auth_id = (select auth.uid());
-  if not found then
-    return query select 'unauthorized'::text, null::integer, null::timestamptz, null::text;
-    return;
-  end if;
-
-  update public.redemptions d
-  set used_at = now(), use_code = encode(extensions.gen_random_bytes(16), 'hex'),
-    use_key = p_use_key
-  where d.id = p_redemption_id and d.user_id = v_user_id
-    and d.used_at is null and now() < d.expires_at
-  returning d.* into v_row;
-  if found then
-    return query select 'used'::text, v_row.id, v_row.used_at, v_row.use_code;
-    return;
-  end if;
-
-  select * into v_row from public.redemptions d
-  where d.id = p_redemption_id and d.user_id = v_user_id;
-  if not found then
-    return query select 'not_found'::text, null::integer, null::timestamptz, null::text;
-  elsif v_row.used_at is not null and v_row.use_key = p_use_key then
-    return query select 'used'::text, v_row.id, v_row.used_at, v_row.use_code;
-  elsif v_row.used_at is not null then
-    return query select 'already_used'::text, v_row.id, v_row.used_at, null::text;
-  else
-    return query select 'expired'::text, v_row.id, null::timestamptz, null::text;
-  end if;
-end;
-$$;
-
 revoke all on function public.get_reward_catalog() from public, anon, authenticated, service_role;
 revoke all on function public.redeem_reward(integer, uuid) from public, anon, authenticated, service_role;
 revoke all on function public.get_my_vouchers() from public, anon, authenticated, service_role;
-revoke all on function public.use_voucher(integer, uuid) from public, anon, authenticated, service_role;
 grant execute on function public.get_reward_catalog() to authenticated;
 grant execute on function public.redeem_reward(integer, uuid) to authenticated;
 grant execute on function public.get_my_vouchers() to authenticated;
-grant execute on function public.use_voucher(integer, uuid) to authenticated;
 
 notify pgrst, 'reload schema';
 commit;

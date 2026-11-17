@@ -32,16 +32,15 @@ do $$
 begin
   if has_function_privilege('anon', 'public.redeem_reward(integer, uuid)', 'execute')
     or has_function_privilege('anon', 'public.get_reward_catalog()', 'execute')
-    or has_function_privilege('anon', 'public.get_my_vouchers()', 'execute')
-    or has_function_privilege('anon', 'public.use_voucher(integer, uuid)', 'execute') then
+    or has_function_privilege('anon', 'public.get_my_vouchers()', 'execute') then
     raise exception 'anon can execute reward functions';
   end if;
   if has_function_privilege('authenticated',
       'private.reward_availability(public.rewards, integer, bigint)', 'execute') then
     raise exception 'authenticated can execute the private availability helper';
   end if;
-  if pg_get_function_result('public.get_my_vouchers()'::regprocedure) ~ 'use_code|use_key|idempotency_key' then
-    raise exception 'voucher list exposes use_code';
+  if pg_get_function_result('public.get_my_vouchers()'::regprocedure) ~ 'idempotency_key' then
+    raise exception 'voucher list exposes idempotency keys';
   end if;
 end;
 $$;
@@ -53,7 +52,6 @@ set local role authenticated;
 do $$
 begin
   if (select outcome from public.redeem_reward(current_setting('test.stack')::integer, gen_random_uuid())) <> 'unauthorized'
-    or (select outcome from public.use_voucher(1, gen_random_uuid())) <> 'unauthorized'
     or exists (select 1 from public.get_reward_catalog())
     or exists (select 1 from public.get_my_vouchers()) then
     raise exception 'unknown user must be unauthorized and see nothing';
@@ -71,7 +69,6 @@ declare
   v_first record;
   v_result record;
   v_key uuid := gen_random_uuid();
-  v_use_key uuid := gen_random_uuid();
 begin
   if exists (select 1 from public.rewards) then
     raise exception 'authenticated can read rewards directly';
@@ -125,23 +122,6 @@ begin
     raise exception 'voucher list is wrong: %', (select json_agg(row_to_json(v)) from public.get_my_vouchers() v);
   end if;
 
-  if (select outcome from public.use_voucher(v_first.redemption_id, null)) <> 'validation' then
-    raise exception 'use without a key must be rejected';
-  end if;
-  select * into v_result from public.use_voucher(v_first.redemption_id, v_use_key);
-  if v_result.outcome <> 'used' or v_result.use_code !~ '^[0-9a-f]{32}$' then
-    raise exception 'first use must return a one-time code: %', row_to_json(v_result);
-  end if;
-  if (select use_code from public.use_voucher(v_first.redemption_id, v_use_key)) <> v_result.use_code then
-    raise exception 'retrying the same use request must return the same code';
-  end if;
-  select * into v_result from public.use_voucher(v_first.redemption_id, gen_random_uuid());
-  if v_result.outcome <> 'already_used' or v_result.use_code is not null then
-    raise exception 'a new use request must not return the code again: %', row_to_json(v_result);
-  end if;
-  if (select status from public.get_my_vouchers() where id = v_first.redemption_id) <> 'used' then
-    raise exception 'used voucher must be listed as used';
-  end if;
   perform set_config('test.voucher', v_first.redemption_id::text, true);
 end;
 $$;
@@ -151,12 +131,11 @@ select set_config('request.jwt.claims',
 
 do $$
 begin
-  if (select outcome from public.use_voucher(current_setting('test.voucher')::integer, gen_random_uuid())) <> 'not_found'
-    or exists (select 1 from public.get_my_vouchers())
+  if exists (select 1 from public.get_my_vouchers())
     or (select outcome from public.redeem_reward(current_setting('test.last')::integer, gen_random_uuid())) <> 'out_of_stock'
     or (select outcome from public.redeem_reward(current_setting('test.stack')::integer, gen_random_uuid())) <> 'insufficient_points'
     or (select redeemed_count from public.get_reward_catalog() where id = current_setting('test.stack')::integer) <> 0 then
-    raise exception 'another user must not see or use vouchers that are not theirs';
+    raise exception 'another user must not see vouchers that are not theirs';
   end if;
 end;
 $$;
@@ -172,6 +151,8 @@ begin
   from public.users u where u.auth_id = '00000000-0000-0000-0000-0000000011a1'
   returning id into v_id;
   perform set_config('test.expired_voucher', v_id::text, true);
+  update public.redemptions set used_at = now()
+  where id = current_setting('test.voucher')::integer;
 end;
 $$;
 
@@ -192,10 +173,11 @@ set local role authenticated;
 
 do $$
 begin
-  if (select outcome from public.use_voucher(current_setting('test.expired_voucher')::integer, gen_random_uuid())) <> 'expired'
+  if (select status from public.get_my_vouchers()
+      where id = current_setting('test.expired_voucher')::integer) <> 'expired'
     or (select status from public.get_my_vouchers()
-      where id = current_setting('test.expired_voucher')::integer) <> 'expired' then
-    raise exception 'expired voucher must not be usable';
+      where id = current_setting('test.voucher')::integer) <> 'used' then
+    raise exception 'voucher status must be derived from used_at and expires_at';
   end if;
 end;
 $$;

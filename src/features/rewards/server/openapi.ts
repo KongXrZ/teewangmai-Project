@@ -126,38 +126,11 @@ export const rewardPaths = {
   "/api/vouchers": {
     get: {
       ...common,
-      summary: "Own vouchers, newest first; never includes the use code",
+      summary: "Own vouchers, newest first",
       responses: {
         200: ok("Vouchers", { type: "array", items: voucher }),
         400: error("Query parameters are not accepted"),
         401: error("Not signed in"),
-        503: error("Rewards unavailable"),
-      },
-    },
-  },
-  "/api/vouchers/{voucherId}/use": {
-    post: {
-      ...common,
-      summary: "Use a voucher now and return its QR code; only a retry with the same Idempotency-Key gets the code again",
-      parameters: [
-        { name: "voucherId", in: "path", required: true, schema: integerId },
-        {
-          name: "Idempotency-Key",
-          in: "header",
-          required: true,
-          schema: { type: "string", format: "uuid" },
-          description: "New UUID per tap on use; reuse it only to retry a lost response",
-        },
-      ],
-      responses: {
-        200: ok("Used", {
-          type: "object",
-          properties: { id: integerId, used_at: dateTime, use_code: { type: "string", pattern: "^[0-9a-f]{32}$" } },
-        }),
-        400: error("Invalid voucher ID, missing or non-UUID Idempotency-Key"),
-        401: error("Not signed in"),
-        404: error("Voucher not found for this user"),
-        409: error("already_used or expired"),
         503: error("Rewards unavailable"),
       },
     },

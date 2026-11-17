@@ -21,7 +21,7 @@ async function call(path, { cookie, method = "GET", headers = {} } = {}) {
   });
   assert.match(response.headers.get("cache-control") ?? "", /no-store/, path);
   const body = await response.json();
-  assert.doesNotMatch(JSON.stringify(body), /"(?:auth_id|user_id|idempotency_key|use_key)"/, path);
+  assert.doesNotMatch(JSON.stringify(body), /"(?:auth_id|user_id|idempotency_key)"/, path);
   return { status: response.status, body };
 }
 
@@ -30,7 +30,6 @@ test("rewards API rejects anonymous callers", { skip: !base }, async () => {
     ["/api/rewards", "GET"],
     ["/api/rewards/1/redeem", "POST"],
     ["/api/vouchers", "GET"],
-    ["/api/vouchers/1/use", "POST"],
   ]) {
     const { status, body } = await call(path, { method });
     assert.equal(status, 401, path);
@@ -38,11 +37,11 @@ test("rewards API rejects anonymous callers", { skip: !base }, async () => {
   }
   const swagger = await fetch(new URL("/api/swagger", base)).then((response) => response.text());
   assert.match(swagger, /\/api\/rewards\/\{rewardId\}\/redeem/);
-  assert.match(swagger, /\/api\/vouchers\/\{voucherId\}\/use/);
+  assert.match(swagger, /\/api\/vouchers/);
 });
 
 test(
-  "rewards API redeems once under concurrency and uses vouchers once",
+  "rewards API redeems once under concurrency and lists own vouchers",
   { skip: !(base && email && password && lastOneId && stackId) },
   async () => {
     const login = await fetch(new URL("/api/auth/login", base), {
@@ -117,27 +116,12 @@ test(
     assert.equal(vouchers.status, 200);
     const listed = vouchers.body.data.find((voucher) => voucher.id === voucherId);
     assert.equal(listed?.status, "available");
-    assert.equal("use_code" in listed, false);
-
-    const use = (id, key) =>
-      call(`/api/vouchers/${id}/use`, {
-        cookie,
-        method: "POST",
-        headers: key ? { "idempotency-key": key } : {},
-      });
-    assert.equal((await use(voucherId)).status, 400);
-    const useKey = crypto.randomUUID();
-    const used = await use(voucherId, useKey);
-    assert.equal(used.status, 200);
-    assert.match(used.body.data.use_code, /^[0-9a-f]{32}$/);
-    const retried = await use(voucherId, useKey);
-    assert.equal(retried.body.data.use_code, used.body.data.use_code);
-    const again = await use(voucherId, crypto.randomUUID());
-    assert.equal(again.status, 409);
-    assert.equal(again.body.code, "already_used");
-    assert.equal(JSON.stringify(again.body).includes(used.body.data.use_code), false);
-    const afterUse = await call("/api/vouchers", { cookie });
-    assert.equal(afterUse.body.data.find((voucher) => voucher.id === voucherId)?.status, "used");
-    assert.equal((await use(2147483647, crypto.randomUUID())).status, 404);
+    assert.equal(listed?.used_points, stack.points_required);
+    assert.equal(
+      Date.parse(listed.expires_at) - Date.parse(listed.redeemed_at),
+      stack.valid_days * 86_400_000,
+    );
+    assert.equal(vouchers.body.data.filter((voucher) => voucher.reward_id === stack.id).length, 2);
+    assert.equal((await call("/api/vouchers?x=1", { cookie })).status, 400);
   },
 );
