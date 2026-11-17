@@ -191,9 +191,12 @@ export type Database = {
         Row: {
           expires_at: string;
           id: number;
+          idempotency_key: string;
           redeemed_at: string;
           reward_id: number;
           status: string;
+          use_code: string | null;
+          use_key: string | null;
           used_at: string | null;
           used_points: number;
           user_id: number;
@@ -201,9 +204,12 @@ export type Database = {
         Insert: {
           expires_at: string;
           id?: never;
+          idempotency_key?: string;
           redeemed_at?: string;
           reward_id: number;
           status?: string;
+          use_code?: string | null;
+          use_key?: string | null;
           used_at?: string | null;
           used_points: number;
           user_id: number;
@@ -211,9 +217,12 @@ export type Database = {
         Update: {
           expires_at?: string;
           id?: never;
+          idempotency_key?: string;
           redeemed_at?: string;
           reward_id?: number;
           status?: string;
+          use_code?: string | null;
+          use_key?: string | null;
           used_at?: string | null;
           used_points?: number;
           user_id?: number;
@@ -241,33 +250,39 @@ export type Database = {
           expires_at: string;
           id: number;
           image_url: string | null;
+          max_per_user: number;
           points_required: number;
           starts_at: string | null;
           status: string;
           stock: number;
           title: string;
+          valid_days: number;
         };
         Insert: {
           description?: string | null;
           expires_at: string;
           id?: never;
           image_url?: string | null;
+          max_per_user?: number;
           points_required: number;
           starts_at?: string | null;
           status?: string;
           stock?: number;
           title: string;
+          valid_days?: number;
         };
         Update: {
           description?: string | null;
           expires_at?: string;
           id?: never;
           image_url?: string | null;
+          max_per_user?: number;
           points_required?: number;
           starts_at?: string | null;
           status?: string;
           stock?: number;
           title?: string;
+          valid_days?: number;
         };
         Relationships: [];
       };
@@ -339,6 +354,63 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      get_crowd_summaries: {
+        Args: { p_floor_id?: number; p_location_id?: number };
+        Returns: {
+          average_score: number;
+          calculated_at: string;
+          capacity: number;
+          density_percent: number;
+          floor_id: number;
+          floor_name: string;
+          latest_report_at: string;
+          location_id: number;
+          report_count: number;
+        }[];
+      };
+      get_my_vouchers: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          expires_at: string;
+          id: number;
+          image_url: string;
+          redeemed_at: string;
+          reward_id: number;
+          status: string;
+          title: string;
+          used_at: string;
+          used_points: number;
+        }[];
+      };
+      get_reward_catalog: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          availability: string;
+          description: string;
+          expires_at: string;
+          id: number;
+          image_url: string;
+          max_per_user: number;
+          points_required: number;
+          redeemed_count: number;
+          starts_at: string;
+          stock: number;
+          title: string;
+          valid_days: number;
+        }[];
+      };
+      redeem_reward: {
+        Args: { p_idempotency_key: string; p_reward_id: number };
+        Returns: {
+          expires_at: string;
+          outcome: string;
+          points: number;
+          redeemed_at: string;
+          redemption_id: number;
+          reward_id: number;
+          used_points: number;
+        }[];
+      };
       search_locations: {
         Args: { category_filter?: string; search_term?: string };
         Returns: {
@@ -360,18 +432,13 @@ export type Database = {
           isSetofReturn: true;
         };
       };
-      get_crowd_summaries: {
-        Args: { p_floor_id?: number; p_location_id?: number };
+      use_voucher: {
+        Args: { p_redemption_id: number; p_use_key: string };
         Returns: {
-          average_score: number;
-          calculated_at: string;
-          capacity: number;
-          density_percent: number;
-          floor_id: number;
-          floor_name: string;
-          latest_report_at: string;
-          location_id: number;
-          report_count: number;
+          id: number;
+          outcome: string;
+          use_code: string;
+          used_at: string;
         }[];
       };
     };
