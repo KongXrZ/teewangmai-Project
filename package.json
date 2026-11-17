@@ -16,7 +16,8 @@
     "db:reset": "supabase db reset --local",
     "db:migration:new": "supabase migration new",
     "db:migration:list": "supabase migration list --local",
-    "db:types": "node scripts/generate-database-types.mjs"
+    "db:types": "node scripts/generate-database-types.mjs",
+    "qr:generate": "node scripts/generate-floor-qr.mjs"
   },
   "engines": {
     "node": "24.x"
@@ -46,8 +47,10 @@
     "@types/react-dom": "^19.3.0",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.3.6",
+    "pngjs": "7.0.0",
     "postcss": "^8.5.28",
     "prettier": "^3.9.9",
+    "qrcode": "1.5.4",
     "supabase": "2.118.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3"
