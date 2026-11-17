@@ -193,6 +193,15 @@ BE-002 ไม่เพิ่มหน้ากู้รหัสผ่าน/แ
 - 401 = session หาย/หมดอายุ ให้ไปหน้า login ส่วน 503 = ระบบ Auth หรือ DB มีปัญหา ให้แสดงลองใหม่ ไม่ต้องพาไป login
 - ข้อผิดพลาดอื่น: 400 `validation`, 404 `not_found`, 409 `insufficient_points` / `out_of_stock` / `limit_reached` / `upcoming` / `expired`, 422 `key_conflict`, 503 `unavailable`
 
+## ประวัติเช็คอิน (BE-009)
+
+`GET /api/profile/checkins?limit=20&cursor=...` ต้องมี session คืนเฉพาะเช็คอินของตัวเอง เรียงใหม่ไปเก่า (`created_at` แล้ว `id`)
+
+- `limit` 1–50 (ไม่ส่ง = 20) ส่ง `next_cursor` ที่ได้กลับมาเป็น `cursor` เพื่อโหลดหน้าถัดไป ถ้าเป็น `null` คือหมดแล้ว
+- หน้าแรก (ไม่มี `cursor`) มี `total` = จำนวนเช็คอินทั้งหมด ใช้แสดง "ครั้งที่รายงาน" ได้
+- แต่ละรายการ: `id`, `location_id`, `building` (รหัสอาคาร), `location_name`, `floor_id`, `floor_name`, `crowd_level` (1–5 ที่ผู้ใช้รายงานเอง), `created_at`
+- 400 `validation` (limit/cursor ผิด หรือมีพารามิเตอร์อื่น), 401 `unauthorized` (session หาย), 503 `unavailable` (DB/Auth มีปัญหา ไม่ต้องพาไป login)
+
 ## การตรวจสอบ
 
 รัน lint, typecheck, tests และ build ก่อน PR ทดสอบด้วยบัญชีจริงที่ได้รับอนุญาต:

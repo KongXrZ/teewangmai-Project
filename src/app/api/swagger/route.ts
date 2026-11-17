@@ -114,6 +114,41 @@ export async function GET() {
           },
         },
       },
+      '/api/profile/checkins': {
+        get: {
+          tags: ['Users'],
+          summary: 'Own check-in history, newest first',
+          description:
+            'Pages own check-ins ordered by created_at DESC, id DESC. Pass next_cursor back as cursor for the next page. total is returned on the first page only. Old reports stay readable with the crowd_level the user reported.',
+          security: [{ cookieAuth: [] }],
+          parameters: [
+            { name: 'limit', in: 'query', required: false, schema: { type: 'integer', minimum: 1, maximum: 50, default: 20 } },
+            { name: 'cursor', in: 'query', required: false, schema: { type: 'string' }, description: 'Opaque next_cursor from the previous page' },
+          ],
+          responses: {
+            200: {
+              description: 'History page',
+              content: {
+                'application/json': {
+                  example: {
+                    success: true,
+                    data: {
+                      items: [
+                        { id: 120, location_id: 7, building: 'N7', location_name: 'Building name', floor_id: 31, floor_name: '2', crowd_level: 4, created_at: '2026-11-17T05:05:00+00:00' },
+                      ],
+                      next_cursor: null,
+                      total: 1,
+                    },
+                  },
+                },
+              },
+            },
+            400: { description: 'Bad limit, unknown parameter or tampered cursor (code: validation)' },
+            401: { description: 'No session, expired session or no profile (code: unauthorized)' },
+            503: { description: 'Database or Auth unavailable (code: unavailable)' },
+          },
+        },
+      },
       '/api/auth/signup': {
         post: {
           tags: ['Auth'],
