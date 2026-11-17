@@ -423,6 +423,17 @@ export type Database = {
           used_points: number;
         }[];
       };
+      resolve_floor_qr: {
+        Args: { p_qr_code_id: string };
+        Returns: {
+          building: string;
+          floor_id: number;
+          floor_name: string;
+          image_url: string;
+          location_id: number;
+          location_name: string;
+        }[];
+      };
       search_locations: {
         Args: { category_filter?: string; search_term?: string };
         Returns: {
@@ -443,6 +454,28 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
+      };
+      submit_checkin: {
+        Args: {
+          p_accuracy_meters: number;
+          p_crowd_level: number;
+          p_latitude: number;
+          p_longitude: number;
+          p_qr_code_id: string;
+        };
+        Returns: {
+          building: string;
+          checkin_id: number;
+          created_at: string;
+          crowd_level: number;
+          distance_meters: number;
+          floor_id: number;
+          floor_name: string;
+          location_id: number;
+          location_name: string;
+          next_eligible_at: string;
+          outcome: string;
+        }[];
       };
     };
     Enums: {
