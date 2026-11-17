@@ -25,6 +25,7 @@ provided by this migration.
 | `GET /api/crowd/locations` | Building cards using the greatest-count floor |
 | `GET /api/crowd/locations/{locationId}` | Crowd summaries of active floors; default floor 1 |
 | `GET /api/crowd/locations/{locationId}/floors/{floorId}` | Selected floor crowd summary |
+| `GET /api/badges` | Own badge collection; awarding happens only in the database after accepted check-ins |
 
 Auth Server Actions also cover password recovery/reset, resend verification,
 current user, logout and own-profile name/avatar updates. Existing Auth UI/session
