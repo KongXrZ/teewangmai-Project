@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   canStartSubmit,
   checkInFlowReducer,
+  getErrorExit,
   gpsFailureReason,
   initialCheckInFlowState,
 } from "../src/features/crowd-report/check-in-flow.ts";
@@ -72,7 +73,10 @@ test("a rejected QR stays on the scanner and can be rescanned", () => {
     message: undefined,
   });
   assert.equal(rejected.floor, null);
-  assert.equal(checkInFlowReducer(rejected, { type: "rescan" }).scan.status, "idle");
+  assert.equal(
+    checkInFlowReducer(rejected, { type: "rescan" }).scan.status,
+    "idle",
+  );
 });
 
 test("a duplicate detection while verifying is ignored", () => {
@@ -229,4 +233,44 @@ test("requestGpsEvidence rejects when aborted and ignores late fixes", async () 
   controller.abort();
   deliver();
   await assert.rejects(pending, { name: "AbortError" });
+});
+
+test("non-retryable submit errors offer a way out", () => {
+  assert.equal(
+    getErrorExit({ status: "error", reason: "invalid_qr" }),
+    "rescan",
+  );
+  assert.equal(getErrorExit({ status: "error", reason: "auth" }), "login");
+  assert.equal(
+    getErrorExit({ status: "error", reason: "cooldown" }),
+    "restart",
+  );
+  assert.equal(getErrorExit({ status: "error", reason: "network" }), null);
+  assert.equal(getErrorExit({ status: "idle" }), null);
+});
+
+test("scan again after an invalid QR returns to the scanner with the level", () => {
+  const state = run(
+    ...submitting,
+    {
+      type: "submit_done",
+      result: { kind: "rejected", reason: "invalid_qr" },
+    },
+    { type: "scan_again" },
+  );
+  assert.equal(state.phase, "scan");
+  assert.equal(state.level, 3);
+  assert.equal(state.floor, null);
+  assert.deepEqual(state.scan, { status: "idle" });
+  assert.deepEqual(state.submission, { status: "idle" });
+});
+
+test("scan again is ignored unless a submit error is showing", () => {
+  const readyState = run(...ready);
+  assert.equal(
+    checkInFlowReducer(readyState, { type: "scan_again" }),
+    readyState,
+  );
+  const pending = run(...submitting);
+  assert.equal(checkInFlowReducer(pending, { type: "scan_again" }), pending);
 });

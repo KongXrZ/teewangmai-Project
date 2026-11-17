@@ -30,6 +30,7 @@ export type CheckInFlowAction =
   | { type: "resolve_start" }
   | { type: "resolve_done"; result: QrResolveResult }
   | { type: "rescan" }
+  | { type: "scan_again" }
   | { type: "submit_start" }
   | { type: "gps_failed"; reason: GpsFailure }
   | { type: "submit_done"; result: CheckInSubmitResult }
@@ -46,6 +47,24 @@ export const initialCheckInFlowState: CheckInFlowState = {
 
 export function gpsFailureReason(failure: GpsFailure): CrowdReportErrorReason {
   return failure === "denied" ? "gps_denied" : "gps_unavailable";
+}
+
+export type CheckInErrorExit = "rescan" | "login" | "restart";
+
+export function getErrorExit(
+  submission: CrowdReportSubmission,
+): CheckInErrorExit | null {
+  if (submission.status !== "error") return null;
+  switch (submission.reason) {
+    case "invalid_qr":
+      return "rescan";
+    case "auth":
+      return "login";
+    case "cooldown":
+      return "restart";
+    default:
+      return null;
+  }
 }
 
 export function canStartSubmit(state: CheckInFlowState) {
@@ -102,6 +121,17 @@ export function checkInFlowReducer(
         return state;
       }
       return { ...state, scan: { status: "idle" } };
+    case "scan_again":
+      if (state.phase !== "ready" || state.submission.status !== "error") {
+        return state;
+      }
+      return {
+        ...state,
+        phase: "scan",
+        scan: { status: "idle" },
+        floor: null,
+        submission: { status: "idle" },
+      };
     case "submit_start":
       if (!canStartSubmit(state)) return state;
       return { ...state, submission: { status: "pending" } };
@@ -109,7 +139,10 @@ export function checkInFlowReducer(
       if (state.submission.status !== "pending") return state;
       return {
         ...state,
-        submission: { status: "error", reason: gpsFailureReason(action.reason) },
+        submission: {
+          status: "error",
+          reason: gpsFailureReason(action.reason),
+        },
       };
     case "submit_done":
       if (state.submission.status !== "pending") return state;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useReducer, useRef } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth/components/auth-provider";
 import { QuickScanPage } from "@/features/quick-scan/components/quick-scan-page";
@@ -8,6 +8,7 @@ import type { QuickScanVerification } from "@/features/quick-scan/types";
 import {
   canStartSubmit,
   checkInFlowReducer,
+  getErrorExit,
   initialCheckInFlowState,
   type CheckInScanState,
 } from "../check-in-flow";
@@ -15,7 +16,10 @@ import { getErrorCopy } from "../crowd-report";
 import { unavailableCheckInGateway } from "../gateway";
 import { requestGpsEvidence, type GpsResult } from "../location";
 import type { CheckInGateway, CrowdLevel } from "../types";
-import { CrowdReportForm } from "./crowd-report-form";
+import {
+  CrowdReportForm,
+  type CrowdReportErrorAction,
+} from "./crowd-report-form";
 
 const LOGIN_ROUTE = "/login?next=%2Fscan";
 
@@ -165,6 +169,28 @@ export function CheckInFlow({
     dispatch({ type: "reset" });
   }, [cancelRequest]);
 
+  const handleScanAgain = useCallback(() => {
+    cancelRequest();
+    dispatch({ type: "scan_again" });
+  }, [cancelRequest]);
+
+  const errorExit = getErrorExit(state.submission);
+  const errorAction = useMemo<CrowdReportErrorAction | null>(() => {
+    switch (errorExit) {
+      case "rescan":
+        return { label: "สแกนใหม่", onAction: handleScanAgain };
+      case "login":
+        return {
+          label: "เข้าสู่ระบบ",
+          onAction: () => router.replace(LOGIN_ROUTE),
+        };
+      case "restart":
+        return { label: "กลับ", onAction: handleDone };
+      default:
+        return null;
+    }
+  }, [errorExit, handleDone, handleScanAgain, router]);
+
   if (state.phase === "scan") {
     return (
       <QuickScanPage
@@ -184,6 +210,7 @@ export function CheckInFlow({
       onConfirmLevel={handleConfirmLevel}
       onSubmit={handleSubmit}
       onDone={handleDone}
+      errorAction={errorAction}
     />
   );
 }
