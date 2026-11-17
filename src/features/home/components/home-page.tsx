@@ -41,7 +41,11 @@ export interface HomePageProps {
   readonly onFullscreenChange?: (fullscreen: boolean) => void;
   readonly isLoading?: boolean;
   readonly errorMessage?: string | null;
+  readonly warningMessage?: string | null;
   readonly emptyMessage?: string | null;
+  readonly searchError?: string | null;
+  readonly onRetry?: () => void;
+  readonly onRetrySearch?: () => void;
 }
 
 export function HomePage({
@@ -67,7 +71,11 @@ export function HomePage({
   onFullscreenChange,
   isLoading = false,
   errorMessage = null,
+  warningMessage = null,
   emptyMessage = null,
+  searchError = null,
+  onRetry,
+  onRetrySearch,
 }: HomePageProps) {
   const [internalQuery, setInternalQuery] = useState(defaultSearchQuery);
   const [internalFullscreen, setInternalFullscreen] =
@@ -119,7 +127,30 @@ export function HomePage({
           aria-label="ผลการค้นหาสถานที่"
           className="absolute inset-x-0 top-full mt-2 max-h-[min(50dvh,360px)] overflow-y-auto rounded-[24px] border border-[#e5e7eb] bg-white p-2.5 shadow-[0_12px_32px_rgba(8,24,40,0.18)]"
         >
-          {searchResults && searchResults.length > 0 ? (
+          {searchError ? (
+            <div className="flex flex-col items-center px-4 py-5 text-center">
+              <p role="alert" className="text-sm font-semibold text-[#b91c1c]">
+                {searchError}
+              </p>
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                {onRetrySearch ? (
+                  <button
+                    type="button"
+                    onClick={onRetrySearch}
+                    className="rounded-full border border-[#fca5a5] bg-white px-4 py-2 text-xs font-medium text-[#b91c1c] transition-colors hover:bg-[#fef2f2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
+                  >
+                    ลองค้นหาใหม่
+                  </button>
+                ) : null}
+                <Link
+                  href="/locations"
+                  className="rounded-full bg-[#ff5815] px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[#e54e10] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
+                >
+                  ดูสถานที่ทั้งหมด
+                </Link>
+              </div>
+            </div>
+          ) : searchResults && searchResults.length > 0 ? (
             <ul className="flex flex-col gap-2.5">
               {searchResults.map((building) => (
                 <li key={building.id}>
@@ -212,7 +243,9 @@ export function HomePage({
             topSlot={isFullscreen ? searchFieldWithDropdown : undefined}
             isLoading={isLoading}
             errorMessage={errorMessage}
+            warningMessage={warningMessage}
             emptyMessage={emptyMessage}
+            onRetry={onRetry}
           />
         </main>
       </div>
