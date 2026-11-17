@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { locationPaths, locationSchemas } from '@/features/locations/api/openapi';
+import { crowdPaths } from '@/features/crowd/openapi';
 
 export async function GET() {
   let sessionCookie = 'sb-project-ref-auth-token';
@@ -19,6 +21,7 @@ export async function GET() {
       },
     ],
     components: {
+      schemas: locationSchemas,
       securitySchemes: {
         cookieAuth: {
           type: 'apiKey',
@@ -29,6 +32,8 @@ export async function GET() {
       },
     },
     tags: [
+      { name: 'Locations', description: 'Public active building and floor catalog' },
+      { name: 'Crowd', description: 'Scheduled floor and building crowd summaries' },
       {
         name: 'Auth',
         description: 'Authentication Endpoints',
@@ -43,6 +48,8 @@ export async function GET() {
       },
     ],
     paths: {
+      ...locationPaths,
+      ...crowdPaths,
       '/api/health': {
         get: {
           tags: ['Health'],
@@ -62,6 +69,45 @@ export async function GET() {
                 },
               },
             },
+          },
+        },
+      },
+      '/api/profile/avatar': {
+        post: {
+          tags: ['Users'],
+          summary: 'Upload profile photo',
+          description:
+            'Upload a JPG or PNG up to 2 MB into the caller folder of the public avatars bucket. Returns the public URL; save it with updateProfileAction({ name, avatar_url }), which then removes older files in that folder.',
+          security: [{ cookieAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              'multipart/form-data': {
+                schema: {
+                  type: 'object',
+                  required: ['file'],
+                  properties: { file: { type: 'string', format: 'binary' } },
+                },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: 'Uploaded',
+              content: {
+                'application/json': {
+                  example: {
+                    success: true,
+                    data: { avatar_url: 'http://127.0.0.1:54321/storage/v1/object/public/avatars/<auth-user-id>/<uuid>.png' },
+                  },
+                },
+              },
+            },
+            400: { description: 'Missing file, not JPG/PNG, or larger than 2 MB (code: validation)' },
+            401: { description: 'No session (code: unauthorized)' },
+            413: { description: 'Request body larger than 2 MB (code: validation)' },
+            415: { description: 'Not multipart/form-data (code: validation)' },
+            503: { description: 'Storage unavailable (code: unavailable)' },
           },
         },
       },

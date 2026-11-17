@@ -17,7 +17,11 @@ export type LocationListState =
   | { status: "loading" }
   | { status: "unavailable" }
   | { status: "error" }
-  | { status: "ready"; buildings: BuildingCardModel[] };
+  | {
+      status: "ready";
+      buildings: BuildingCardModel[];
+      totalCount?: number | null;
+    };
 
 export type BuildingSelectHandler = (id: BuildingId) => void;
 
@@ -34,7 +38,7 @@ export interface CrowdEstimate {
 }
 
 export interface FloorStatsModel extends CrowdEstimate {
-  openingHours: OpeningHours | null;
+  openingHours: OpeningHours | "closed" | null;
 }
 
 export type FloorCrowdState =
@@ -54,7 +58,7 @@ export interface FloorDetailItem {
 export interface FloorModel {
   id: FloorId;
   label: string;
-  openingHours: OpeningHours | null;
+  openingHours: OpeningHours | "closed" | null;
   crowd: FloorCrowdState;
   details: FloorDetailItem[];
 }

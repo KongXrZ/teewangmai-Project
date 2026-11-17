@@ -1,7 +1,8 @@
 # Database Design
 
 Versioned SQL in `supabase/migrations/` is the schema source of truth. The v4
-forward migration defines **nine application tables**. Supabase-managed
+forward migration defines **nine public application tables**. BE-006 adds the
+private `floor_crowd_summaries` snapshot table. Supabase-managed
 `auth.users` is separate. Local validation does not imply Cloud deployment.
 
 ## Current tables
@@ -35,7 +36,8 @@ building, not a user/floor. `image_url` remains optional.
 Each floor references a building. Non-empty floor names (including `G`/`B1`)
 are unique within a building; `qr_code_id` is unique and non-empty. Optional
 `capacity` must be positive; null means unknown. It is not measured attendance
-or a formula for converting scores to occupancy percentages.
+or a formula for converting scores to occupancy percentages. BE-006 uses
+check-in count / capacity * 100 independently of the mean reported score.
 
 `floor_hours` replaces `location_hours`; `(floor_id, day_of_week)` is unique.
 
@@ -76,13 +78,16 @@ floors/buildings and enforced atomically, including concurrent submissions.
 `current_crowd_level` is the arithmetic mean of accepted reports per floor in
 the **latest 30 minutes**, recalculated **every 10 minutes**. No reports means
 null/unknown, never zero or a stale score kept indefinitely. Retain old reports
-as history. Lookback and refresh should be adjustable in the backend. Boundary
-inclusion, labels/rounding, storage, scheduling and building-wide crowd
-aggregation remain future work.
+as history. BE-006 includes timestamps in (T − 30 minutes, T], uses pg_cron and a
+private snapshot, and maps mean scores to low (<2.5), medium (<3.5), high (>=3.5).
+The building card uses the floor with greatest check-in count; detail defaults
+to floor 1. Estimated people equals count, and density equals count / capacity *
+100. Timing configuration is deferred per the November 16 decision.
 
 Indexes cover floor/time summaries, user/floor/time cooldown and user/time
-history. Indexes alone do not enforce cooldown. There is no persisted summary,
-scheduler or settings table here. **Check-in point awarding is deferred; this
+history. Indexes alone do not enforce cooldown. Snapshots and refresh are private;
+an aggregate-only RPC provides public reads. No admin settings are added.
+See [Crowd API](crowd-api.md). **Check-in point awarding is deferred; this
 round does not add +10 points.** See [Check-in Rules](check-in-rules.md).
 
 ## Rewards, vouchers and badges
@@ -133,14 +138,21 @@ The existing Auth insert trigger calls `private.handle_new_user()`, using
 `SECURITY DEFINER`, empty `search_path` and qualified objects. Initial name comes
 from metadata `name`, then `full_name`, then email prefix. Email is copied at
 creation; later Auth email synchronization is not implemented. Avatar URLs are
-null or HTTP(S). This migration does not modify Auth.
+null or HTTP(S). This migration does not modify Auth. BE-010 adds the public
+Storage bucket `avatars` (JPEG/PNG, 2 MB) with per-user folder policies; uploads
+go through `POST /api/profile/avatar` (see `frontend-integration.md`).
 
-All nine tables have RLS. Clients can read only their own profile and update
+All nine tables have RLS. Clients can read only their own user profile and update
 only name/avatar. Ownership policies and column grants protect points/email/
-identity. Other eight tables have no client policies. New `floor_hours` table/
-sequence grants are revoked from public, anon and authenticated, and granted to
-`service_role` for trusted server use. Never expose that key in browser code.
-Future access rules must not let direct writes bypass trusted business checks.
+identity. BE-005 additionally permits anon/authenticated SELECT on active
+buildings, active floors of active buildings, and their schedules (including
+disabled schedule rows so closed differs from unknown). Floor reads are limited
+to catalog columns; `qr_code_id` is not granted. There are no public catalog
+writes or sequence grants. The other five application tables still have no
+client policies. `search_locations` is a parameterized SECURITY INVOKER function
+subject to the caller's RLS, not a privileged bypass. See [Location API](location-api.md).
+Trusted server access can use `service_role`; never expose that key in browser
+code. Future access rules must not let direct writes bypass business checks.
 
 ## Forward migration and handoff
 

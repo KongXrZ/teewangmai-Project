@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import { BottomNavigation } from "@/components/layout/bottom-navigation";
 import {
@@ -20,23 +20,32 @@ import { ExpandedBuildingCard } from "./expanded-building-card";
 
 export interface LocationListPageProps {
   state: LocationListState;
+  initialQuery?: string;
+  initialCrowdFilter?: CrowdLevelFilterValue;
   onSearchChange?: (query: string) => void;
   onCrowdFilterChange?: (value: CrowdLevelFilterValue) => void;
   onSelectBuilding?: BuildingSelectHandler;
   expandedBuilding?: ExpandedBuildingModel;
   onSelectFloor?: FloorSelectHandler;
   onViewBuildingDetail?: BuildingSelectHandler;
+  onLoadMore?: () => void;
+  loadingMore?: boolean;
 }
 
 export function LocationListPage({
   state,
+  initialQuery = "",
+  initialCrowdFilter = "all",
   onSearchChange,
   onCrowdFilterChange,
   onSelectBuilding,
+  onLoadMore,
+  loadingMore = false,
   ...expandedProps
 }: LocationListPageProps) {
-  const [query, setQuery] = useState("");
-  const [crowdFilter, setCrowdFilter] = useState<CrowdLevelFilterValue>("all");
+  const [query, setQuery] = useState(initialQuery);
+  const [crowdFilter, setCrowdFilter] =
+    useState<CrowdLevelFilterValue>(initialCrowdFilter);
   const isFiltering = query.trim() !== "" || crowdFilter !== "all";
 
   function handleQueryChange(value: string) {
@@ -90,7 +99,7 @@ export function LocationListPage({
               role="status"
               className="shrink-0 text-base leading-snug font-medium text-[#878787]"
             >
-              พบ {state.buildings.length} สถานที่
+              พบ {state.totalCount ?? state.buildings.length} สถานที่
             </p>
             <span aria-hidden="true" className="h-px flex-1 bg-[#acacac]" />
           </div>
@@ -105,6 +114,8 @@ export function LocationListPage({
             isFiltering={isFiltering}
             onSelectBuilding={onSelectBuilding}
             {...expandedProps}
+            onLoadMore={onLoadMore}
+            loadingMore={loadingMore}
           />
         </section>
       </main>
@@ -119,6 +130,8 @@ type BuildingListProps = Pick<
   | "expandedBuilding"
   | "onSelectFloor"
   | "onViewBuildingDetail"
+  | "onLoadMore"
+  | "loadingMore"
 > & { isFiltering: boolean };
 
 function ListContent({
@@ -155,6 +168,8 @@ function BuildingList({
   expandedBuilding,
   onSelectFloor,
   onViewBuildingDetail,
+  onLoadMore,
+  loadingMore,
 }: BuildingListProps & { buildings: BuildingCardModel[] }) {
   if (buildings.length === 0) {
     return isFiltering ? (
@@ -179,22 +194,73 @@ function BuildingList({
   }
 
   return (
-    <ul className="m-0 flex list-none flex-col p-0">
-      {buildings.map((building) => (
-        <li key={building.id}>
-          {building.id === expandedBuilding?.buildingId ? (
-            <ExpandedBuildingCard
-              building={building}
-              floors={expandedBuilding.floors}
-              onSelectFloor={onSelectFloor}
-              onViewDetail={onViewBuildingDetail}
-            />
-          ) : (
-            <BuildingCard building={building} onSelect={onSelectBuilding} />
-          )}
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className="m-0 flex list-none flex-col p-0">
+        {buildings.map((building) => (
+          <li key={building.id}>
+            {building.id === expandedBuilding?.buildingId ? (
+              <ExpandedBuildingCard
+                building={building}
+                floors={expandedBuilding.floors}
+                onSelectFloor={onSelectFloor}
+                onViewDetail={onViewBuildingDetail}
+              />
+            ) : (
+              <BuildingCard building={building} onSelect={onSelectBuilding} />
+            )}
+          </li>
+        ))}
+      </ul>
+      {onLoadMore && (
+        <LoadMoreTrigger
+          key={buildings.length}
+          onLoadMore={onLoadMore}
+          loading={loadingMore}
+        />
+      )}
+    </>
+  );
+}
+
+function LoadMoreTrigger({
+  onLoadMore,
+  loading,
+}: {
+  onLoadMore: () => void;
+  loading?: boolean;
+}) {
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const onLoadMoreRef = useRef(onLoadMore);
+
+  useEffect(() => {
+    onLoadMoreRef.current = onLoadMore;
+  }, [onLoadMore]);
+
+  useEffect(() => {
+    const trigger = triggerRef.current;
+    if (!trigger || loading) {
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          onLoadMoreRef.current();
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(trigger);
+    return () => observer.disconnect();
+  }, [loading]);
+
+  return (
+    <div
+      ref={triggerRef}
+      role="status"
+      className="min-h-8 px-6 py-2 text-center text-[13px] leading-normal text-[#878787]"
+    >
+      {loading ? "กำลังโหลดเพิ่ม..." : ""}
+    </div>
   );
 }
 

@@ -98,8 +98,11 @@ Home, Location List/Detail, Rewards catalog/redemption dialog and Achievements
 UI are present, alongside Auth UI/backend, Supabase clients and migrations.
 Home's map remains blank pending its SVG and a separate map task. Location/reward
 routes show unavailable states until data integration; the Achievements adapter
-targets a badge API that is not implemented yet. Verified check-ins, scheduled
-aggregation, reward transactions and badge awarding remain future work.
+targets a badge API that is not implemented yet. BE-006 provides scheduled crowd
+aggregation and public summary APIs; frontend wiring remains separate. Verified
+check-ins, reward transactions and badge awarding remain future work.
+Building/floor read APIs are implemented separately from FE wiring; see the
+[Location API contract](docs/location-api.md) for search, detail and opening hours.
 No mock application data is included.
 
 ## Database
@@ -228,8 +231,9 @@ Example:
 
 Reports use a confirmed 1–5 scale. Each floor's current summary is the arithmetic
 mean of reports from the **latest 30 minutes**, recalculated **every 10 minutes**.
-No reports means null/unknown. Label thresholds and rounding remain undecided;
-the summary scheduler/storage still need implementation. See [Check-in Rules](docs/check-in-rules.md).
+No reports means null/unknown. BE-006 implements scheduled snapshots, score-based
+labels and check-in-count/capacity percentages; building cards use the busiest
+floor by count. See [Crowd API](docs/crowd-api.md) and [Check-in Rules](docs/check-in-rules.md).
 
 ---
 

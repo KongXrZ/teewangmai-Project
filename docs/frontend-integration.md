@@ -153,6 +153,29 @@ BE-002 ไม่เพิ่มหน้ากู้รหัสผ่าน/แ
 ตอนเชื่อมหน้าเหล่านั้นต้องตรวจ UX, authorization และ error handling ของ action
 ที่เกี่ยวข้องเพิ่มเติม ไม่ถือว่าเสร็จเพียงเพราะมี action อยู่แล้ว
 
+## อัปโหลดรูปโปรไฟล์ (BE-010)
+
+เปลี่ยนรูปมีสองขั้น: อัปโหลดไฟล์ก่อน แล้วบันทึก URL ด้วย `updateProfileAction` เดิม
+
+1. `POST /api/profile/avatar` แบบ `multipart/form-data` field `file` ต้องมี session
+   รับเฉพาะ JPG/PNG ไม่เกิน 2 MB (route ตรวจจาก bytes ของไฟล์ ส่วน bucket บังคับ MIME type และขนาด)
+2. นำ `data.avatar_url` ที่ได้ไปส่ง `updateProfileAction({ name, avatar_url })`
+   เมื่อบันทึกสำเร็จ server ลบรูปเก่าและไฟล์ค้างในโฟลเดอร์ของผู้ใช้ทิ้ง ส่ง `avatar_url: null`
+   เพื่อลบรูปออกทั้งหมด ถ้าไม่ส่ง `avatar_url` รูปเดิมไม่ถูกแตะ
+
+| ผล | HTTP | Body |
+| --- | --- | --- |
+| สำเร็จ | 200 | `{success: true, data: {avatar_url}}` |
+| ไม่ใช่ multipart | 415 | `{success: false, code: "validation", error}` |
+| request ใหญ่เกิน 2 MB | 413 | `{success: false, code: "validation", error}` |
+| ไม่มีไฟล์, ไม่ใช่ JPG/PNG, เกิน 2 MB | 400 | `{success: false, code: "validation", error}` |
+| ไม่มี session | 401 | `{success: false, code: "unauthorized", error}` |
+| Storage ล้มเหลว | 503 | `{success: false, code: "unavailable", error}` |
+
+ถ้าอัปโหลดผ่านแต่บันทึกโปรไฟล์ไม่สำเร็จ รูปเดิมยังใช้ได้ ไฟล์ค้างที่เก่ากว่ารูปที่บันทึกจะถูกลบในการบันทึกครั้งถัดไป
+ไฟล์เก็บใน bucket `avatars` (public) ที่ `{auth user id}/{uuid}.jpg|png`
+ผู้ใช้เขียน อ่านรายการ และลบได้เฉพาะโฟลเดอร์ของตัวเอง
+
 ## การตรวจสอบ
 
 รัน lint, typecheck, tests และ build ก่อน PR ทดสอบด้วยบัญชีจริงที่ได้รับอนุญาต:

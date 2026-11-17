@@ -19,12 +19,22 @@ provided by this migration.
 | `GET /auth/callback` | Auth code exchange and safe internal redirect |
 | `GET /api/health` | Application health response; not a database connectivity test |
 | `GET /api/swagger` | API documentation |
+| `GET /api/locations` | Public active building search/list with pagination and derived opening hours |
+| `GET /api/locations/{locationId}` | Active building detail and floor schedules |
+| `GET /api/locations/{locationId}/floors/{floorId}` | Selected active floor belonging to the building |
+| `GET /api/crowd/locations` | Building cards using the greatest-count floor |
+| `GET /api/crowd/locations/{locationId}` | Crowd summaries of active floors; default floor 1 |
+| `GET /api/crowd/locations/{locationId}/floors/{floorId}` | Selected floor crowd summary |
 
 Auth Server Actions also cover password recovery/reset, resend verification,
 current user, logout and own-profile name/avatar updates. Existing Auth UI/session
 integration is documented in [Frontend Integration](frontend-integration.md).
 Google UI integration is deferred. Keep browser-readable cookie sessions and
 server identity verification; do not implement a second password store.
+
+BE-005's catalog API is implemented locally. See [Location API](location-api.md)
+for DTOs, query rules, Bangkok opening-hours behavior and real-data integration
+tests. FE wiring remains separate; crowd summaries still belong to BE-006.
 
 ## Backend task order
 
@@ -35,7 +45,7 @@ request/response contracts and update Swagger during implementation.
 | --- | --- |
 | BE-004 | Building/floor/hour CSV import; 35 buildings and 224 floors imported, temporary weekday hours seeded, real hour CSV pending |
 | BE-005 | Building search/list and selected-floor detail; search code/name/category-array members/aliases, building hours derived from floors, floor capacity and metadata |
-| BE-006 | Per-floor crowd summaries: 30-minute lookback, refresh every 10 minutes, unknown when empty; configurable timing |
+| BE-006 | Scheduled floor summaries: 30-minute lookback, refresh every 10 minutes; count estimates and capacity percentage, score-based labels, busiest-floor building cards. Timing configuration deferred. See [Crowd API](crowd-api.md) |
 | BE-007 | Floor QR generation and printable assets; 224 stable floor identifiers are provisioned in Local |
 | BE-008 | QR resolution and verified check-in: Auth, active reference data, GPS, integer score 1–5, atomic independent 30-minute user/floor cooldown |
 | BE-009 | Own check-in history only, retained logs, pagination ordered by created_at DESC then id DESC; no reward/badge responsibilities |
@@ -68,9 +78,8 @@ rule is needed. Reward exchange still deducts points and stock atomically.
 5. Add contract/error/concurrency tests appropriate to the implemented operation.
    Run the schema SQL checks and normal lint/typecheck/test/build checks.
 
-Unresolved runtime decisions include GPS tolerance/accuracy, summary timestamp
-boundaries, rounding/labels, storage/scheduler/admin settings, building-wide crowd
-aggregation, badge requirement vocabulary, voucher consumption authorization,
+Unresolved runtime decisions include GPS tolerance/accuracy, display rounding,
+admin settings, badge requirement vocabulary, voucher consumption authorization,
 point earning and retention. Do not infer these from schema defaults.
 
 Local SQL validation covers schema replay/upgrade, constraints and access. It does

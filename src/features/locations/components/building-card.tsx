@@ -121,8 +121,8 @@ export function BuildingSummary({
       <span className="self-end justify-self-end">
         <CrowdTag level={building.crowdLevel} />
       </span>
-      <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 self-start">
-        <span className="max-w-full truncate text-xs leading-normal">
+      <span className="flex min-w-0 items-center gap-x-2 self-start">
+        <span className="min-w-0 truncate text-xs leading-normal">
           {building.name}
         </span>
         {floorControl}

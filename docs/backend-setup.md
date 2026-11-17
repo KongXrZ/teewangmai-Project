@@ -145,8 +145,9 @@ three environment values and the server terminal. Signup/login responses are
 documented in [Frontend Integration](frontend-integration.md).
 
 Available product APIs are listed in [Backend Handoff](backend-handoff.md).
-Building/floor reads belong to BE-005 and summaries to BE-006. Those API tasks
-can use the seeded reference data while real schedules are being collected.
+Building/floor reads are implemented in BE-005; see [Location API](location-api.md)
+for contracts and verification. Summaries remain BE-006. The catalog uses seeded
+reference data while real schedules are being collected.
 
 ## Schema and migration workflow
 

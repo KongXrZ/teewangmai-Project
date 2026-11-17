@@ -152,7 +152,7 @@ function BuildingDetail({
   onBack: () => void;
 }) {
   const [selectedFloorId, setSelectedFloorId] = useState<FloorId | undefined>(
-    initialFloorId ?? building.floors[0]?.id,
+    initialFloorId ?? building.floors.find((floor) => floor.label.trim() === "1")?.id ?? building.floors[0]?.id,
   );
   const selectedFloor =
     building.floors.find((floor) => floor.id === selectedFloorId) ??

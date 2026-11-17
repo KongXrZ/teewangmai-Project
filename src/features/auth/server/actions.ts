@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { removeOtherAvatars } from "@/features/profile/server/avatar-storage";
 import {
   AUTH_UNAVAILABLE,
   getAuthErrorCode,
@@ -298,13 +299,20 @@ export async function updateProfileAction(
     return { success: false, error: "กรุณาเข้าสู่ระบบก่อนทำรายการ" };
   }
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("users")
     .update(parsed.data)
-    .eq("auth_id", user.id);
+    .eq("auth_id", user.id)
+    .select("id");
 
   if (error) {
     return { success: false, error: error.message };
+  }
+
+  if (parsed.data.avatar_url !== undefined && updated.length > 0) {
+    await removeOtherAvatars(supabase, user.id, parsed.data.avatar_url).catch(
+      () => undefined,
+    );
   }
 
   return { success: true, message: "อัปเดตโปรไฟล์เรียบร้อยแล้ว" };

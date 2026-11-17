@@ -153,7 +153,8 @@ Shared Local config ปัจจุบันปิด email confirmation หา�
 ด้วย browser เดียวกับที่สมัคร แล้วทดสอบ Login ต่อ
 
 การอ่านโปรไฟล์หลัง Login และ query ตรวจข้อมูลใช้ยืนยันการเชื่อมต่อ DB ร่วมกับผล
-ของ health endpoint ได้ API อาคาร/ชั้นเป็นงาน BE-005 และ crowd summary เป็น BE-006
+ของ health endpoint ได้ API อาคาร/ชั้น BE-005 มีแล้ว ดู contract และวิธีทดสอบที่
+[Location API](location-api.md) ส่วน crowd summary ยังเป็นงาน BE-006
 ติดตาม API ที่มีอยู่จาก [Backend Handoff](backend-handoff.md)
 
 ## 7. ตรวจงานและปิดบริการ

@@ -115,8 +115,8 @@ currently open to clients; column grants restrict updates to name/avatar.
 Auth uses browser-readable cookie sessions and request-scoped server clients.
 Before enabling reports, implement trusted GPS/QR checks and the independent
 30-minute user/floor cooldown. Floor summaries use the latest 30 minutes of
-reports and refresh every 10 minutes; their scheduler and storage remain future
-work. See [Check-in Rules](check-in-rules.md).
+reports and refresh every 10 minutes using the BE-006 private snapshot and
+pg_cron. See [Check-in Rules](check-in-rules.md) and [Crowd API](crowd-api.md).
 
 Zod, React Hook Form, and its Zod resolver are already used by Auth forms and
 validation. Keep schemas in each feature's `schemas.ts` and validate untrusted
@@ -145,8 +145,12 @@ unavailable states; the Achievements adapter targets a badge API not yet impleme
 These pages do not demonstrate completed data integration or successful exchanges.
 The nine-table v4 schema and category-array migration are applied locally. The 35
 approved buildings and 224 floors are imported, with S7 inactive. Hours/reward/badge data
-remains pending. Product APIs, verified check-ins,
-scheduled summaries, reward transactions and badge awarding remain separate work.
+remains pending. Temporary weekday schedules are seeded. Building/floor catalog
+APIs are implemented in BE-005, with public active-only RLS reads and no public
+QR-column access; see [Location API](location-api.md). BE-006 implements
+scheduled crowd snapshots and public `/api/crowd/...` APIs; frontend wiring is
+separate. See [Crowd API](crowd-api.md). Other product APIs, verified check-ins,
+reward transactions and badge awarding remain separate work.
 Check-in +10 awarding is deferred. No hosted deployment is made by these changes.
 See [Backend Handoff](backend-handoff.md) and [Backend Setup](backend-setup.md). Local
 source presentations and diagrams are excluded from Git; their confirmed

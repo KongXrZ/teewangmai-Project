@@ -339,7 +339,41 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      search_locations: {
+        Args: { category_filter?: string; search_term?: string };
+        Returns: {
+          aliases: string[];
+          building: string;
+          category: string[];
+          details: NonNullable<Json>;
+          gps_lat: number;
+          gps_lng: number;
+          id: number;
+          image_url: string | null;
+          is_active: boolean;
+          name: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "locations";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      get_crowd_summaries: {
+        Args: { p_floor_id?: number; p_location_id?: number };
+        Returns: {
+          average_score: number;
+          calculated_at: string;
+          capacity: number;
+          density_percent: number;
+          floor_id: number;
+          floor_name: string;
+          latest_report_at: string;
+          location_id: number;
+          report_count: number;
+        }[];
+      };
     };
     Enums: {
       [_ in never]: never;
