@@ -24,6 +24,11 @@ import type {
 import { CrowdLevelPicker } from "./crowd-level-picker";
 import { CrowdReportSuccessDialog } from "./crowd-report-success-dialog";
 
+export interface CrowdReportErrorAction {
+  label: string;
+  onAction: () => void;
+}
+
 export interface CrowdReportFormProps {
   context: CrowdReportContext | null;
   submission: CrowdReportSubmission;
@@ -33,6 +38,7 @@ export interface CrowdReportFormProps {
   onViewHistory?: () => void;
   initialLevel?: CrowdLevel | null;
   verifying?: boolean;
+  errorAction?: CrowdReportErrorAction | null;
 }
 
 const primaryButton =
@@ -50,6 +56,7 @@ export function CrowdReportForm({
   onViewHistory,
   initialLevel = null,
   verifying = false,
+  errorAction = null,
 }: CrowdReportFormProps) {
   const [level, setLevel] = useState<CrowdLevel | null>(initialLevel);
   const [levelConfirmed, setLevelConfirmed] = useState(false);
@@ -61,6 +68,8 @@ export function CrowdReportForm({
   const step = getCrowdReportStep(contextReady, levelConfirmed);
   const view = getCrowdReportView(submission, contextReady);
   const invalid = showValidation && level === null;
+  const exitAction =
+    step === "ready" && view.error && !view.canSubmit ? errorAction : null;
 
   useEffect(() => {
     submitLockRef.current = false;
@@ -211,7 +220,17 @@ export function CrowdReportForm({
             </button>
           )}
 
-          {step === "ready" && (
+          {exitAction && (
+            <button
+              type="button"
+              onClick={exitAction.onAction}
+              className={primaryButton}
+            >
+              {exitAction.label}
+            </button>
+          )}
+
+          {step === "ready" && !exitAction && (
             <button
               type="submit"
               aria-disabled={!view.canSubmit || undefined}
