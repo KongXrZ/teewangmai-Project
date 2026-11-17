@@ -176,6 +176,23 @@ BE-002 ไม่เพิ่มหน้ากู้รหัสผ่าน/แ
 ไฟล์เก็บใน bucket `avatars` (public) ที่ `{auth user id}/{uuid}.jpg|png`
 ผู้ใช้เขียน อ่านรายการ และลบได้เฉพาะโฟลเดอร์ของตัวเอง
 
+## รางวัลและคูปอง (BE-011)
+
+ทุก route ต้องมี session ไม่มี session ได้ 401 `unauthorized` รายละเอียดเต็มอยู่ใน [Rewards API](rewards-api.md)
+
+| ใช้ทำ | Request | `data` เมื่อสำเร็จ |
+| --- | --- | --- |
+| หน้ารางวัล | `GET /api/rewards` | `{points, rewards}` แต่ละรางวัลมี `availability`, `redeemed_count`, `max_per_user` |
+| แลก 1 ใบ | `POST /api/rewards/{rewardId}/redeem` + header `Idempotency-Key: <uuid>` | `{replayed, points, voucher}` |
+| คลังคูปอง | `GET /api/vouchers` | คูปองของตัวเอง `status` = `available` / `used` / `expired` |
+| กดใช้ | `POST /api/vouchers/{voucherId}/use` + header `Idempotency-Key: <uuid>` | `{id, used_at, use_code}` เอา `use_code` ไปทำ QR |
+
+- `availability`: `redeemable`, `insufficient_points` (แสดงล็อก), `out_of_stock`, `limit_reached` (แลกครบสิทธิ์), `upcoming` รางวัลหมดเขตไม่ถูกส่งมา
+- สร้าง UUID ใหม่ทุกครั้งที่ผู้ใช้กดยืนยันแลก ถ้าเน็ตหลุดแล้วกดลองใหม่ ให้ส่ง UUID เดิม จะได้คูปองใบเดิมโดยไม่หักแต้มซ้ำ
+- คูปองหมดอายุหลังแลก `valid_days` วัน (ค่าเริ่มต้น 7) แต่ละใบหมดไม่พร้อมกัน
+- กดใช้ 1 ครั้งสร้าง UUID ใหม่ 1 ตัว ถ้าเน็ตหลุดให้ลองใหม่ด้วย UUID เดิมจะได้ `use_code` เดิม ถ้าปิด QR แล้วกดใหม่ (UUID ใหม่) ได้ 409 `already_used` ไม่มีโค้ด ควรมีหน้ายืนยันก่อนกดใช้
+- ข้อผิดพลาดอื่น: 400 `validation`, 404 `not_found`, 409 `insufficient_points` / `out_of_stock` / `limit_reached` / `upcoming` / `expired`, 422 `key_conflict`, 503 `unavailable`
+
 ## การตรวจสอบ
 
 รัน lint, typecheck, tests และ build ก่อน PR ทดสอบด้วยบัญชีจริงที่ได้รับอนุญาต:
