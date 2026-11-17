@@ -133,7 +133,9 @@ The existing Auth insert trigger calls `private.handle_new_user()`, using
 `SECURITY DEFINER`, empty `search_path` and qualified objects. Initial name comes
 from metadata `name`, then `full_name`, then email prefix. Email is copied at
 creation; later Auth email synchronization is not implemented. Avatar URLs are
-null or HTTP(S). This migration does not modify Auth.
+null or HTTP(S). This migration does not modify Auth. BE-010 adds the public
+Storage bucket `avatars` (JPEG/PNG, 2 MB) with per-user folder policies; uploads
+go through `POST /api/profile/avatar` (see `frontend-integration.md`).
 
 All nine tables have RLS. Clients can read only their own user profile and update
 only name/avatar. Ownership policies and column grants protect points/email/
