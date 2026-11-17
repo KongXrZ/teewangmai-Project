@@ -202,6 +202,21 @@ BE-002 ไม่เพิ่มหน้ากู้รหัสผ่าน/แ
 - แต่ละรายการ: `id`, `location_id`, `building` (รหัสอาคาร), `location_name`, `floor_id`, `floor_name`, `crowd_level` (1–5 ที่ผู้ใช้รายงานเอง), `created_at`
 - 400 `validation` (limit/cursor ผิด หรือมีพารามิเตอร์อื่น), 401 `unauthorized` (session หาย), 503 `unavailable` (DB/Auth มีปัญหา ไม่ต้องพาไป login)
 
+## สแกน QR และเช็คอิน (BE-008)
+
+ทั้งสอง route เป็น `POST` แบบ JSON ต้องมี session (ไม่มี = 401 `unauthorized`, Auth/DB ล่ม = 503 `unavailable` ไม่ต้องพาไป login)
+
+| ขั้น | Request | สำเร็จ |
+| --- | --- | --- |
+| สแกน | `POST /api/checkins/resolve` body `{qr}` (ค่าดิบจาก QR) | 200 `{floor_ref, location: {id, building, name, image_url}, floor: {id, name}}` ไม่สร้างเช็คอิน ไม่เริ่ม cooldown |
+| ส่ง | `POST /api/checkins` body `{qr: floor_ref, crowd_level, latitude, longitude, accuracy_meters}` | 201 `{id, location, floor, crowd_level, created_at, next_eligible_at}` |
+
+- QR ต้องเป็น UUID แบบ `floor-uuid-v1` ตาม BE-007 QR อื่น/URL/QR ไม่รู้จัก/ชั้นหรืออาคารปิด ได้ 404 `invalid_qr` (ให้ขึ้นปุ่มสแกนใหม่)
+- 409 `cooldown`: รายงานชั้นนี้ไปแล้วภายใน 30 นาที มี `next_eligible_at` ใน body
+- 422 `gps_inaccurate`: ความแม่นยำเกิน 100 m (ตรงกับ `maxAccuracyMeters` ของ FE-015) / 422 `out_of_range`: ไกลอาคารเกิน 100 m + min(accuracy, 50 m) มี `distance_meters` ใน body
+- ยิงซ้ำพร้อมกันได้ 201 ครั้งเดียว ที่เหลือได้ 409 `cooldown`
+- adapter ของ FE-015 ให้ดู `code` ไม่ใช่ status (422 มีสองแบบ): `gps_inaccurate` → `gps_unavailable`, `out_of_range` → `out_of_range`, `cooldown` → `cooldown`, `invalid_qr` → `invalid_qr`, 401 → `auth`, 400/415/503 → `network`
+
 ## การตรวจสอบ
 
 รัน lint, typecheck, tests และ build ก่อน PR ทดสอบด้วยบัญชีจริงที่ได้รับอนุญาต:
