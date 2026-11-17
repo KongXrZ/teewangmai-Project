@@ -1,10 +1,10 @@
 # Floor check-ins and crowd summaries
 
-Product decisions confirmed on November 8, updated November 15, 2026. The v4
+Product decisions confirmed on November 8, updated November 16, 2026. The v4
 model has nine application tables: QR identifiers belong to `floors`, and
 `checkins.floor_id` identifies the reported floor. Cooldown, GPS/QR submission
-validation, scheduled summaries, and administrative settings remain future
-implementation; the schema migration alone does not provide those behaviors.
+validation and administrative settings remain future implementation. BE-006
+implements scheduled summaries; see [Crowd API](crowd-api.md).
 
 ## Buildings, floors, and reports
 
@@ -85,10 +85,11 @@ same user and floor.
 | 10:10 | 09:40–10:10 |
 | 10:20 | 09:50–10:20 |
 
-- Keep each floor's summary independent. A building-wide combination is not
-  defined by these rules.
-- The mean may be fractional even though individual scores are integers.
-  Rounding and mapping it to labels/colors remain to be decided.
+- Keep each floor's summary independent. The building card uses the floor with
+  the highest report count, with natural floor order and ID breaking ties.
+  Building detail starts at floor 1, independently of the card's selected floor.
+- The mean remains fractional. Map scores below 2.5 to low, from 2.5 to below
+  3.5 to medium, and from 3.5 to high (rounding 1–2 / 3 / 4–5 for display labels).
 - All viewers may read the aggregate without submitting a check-in. Viewing
   or deciding not to visit contributes no score and creates no check-in log.
 - Recalculate even when no new reports arrive, so old reports leave the window.
@@ -96,18 +97,20 @@ same user and floor.
 - With no reports in the window, the mean is `null` and the state is unknown.
   Do not carry an old score forward indefinitely or interpret no data as 0/low.
 - Show report count, latest included report time, and calculation time alongside
-  the summary. Report count is not the number of people currently present.
+  the summary. Per the November 16 decision, estimated people equals report count;
+  density percentage equals count / floor capacity * 100. This is an estimate,
+  not a measured headcount; null capacity gives null percentage.
 - Show an unknown state such as “ยังไม่มีข้อมูลความหนาแน่นล่าสุด” in a neutral
   color. Users can still view details and start check-in when eligible. This FE
   state still needs implementation.
 - Public aggregate reads must not expose reporter identities or individual logs.
-  The required access policies are not implemented yet.
+  BE-006 exposes a restricted aggregate RPC; snapshots and refresh remain private.
 
 This is a periodically refreshed estimate of reported conditions, not a forecast
 of future attendance. A live query over a moving window alone would not enforce
 the agreed 10-minute update cadence. The scheduler and summary storage/cache
-strategy remain implementation decisions; no summary table or
-`floors.current_crowd_level` column is prescribed yet.
+strategy use a private snapshot table and pg_cron in BE-006. Refresh includes
+timestamps in (T − 30 minutes, T], never deletes reports, and runs every 10 minutes.
 
 ## Configurable timing
 
@@ -117,6 +120,8 @@ strategy remain implementation decisions; no summary table or
 | Summary refresh interval | 10 minutes | Owner can adjust through the backend/admin interface |
 | Per-user/per-floor cooldown | 30 minutes | Confirm whether this is also editable in admin |
 
+The November 16 scope decision fixes lookback/refresh at 30/10 minutes for BE-006.
+Admin configuration is deferred to a separate task; CSV updates are also separate.
 Keep these settings distinct: refresh interval controls when a summary changes;
 lookback controls which reports it uses. The settings store, admin authorization,
 and the effect of changing settings on existing cooldowns are not defined yet.
@@ -141,10 +146,8 @@ defaults and `is_active` for closed weekdays. Full day is 00:00:00–23:59:59.
 ## Remaining implementation decisions
 
 - Server-side GPS radius/accuracy rules and atomic cooldown enforcement.
-- Timing configuration storage and admin UI; cooldown editability.
-- Scheduled calculation mechanism, summary persistence/cache, and failure handling.
-- Exact time-window boundaries, label thresholds, and display rounding.
-- Building-level summaries, if needed, and history-retention/deletion policy.
+- Timing configuration storage and admin UI; cooldown editability (separate task).
+- Display rounding and history-retention/deletion policy.
 - Feature access policies, point earning, and reward/badge business rules.
 
 See [Database Design](database.md) for the schema represented by the current
