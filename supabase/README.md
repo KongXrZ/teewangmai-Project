@@ -30,8 +30,9 @@ for the current columns and constraints, including:
   JSON preserved from the removed `location_profiles` table.
 - Per-floor `floor_hours` with unique floor/day pairs, Monday=1 through Sunday=7,
   08:00–16:00 defaults and an active switch. Optional positive floor capacity.
-- Required stock (default zero), upcoming/active/expired reward availability and
-  fixed voucher deadlines. Successful exchanges have separate expiry/use fields.
+- Required stock (default zero), upcoming/active/expired reward availability,
+  per-user voucher limits and voucher lifetimes counted from redemption.
+  Successful exchanges have separate expiry/use fields and idempotency keys.
 - Composite `(user_id, badge_id)` ownership keys, separate from badge definitions.
 - Crowd levels from 1 to 5; insert check-ins only after GPS AND QR validation,
   without verification-result columns.

@@ -16,8 +16,8 @@ private `floor_crowd_summaries` snapshot table. Supabase-managed
 | `checkins` | Individual crowd reports and history | `id`, `user_id`, `floor_id`, `crowd_level`, `created_at` |
 | `badges` | Badge definitions | `id`, `name`, `description`, `requirement_type`, `requirement_value`, `icon_url`, `is_active` |
 | `user_badges` | Earned badges | `user_id`, `badge_id`, `earned_at` |
-| `rewards` | Catalog and stock | `id`, `title`, `description`, `points_required`, `stock`, `image_url`, `status`, `starts_at`, `expires_at` |
-| `redemptions` | Successful exchanges and vouchers | `id`, `user_id`, `reward_id`, `used_points`, `status`, `redeemed_at`, `expires_at`, `used_at` |
+| `rewards` | Catalog and stock | `id`, `title`, `description`, `points_required`, `stock`, `image_url`, `status`, `starts_at`, `expires_at`, `max_per_user`, `valid_days` |
+| `redemptions` | Successful exchanges and vouchers | `id`, `user_id`, `reward_id`, `used_points`, `status`, `redeemed_at`, `expires_at`, `used_at`, `idempotency_key`, `use_code` |
 
 ## Buildings, floors and schedules
 
@@ -97,21 +97,35 @@ unlimited). `points_required` is nonnegative. Catalog `status` defaults to
 `active`, allowing `upcoming`, `active`, `expired`. An individual's exchange
 does not change this shared status.
 
-Every reward requires one fixed `expires_at`; optional `starts_at` must precede
-it. All users acquiring the same reward share its deadline. Interpret entered
-local dates in `Asia/Bangkok`, storing absolute `timestamptz` values. Future APIs
-must enforce time bounds even if the stored catalog status is stale.
+Every reward requires `expires_at`, the last moment it can be redeemed;
+optional `starts_at` must precede it. Interpret entered local dates in
+`Asia/Bangkok`, storing absolute `timestamptz` values. APIs enforce these time
+bounds even if the stored catalog status is stale.
 
-The future trusted exchange transaction checks eligibility, points and stock,
-deducts points/stock and inserts a redemption atomically. Only successful
-exchanges are stored: `status = 'completed'` is the sole allowed value, not
-pending/cancelled. `used_points` preserves the price. Copy the reward deadline
-into `redemptions.expires_at` at issuance, never issuance plus a duration.
-The copied expiry must be later than `redeemed_at`.
+BE-011 (2026-11-17) adds two catalog rules. `max_per_user` (integer, default 1,
+at least 1) limits how many vouchers one user may ever redeem for a reward;
+used and expired vouchers still count, and a user may hold several vouchers of
+the same reward up to that limit. `valid_days` (integer, default 7, above 0) is
+the voucher lifetime: each voucher expires at `redeemed_at + valid_days`, so
+vouchers of one reward expire on different dates. This replaces the earlier
+rule that copied the reward deadline into every voucher.
 
-Completed exchange and voucher use differ. Authorized consumption sets `used_at`
-once, atomically, before expiry. The constraint requires
-`redeemed_at <= used_at < expires_at` when present. Personal display derives:
+The trusted exchange (`public.redeem_reward`) locks the user row, then the
+reward row, checks the time window, stock, per-user limit and points, then
+deducts points and stock and inserts the redemption in one transaction. Only
+successful exchanges are stored: `status = 'completed'` is the sole allowed
+value, not pending/cancelled. `used_points` preserves the price. Each request
+carries an `idempotency_key` (UUID, unique per user): repeating a key returns
+the original voucher without charging again; a key reused for another reward is
+rejected.
+
+Completed exchange and voucher use differ. The owner uses a voucher through
+`public.use_voucher`, which sets `used_at`, a random `use_code` and the request's
+`use_key` once, atomically, before expiry. The code is returned only by that
+call, or by a retry with the same `use_key`, and shown as a one-time QR.
+`use_code` and `use_key` exist only together on a used voucher. The constraint
+requires `redeemed_at <= used_at < expires_at` when present. Personal display
+derives:
 
 | Condition | Display |
 | --- | --- |
@@ -119,9 +133,11 @@ once, atomically, before expiry. The constraint requires
 | Unused, current time at/after expiry | Expired |
 | Unused, before expiry | Redeemed / available to use |
 
-Checks alone cannot copy expiry, debit balances, enforce current-time deadlines
-or prevent double use. Those operations and voucher QR verification need trusted
-APIs. Direct clients cannot issue/consume vouchers.
+`rewards` and `redemptions` keep RLS with no client policies. The catalog,
+exchange, own-voucher list and use run only through the `SECURITY DEFINER`
+functions `get_reward_catalog`, `redeem_reward`, `get_my_vouchers` and
+`use_voucher`, executable by `authenticated` only (not `anon`). See
+[Rewards API](rewards-api.md).
 
 `badges.requirement_value` is a positive threshold interpreted together with
 `requirement_type`. Supported types/evaluation are future work. Earned badges
