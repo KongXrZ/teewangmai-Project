@@ -104,8 +104,8 @@ truth for email. `locations` represents buildings, `floors.location_id` belongs
 to a building, and `checkins.floor_id` belongs to a floor. QR identifiers live
 on floors. Buildings have unique canonical N/S codes, category arrays, search aliases and JSON
 details. `floor_hours` has its own primary key and a unique floor/day pair.
-Rewards have fixed expiry; successful exchanges and actual voucher use are
-separate. Check-in point awarding is deferred.
+Rewards have a last redemption time; each voucher expires `valid_days` after
+its redemption, and successful exchanges and actual voucher use are separate. Check-in point awarding is deferred.
 Keep badge definitions separate from ownership, whose primary key is
 `(user_id, badge_id)`. See [the database baseline](database.md) for constraints
 and decisions still awaiting agreement.
