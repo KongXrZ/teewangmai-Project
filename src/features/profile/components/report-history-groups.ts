@@ -82,10 +82,12 @@ function groupOf(report: CalendarDay, today: CalendarDay): ReportHistoryGroupId 
 
 function matchesFilter(
   group: ReportHistoryGroupId,
+  report: CalendarDay,
+  today: CalendarDay,
   filter: ReportHistoryFilter,
 ) {
   if (filter === "week") return group === "today" || group === "week";
-  if (filter === "month") return group !== "earlier";
+  if (filter === "month") return report.month === today.month;
   return true;
 }
 
@@ -116,7 +118,7 @@ export function groupReportHistory(
     seen.add(report.id);
     const day = toCalendarDay(date);
     const group = groupOf(day, today);
-    if (!matchesFilter(group, filter)) continue;
+    if (!matchesFilter(group, day, today, filter)) continue;
     const rows = groups.get(group) ?? [];
     rows.push({ ...report, timeLabel: timeLabel(date, day, today) });
     groups.set(group, rows);
