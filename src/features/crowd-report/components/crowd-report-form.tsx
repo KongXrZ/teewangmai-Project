@@ -32,6 +32,7 @@ export interface CrowdReportFormProps {
   onDone: () => void;
   onViewHistory?: () => void;
   initialLevel?: CrowdLevel | null;
+  verifying?: boolean;
 }
 
 const primaryButton =
@@ -48,6 +49,7 @@ export function CrowdReportForm({
   onDone,
   onViewHistory,
   initialLevel = null,
+  verifying = false,
 }: CrowdReportFormProps) {
   const [level, setLevel] = useState<CrowdLevel | null>(initialLevel);
   const [levelConfirmed, setLevelConfirmed] = useState(false);
@@ -124,7 +126,7 @@ export function CrowdReportForm({
 
         <section
           aria-label="สถานที่ที่กำลังเช็คอิน"
-          aria-busy={!contextReady || undefined}
+          aria-busy={(!contextReady && verifying) || undefined}
           className="mt-3 flex flex-col gap-3 px-1.5"
         >
           <StepVisual step={step} context={context} />
@@ -139,7 +141,7 @@ export function CrowdReportForm({
                 {context.floorLabel}
               </dd>
             </dl>
-          ) : (
+          ) : verifying ? (
             <p
               role="status"
               className="flex min-h-[50px] items-center justify-center gap-2.5 rounded-full bg-[#ff8a5c] px-5 py-2 text-[clamp(1.0625rem,5vw,1.25rem)] leading-snug font-bold text-white"
@@ -152,7 +154,7 @@ export function CrowdReportForm({
               />
               กำลังตรวจสอบ
             </p>
-          )}
+          ) : null}
         </section>
 
         <form
