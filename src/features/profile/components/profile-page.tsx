@@ -8,6 +8,7 @@ import EditOutlined from "@mui/icons-material/EditOutlined";
 import HistoryRounded from "@mui/icons-material/HistoryRounded";
 import LogoutRounded from "@mui/icons-material/LogoutRounded";
 import PersonOutlineRounded from "@mui/icons-material/PersonOutlineRounded";
+import PhotoCameraOutlined from "@mui/icons-material/PhotoCameraOutlined";
 import SettingsOutlined from "@mui/icons-material/SettingsOutlined";
 import WarningAmberRounded from "@mui/icons-material/WarningAmberRounded";
 import WorkspacePremiumOutlined from "@mui/icons-material/WorkspacePremiumOutlined";
@@ -139,18 +140,32 @@ function ProfileOverview({
         className="rounded-[20px] border border-[#e5e7eb] p-4 sm:p-5"
       >
         <div className="flex items-center gap-4">
-          <Avatar
-            src={profile.avatarUrl ?? undefined}
-            alt=""
-            sx={{
-              width: 72,
-              height: 72,
-              bgcolor: "#fdebe0",
-              color: "#ea580c",
-            }}
+          <button
+            type="button"
+            onClick={onEdit}
+            aria-label="เปลี่ยนรูปโปรไฟล์"
+            className="group relative shrink-0 cursor-pointer touch-manipulation rounded-full border-0 bg-transparent p-0 [-webkit-tap-highlight-color:transparent] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ea580c] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <PersonOutlineRounded aria-hidden="true" sx={{ fontSize: 40 }} />
-          </Avatar>
+            <Avatar
+              component="span"
+              src={profile.avatarUrl ?? undefined}
+              alt=""
+              sx={{
+                width: 72,
+                height: 72,
+                bgcolor: "#fdebe0",
+                color: "#ea580c",
+              }}
+            >
+              <PersonOutlineRounded aria-hidden="true" sx={{ fontSize: 40 }} />
+            </Avatar>
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 flex items-center justify-center rounded-full bg-[#081828]/45 text-white opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100 group-active:opacity-100 group-disabled:opacity-0"
+            >
+              <PhotoCameraOutlined sx={{ fontSize: 28 }} />
+            </span>
+          </button>
           <p className="line-clamp-2 min-w-0 flex-1 text-lg leading-snug font-semibold break-words text-[#141414] min-[360px]:text-xl">
             {profile.name}
           </p>
