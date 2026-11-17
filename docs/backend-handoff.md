@@ -50,8 +50,8 @@ request/response contracts and update Swagger during implementation.
 | BE-008 | QR resolution and verified check-in: Auth, active reference data, GPS, integer score 1–5, atomic independent 30-minute user/floor cooldown |
 | BE-009 | Own check-in history only, retained logs, pagination ordered by created_at DESC then id DESC; no reward/badge responsibilities |
 | BE-010 | Authorized profile-photo upload and avatar update |
-| BE-011 | Rewards catalog, immediate atomic idempotent exchange, per-user limits, own voucher history and one-time use with QR code; voucher expiry counted from redemption (`valid_days`) |
-| BE-012 | Staff-side verification of a used voucher `use_code`; consumption itself moved to BE-011 (2026-11-17) |
+| BE-011 | Rewards catalog, immediate atomic idempotent exchange, per-user limits and own voucher history; voucher expiry counted from redemption (`valid_days`) |
+| BE-012 | Owner uses a voucher (marked used immediately, one-time QR) and the shop verifies the QR is genuine |
 | BE-013 | Badge catalog, requirement evaluation and own earned badges |
 | BE-014 | Approved reward/badge CSV import, preserving catalog identities, balances, stock and existing activity |
 

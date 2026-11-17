@@ -247,7 +247,7 @@ including multiple categories, default category, parsed aliases and inactive S7.
 per-floor capacity/activity and generated QR identifier format.
 `rewards_redemption.sql` creates two throwaway accounts and rewards inside a
 rolled-back transaction and checks catalog availability, redemption, replay,
-per-user limits, stock, one-time use and that anon cannot call the functions.
+per-user limits, stock, voucher status and that anon cannot call the functions.
 `floor_hours_seed.sql` checks the 1,120 weekday `floor_hours` rows
 (Monday–Friday `08:00:00`–`17:00:00`, active, with Saturday–Sunday omitted). Fresh replay and
 existing-data import verification also check repeated imports preserve IDs,

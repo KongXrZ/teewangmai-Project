@@ -17,7 +17,7 @@ private `floor_crowd_summaries` snapshot table. Supabase-managed
 | `badges` | Badge definitions | `id`, `name`, `description`, `requirement_type`, `requirement_value`, `icon_url`, `is_active` |
 | `user_badges` | Earned badges | `user_id`, `badge_id`, `earned_at` |
 | `rewards` | Catalog and stock | `id`, `title`, `description`, `points_required`, `stock`, `image_url`, `status`, `starts_at`, `expires_at`, `max_per_user`, `valid_days` |
-| `redemptions` | Successful exchanges and vouchers | `id`, `user_id`, `reward_id`, `used_points`, `status`, `redeemed_at`, `expires_at`, `used_at`, `idempotency_key`, `use_code` |
+| `redemptions` | Successful exchanges and vouchers | `id`, `user_id`, `reward_id`, `used_points`, `status`, `redeemed_at`, `expires_at`, `used_at`, `idempotency_key` |
 
 ## Buildings, floors and schedules
 
@@ -119,11 +119,8 @@ carries an `idempotency_key` (UUID, unique per user): repeating a key returns
 the original voucher without charging again; a key reused for another reward is
 rejected.
 
-Completed exchange and voucher use differ. The owner uses a voucher through
-`public.use_voucher`, which sets `used_at`, a random `use_code` and the request's
-`use_key` once, atomically, before expiry. The code is returned only by that
-call, or by a retry with the same `use_key`, and shown as a one-time QR.
-`use_code` and `use_key` exist only together on a used voucher. The constraint
+Completed exchange and voucher use differ. Using a voucher (setting `used_at`
+once, atomically, before expiry, with its QR) belongs to BE-012. The constraint
 requires `redeemed_at <= used_at < expires_at` when present. Personal display
 derives:
 
@@ -134,9 +131,9 @@ derives:
 | Unused, before expiry | Redeemed / available to use |
 
 `rewards` and `redemptions` keep RLS with no client policies. The catalog,
-exchange, own-voucher list and use run only through the `SECURITY DEFINER`
-functions `get_reward_catalog`, `redeem_reward`, `get_my_vouchers` and
-`use_voucher`, executable by `authenticated` only (not `anon`). See
+exchange and own-voucher list run only through the `SECURITY DEFINER`
+functions `get_reward_catalog`, `redeem_reward` and `get_my_vouchers`,
+executable by `authenticated` only (not `anon`). See
 [Rewards API](rewards-api.md).
 
 `badges.requirement_value` is a positive threshold interpreted together with
