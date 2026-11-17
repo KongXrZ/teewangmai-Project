@@ -362,6 +362,24 @@ export type Database = {
           report_count: number;
         }[];
       };
+      get_my_checkins: {
+        Args: {
+          p_before_created_at?: string;
+          p_before_id?: number;
+          p_limit: number;
+        };
+        Returns: {
+          building: string;
+          created_at: string;
+          crowd_level: number;
+          floor_id: number;
+          floor_name: string;
+          id: number;
+          location_id: number;
+          location_name: string;
+          matching_count: number;
+        }[];
+      };
       get_my_vouchers: {
         Args: Record<PropertyKey, never>;
         Returns: {
