@@ -12,8 +12,9 @@ export async function POST(
   context: { params: Promise<{ rewardId: string }> },
 ) {
   try {
-    const { supabase, user } = await rewardsSession();
-    if (!user) return rewardsError("unauthorized");
+    const session = await rewardsSession();
+    if (session.failure) return rewardsError(session.failure);
+    const { supabase } = session;
 
     const rewardId = parseRewardsId((await context.params).rewardId);
     const key = parseIdempotencyKey(request.headers.get("idempotency-key"));

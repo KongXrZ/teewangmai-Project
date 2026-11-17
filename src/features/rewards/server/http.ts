@@ -46,10 +46,26 @@ export function parseIdempotencyKey(value: string | null) {
   return parsed.success ? parsed.data : null;
 }
 
+const lostSessionCodes = new Set([
+  "session_not_found",
+  "refresh_token_not_found",
+  "refresh_token_already_used",
+  "bad_jwt",
+]);
+
 export async function rewardsSession() {
   const supabase = await createClient();
   const {
     data: { user },
+    error,
   } = await supabase.auth.getUser();
-  return { supabase, user };
+  if (error) {
+    const lost =
+      error.name === "AuthSessionMissingError" ||
+      [401, 403].includes(error.status ?? 0) ||
+      lostSessionCodes.has(error.code ?? "");
+    return { failure: lost ? ("unauthorized" as const) : ("unavailable" as const) };
+  }
+  if (!user) return { failure: "unauthorized" as const };
+  return { failure: null, supabase, user };
 }

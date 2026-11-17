@@ -6,8 +6,9 @@ import {
 
 export async function GET(request: Request) {
   try {
-    const { supabase, user } = await rewardsSession();
-    if (!user) return rewardsError("unauthorized");
+    const session = await rewardsSession();
+    if (session.failure) return rewardsError(session.failure);
+    const { supabase, user } = session;
     if (new URL(request.url).search) return rewardsError("validation");
 
     const [profile, catalog] = await Promise.all([
