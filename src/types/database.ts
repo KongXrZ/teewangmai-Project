@@ -339,6 +339,33 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      get_crowd_summaries: {
+        Args: { p_floor_id?: number; p_location_id?: number };
+        Returns: {
+          average_score: number;
+          calculated_at: string;
+          capacity: number;
+          density_percent: number;
+          floor_id: number;
+          floor_name: string;
+          latest_report_at: string;
+          location_id: number;
+          report_count: number;
+        }[];
+      };
+      get_my_badges: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          description: string;
+          earned_at: string;
+          icon_url: string;
+          id: number;
+          is_active: boolean;
+          name: string;
+          requirement_type: string;
+          requirement_value: number;
+        }[];
+      };
       search_locations: {
         Args: { category_filter?: string; search_term?: string };
         Returns: {
@@ -359,20 +386,6 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
-      };
-      get_crowd_summaries: {
-        Args: { p_floor_id?: number; p_location_id?: number };
-        Returns: {
-          average_score: number;
-          calculated_at: string;
-          capacity: number;
-          density_percent: number;
-          floor_id: number;
-          floor_name: string;
-          latest_report_at: string;
-          location_id: number;
-          report_count: number;
-        }[];
       };
     };
     Enums: {
