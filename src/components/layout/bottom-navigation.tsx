@@ -19,7 +19,7 @@ const navigationItems = [
     primary: true,
   },
   { id: "rewards", label: "แลกรางวัล", icon: StarRounded, href: "/rewards" },
-  { id: "profile", label: "โปรไฟล์", icon: Person },
+  { id: "profile", label: "โปรไฟล์", icon: Person, href: "/profile" },
 ] as const;
 
 export type NavigationItemId = (typeof navigationItems)[number]["id"];
