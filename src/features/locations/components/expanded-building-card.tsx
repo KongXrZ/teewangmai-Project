@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
 import ArticleOutlined from "@mui/icons-material/ArticleOutlined";
+import CheckRounded from "@mui/icons-material/CheckRounded";
 import ChevronRight from "@mui/icons-material/ChevronRight";
 import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
 import type {
@@ -98,31 +101,76 @@ function FloorDropdown({
   selectedId: FloorId;
   onSelect: (id: FloorId) => void;
 }) {
-  const selectId = useId();
+  const menuId = useId();
+  const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null);
+  const selected = floors.find((floor) => floor.id === selectedId);
+
+  function handleSelect(id: FloorId) {
+    setAnchor(null);
+    onSelect(id);
+  }
 
   return (
-    <span className="relative shrink-0">
-      <label htmlFor={selectId} className="sr-only">
-        เลือกชั้น
-      </label>
-      <select
-        id={selectId}
-        value={selectedId}
-        onChange={(event) => onSelect(event.target.value)}
-        className="h-11 cursor-pointer appearance-none rounded-[7px] border-0 bg-white pr-5 pl-2 text-xs text-black focus-visible:outline-2 focus-visible:outline-[#ff5815]"
+    <>
+      <button
+        type="button"
+        aria-label={`เลือกชั้น ตอนนี้ชั้น ${selected?.label ?? ""}`}
+        aria-haspopup="listbox"
+        aria-expanded={anchor !== null}
+        aria-controls={anchor ? menuId : undefined}
+        onClick={(event) => setAnchor(event.currentTarget)}
+        className="flex h-11 shrink-0 cursor-pointer items-center gap-0.5 rounded-[7px] border-0 bg-white pr-1 pl-2 text-xs whitespace-nowrap text-black focus-visible:outline-2 focus-visible:outline-[#ff5815]"
+      >
+        ชั้น {selected?.label}
+        <KeyboardArrowDown aria-hidden="true" sx={{ fontSize: 16 }} />
+      </button>
+      <Menu
+        id={menuId}
+        anchorEl={anchor}
+        open={anchor !== null}
+        onClose={() => setAnchor(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        transformOrigin={{ vertical: "top", horizontal: "left" }}
+        slotProps={{
+          paper: {
+            sx: {
+              mt: 0.5,
+              minWidth: anchor?.offsetWidth,
+              maxHeight: 220,
+              borderRadius: "7px",
+              boxShadow: "0 4px 4px rgba(0,0,0,0.25)",
+            },
+          },
+          list: { role: "listbox", "aria-label": "เลือกชั้น", sx: { py: 0 } },
+        }}
       >
         {floors.map((floor) => (
-          <option key={floor.id} value={floor.id}>
+          <MenuItem
+            key={floor.id}
+            role="option"
+            selected={floor.id === selectedId}
+            aria-selected={floor.id === selectedId}
+            onClick={() => handleSelect(floor.id)}
+            sx={{
+              minHeight: 44,
+              gap: 0.5,
+              px: 1,
+              fontSize: 12,
+              "&.Mui-selected, &.Mui-selected:hover, &.Mui-selected.Mui-focusVisible":
+                { bgcolor: "rgba(255,88,21,0.2)" },
+            }}
+          >
             ชั้น {floor.label}
-          </option>
+            {floor.id === selectedId && (
+              <CheckRounded
+                aria-hidden="true"
+                sx={{ fontSize: 16, color: "#ff5815", ml: "auto" }}
+              />
+            )}
+          </MenuItem>
         ))}
-      </select>
-      <KeyboardArrowDown
-        aria-hidden="true"
-        sx={{ fontSize: 16 }}
-        className="pointer-events-none absolute top-1/2 right-1 -translate-y-1/2"
-      />
-    </span>
+      </Menu>
+    </>
   );
 }
 

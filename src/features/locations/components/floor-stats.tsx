@@ -84,7 +84,9 @@ function toStatItems(stats: FloorStatsModel): StatItem[] {
       value:
         stats.openingHours === null
           ? "00:00 - 23:59"
-          : `${stats.openingHours.open.slice(0, 5)} - ${stats.openingHours.close.slice(0, 5)}`,
+          : stats.openingHours === "closed"
+            ? "ปิดวันนี้"
+            : `${stats.openingHours.open.slice(0, 5)} - ${stats.openingHours.close.slice(0, 5)}`,
       label: "ช่วงเวลาเปิด/ปิด",
     },
   ];
