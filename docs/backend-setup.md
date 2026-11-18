@@ -228,6 +228,8 @@ docker cp supabase/tests/floor_hours_seed.sql supabase_db_teewangmai:/tmp/floor_
 docker exec supabase_db_teewangmai psql -U postgres -d postgres --no-psqlrc -v ON_ERROR_STOP=1 -f /tmp/floor_hours_seed.sql
 docker cp supabase/tests/rewards_redemption.sql supabase_db_teewangmai:/tmp/rewards_redemption.sql
 docker exec supabase_db_teewangmai psql -U postgres -d postgres --no-psqlrc -v ON_ERROR_STOP=1 -f /tmp/rewards_redemption.sql
+docker cp supabase/tests/voucher_use.sql supabase_db_teewangmai:/tmp/voucher_use.sql
+docker exec supabase_db_teewangmai psql -U postgres -d postgres --no-psqlrc -v ON_ERROR_STOP=1 -f /tmp/voucher_use.sql
 docker cp supabase/tests/checkin_history.sql supabase_db_teewangmai:/tmp/checkin_history.sql
 docker exec supabase_db_teewangmai psql -U postgres -d postgres --no-psqlrc -v ON_ERROR_STOP=1 -f /tmp/checkin_history.sql
 ```
@@ -250,6 +252,8 @@ per-floor capacity/activity and generated QR identifier format.
 `rewards_redemption.sql` creates two throwaway accounts and rewards inside a
 rolled-back transaction and checks catalog availability, redemption, replay,
 per-user limits, stock, voucher status and that anon cannot call the functions.
+`voucher_use.sql` checks one-time use with the same-key retry, expired and other
+users' vouchers, and that a shop verifies a code once without seeing the owner.
 `checkin_history.sql` creates throwaway accounts and reports inside a rolled-back
 transaction and checks own-only history, paging over equal timestamps, old
 reports, empty history, the bounded limit and that anon cannot call it.
