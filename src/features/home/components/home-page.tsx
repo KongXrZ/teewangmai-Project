@@ -32,6 +32,7 @@ export interface HomePageProps {
   readonly selectedBuilding?: BuildingCardModel | null;
   readonly expandedBuilding?: ExpandedBuildingModel | null;
   readonly highlightedBuildingIds?: readonly string[];
+  readonly mapFocusNonce?: number;
   readonly crowdFilter?: CrowdFilterValue;
   readonly defaultCrowdFilter?: CrowdFilterValue;
   readonly onCrowdFilterChange?: (value: CrowdFilterValue) => void;
@@ -63,6 +64,7 @@ export function HomePage({
   selectedBuilding = null,
   expandedBuilding = null,
   highlightedBuildingIds = [],
+  mapFocusNonce = 0,
   crowdFilter,
   defaultCrowdFilter = "all",
   onCrowdFilterChange,
@@ -251,6 +253,7 @@ export function HomePage({
             selectedBuilding={selectedBuilding}
             expandedBuilding={expandedBuilding}
             highlightedBuildingIds={highlightedBuildingIds}
+            mapFocusNonce={mapFocusNonce}
             crowdFilter={crowdFilter}
             defaultCrowdFilter={defaultCrowdFilter}
             onCrowdFilterChange={onCrowdFilterChange}

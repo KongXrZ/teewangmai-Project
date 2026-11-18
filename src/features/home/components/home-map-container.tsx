@@ -70,6 +70,7 @@ export function HomeMapContainer({
     useState<BuildingId | null>(null);
   const [expandedBuilding, setExpandedBuilding] =
     useState<ExpandedBuildingModel | null>(null);
+  const [mapFocusNonce, setMapFocusNonce] = useState(0);
 
   const catalogControllerRef = useRef<AbortController | null>(null);
   const searchControllerRef = useRef<AbortController | null>(null);
@@ -85,6 +86,7 @@ export function HomeMapContainer({
 
       setSelectedBuildingId(buildingId);
       setDropdownDismissed(true);
+      setMapFocusNonce((n) => n + 1);
       setExpandedBuilding({
         buildingId,
         floors: { status: "loading" },
@@ -123,6 +125,7 @@ export function HomeMapContainer({
         selectAndLoadBuilding(confirmed.id);
       } else if (filteredResults.length > 0) {
         setDropdownDismissed(true);
+        setMapFocusNonce((n) => n + 1);
       }
     },
     [selectAndLoadBuilding],
@@ -393,6 +396,7 @@ export function HomeMapContainer({
       selectedBuilding={selectedBuilding}
       expandedBuilding={expandedBuilding}
       highlightedBuildingIds={searchResolution.highlightedBuildingIds}
+      mapFocusNonce={mapFocusNonce}
       crowdFilter={crowdFilter}
       onCrowdFilterChange={handleCrowdFilterChange}
       onSelectBuilding={selectAndLoadBuilding}

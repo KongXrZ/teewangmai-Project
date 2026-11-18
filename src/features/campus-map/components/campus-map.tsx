@@ -23,8 +23,12 @@ import {
   CAMPUS_BUILDING_SHAPES,
   CAMPUS_MAP_IMAGE_SRC,
   CAMPUS_MAP_VIEWBOX,
+  getBuildingsBoundingCenter,
+  isBuildingCode,
+  type BuildingCode,
 } from "../building-shapes";
 import {
+  centerMapOnPoint,
   clampMapTransform,
   computeBaseScale,
   computeBuildingRenderStates,
@@ -41,6 +45,7 @@ export interface CampusMapProps {
   readonly selectedBuilding?: BuildingCardModel | null;
   readonly expandedBuilding?: ExpandedBuildingModel | null;
   readonly highlightedBuildingIds?: readonly string[];
+  readonly mapFocusNonce?: number;
   readonly crowdFilter?: CrowdFilterValue;
   readonly defaultCrowdFilter?: CrowdFilterValue;
   readonly onCrowdFilterChange?: (value: CrowdFilterValue) => void;
@@ -70,6 +75,7 @@ export function CampusMap({
   selectedBuilding = null,
   expandedBuilding = null,
   highlightedBuildingIds = [],
+  mapFocusNonce = 0,
   crowdFilter: controlledFilter,
   defaultCrowdFilter = "all",
   onCrowdFilterChange,
@@ -96,7 +102,9 @@ export function CampusMap({
   const [transform, setTransform] = useState<MapTransform>(DEFAULT_TRANSFORM);
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   const [imageFailed, setImageFailed] = useState(false);
+  const [isFocusAnimating, setIsFocusAnimating] = useState(false);
   const hasInitializedViewRef = useRef(false);
+  const lastAppliedFocusKeyRef = useRef<string | null>(null);
 
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const activePointersRef = useRef(new Map<number, { x: number; y: number }>());
@@ -178,6 +186,7 @@ export function CampusMap({
 
     const handleWheel = (event: WheelEvent) => {
       event.preventDefault();
+      setIsFocusAnimating(false);
       const rect = el.getBoundingClientRect();
       const anchorX = event.clientX - rect.left;
       const anchorY = event.clientY - rect.top;
@@ -227,6 +236,78 @@ export function CampusMap({
     onClearSelection,
     onFullscreenChange,
   ]);
+
+  const highlightedKey = highlightedBuildingIds.join(",");
+  const focusKey = selectedBuilding
+    ? `selected:${selectedBuilding.id}:${mapFocusNonce}`
+    : highlightedKey !== ""
+      ? `highlight:${highlightedKey}:${mapFocusNonce}`
+      : null;
+
+  useEffect(() => {
+    if (!focusKey) {
+      lastAppliedFocusKeyRef.current = null;
+      return;
+    }
+    if (viewportSize.width <= 0 || viewportSize.height <= 0) return;
+    if (lastAppliedFocusKeyRef.current === focusKey) return;
+
+    const targetCodes: BuildingCode[] = [];
+    if (selectedBuilding) {
+      const code = selectedBuilding.code.toUpperCase();
+      if (isBuildingCode(code)) {
+        targetCodes.push(code);
+      }
+    } else {
+      for (const id of highlightedBuildingIds) {
+        const marker = buildings.find((item) => item.id === id);
+        if (!marker) continue;
+        const code = marker.code.toUpperCase();
+        if (isBuildingCode(code)) {
+          targetCodes.push(code);
+        }
+      }
+    }
+    if (targetCodes.length === 0) return;
+
+    const center = getBuildingsBoundingCenter(targetCodes);
+    if (!center) return;
+
+    lastAppliedFocusKeyRef.current = focusKey;
+    const isSingleTarget = Boolean(selectedBuilding) || targetCodes.length === 1;
+    const targetAnchorY = selectedBuilding ? 0.42 : 0.5;
+    const frame = requestAnimationFrame(() => {
+      setIsFocusAnimating(true);
+      setTransform((prev) =>
+        centerMapOnPoint(
+          prev,
+          center,
+          viewportSize.width,
+          viewportSize.height,
+          CAMPUS_MAP_VIEWBOX.width,
+          CAMPUS_MAP_VIEWBOX.height,
+          {
+            zoom: isSingleTarget ? Math.max(prev.zoom, 2) : prev.zoom,
+            anchorRatioY: targetAnchorY,
+          },
+        ),
+      );
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [
+    focusKey,
+    selectedBuilding,
+    highlightedBuildingIds,
+    buildings,
+    viewportSize.width,
+    viewportSize.height,
+  ]);
+
+  useEffect(() => {
+    if (!isFocusAnimating) return;
+    const timer = setTimeout(() => setIsFocusAnimating(false), 320);
+    return () => clearTimeout(timer);
+  }, [isFocusAnimating]);
 
   const clampedTransform = useMemo(
     () =>
@@ -291,6 +372,7 @@ export function CampusMap({
 
   function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
     if (event.button !== 0 && event.pointerType === "mouse") return;
+    setIsFocusAnimating(false);
     activePointersRef.current.set(event.pointerId, {
       x: event.clientX,
       y: event.clientY,
@@ -452,7 +534,10 @@ export function CampusMap({
             transform: `translate3d(${clampedTransform.panX}px, ${clampedTransform.panY}px, 0) scale(${totalScale})`,
             transformOrigin: "0 0",
           }}
-          className="absolute top-0 left-0 will-change-transform"
+          onTransitionEnd={() => setIsFocusAnimating(false)}
+          className={`absolute top-0 left-0 will-change-transform ${
+            isFocusAnimating ? "transition-transform duration-300 ease-out" : ""
+          }`}
         >
           {mapImageSrc && !imageFailed ? (
             <Image
