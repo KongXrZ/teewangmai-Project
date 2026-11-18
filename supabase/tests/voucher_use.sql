@@ -118,8 +118,12 @@ reset role;
 
 do $$
 begin
-  if (select count(*) from public.redemptions where verified_at is not null) <> 1
-    or (select count(*) from public.redemptions where use_code is not null) <> 2 then
+  if (select count(*) filter (where d.verified_at is not null) from public.redemptions d
+      join public.users u on u.id = d.user_id
+      where u.auth_id = '00000000-0000-0000-0000-0000000077a1') <> 1
+    or (select count(*) filter (where d.use_code is not null) from public.redemptions d
+      join public.users u on u.id = d.user_id
+      where u.auth_id = '00000000-0000-0000-0000-0000000077a1') <> 2 then
     raise exception 'exactly one fresh voucher must be used and verified';
   end if;
 end;
