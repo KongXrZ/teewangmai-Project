@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   buildHomeQueryString,
+  findConfirmedSearchBuilding,
   parseCrowdFilterParam,
   resolveMapSearch,
   type ApiCrowdBuilding,
@@ -74,6 +75,7 @@ export function HomeMapContainer({
   const searchControllerRef = useRef<AbortController | null>(null);
   const floorsControllerRef = useRef<AbortController | null>(null);
   const restoredInitialSelectionRef = useRef(false);
+  const pendingSearchConfirmRef = useRef<string | null>(null);
 
   const selectAndLoadBuilding = useCallback(
     (buildingId: BuildingId) => {
@@ -112,6 +114,18 @@ export function HomeMapContainer({
         );
     },
     [dataSource],
+  );
+
+  const confirmSearchMatches = useCallback(
+    (query: string, filteredResults: readonly BuildingCardModel[]) => {
+      const confirmed = findConfirmedSearchBuilding(query, filteredResults);
+      if (confirmed) {
+        selectAndLoadBuilding(confirmed.id);
+      } else if (filteredResults.length > 0) {
+        setDropdownDismissed(true);
+      }
+    },
+    [selectAndLoadBuilding],
   );
 
   const handleRetryCatalog = useCallback(() => {
@@ -221,12 +235,18 @@ export function HomeMapContainer({
             matches,
             crowdFilter,
           );
-          if (resolved.exactMatchBuilding) {
+          if (pendingSearchConfirmRef.current === debouncedQuery) {
+            pendingSearchConfirmRef.current = null;
+            confirmSearchMatches(debouncedQuery, resolved.filteredResults);
+          } else if (resolved.exactMatchBuilding) {
             selectAndLoadBuilding(resolved.exactMatchBuilding.id);
           }
         },
         () => {
           if (!controller.signal.aborted) {
+            if (pendingSearchConfirmRef.current === debouncedQuery) {
+              pendingSearchConfirmRef.current = null;
+            }
             setSearchFailed(true);
             setRawSearchMatches([]);
           }
@@ -240,6 +260,7 @@ export function HomeMapContainer({
     crowdById,
     crowdFilter,
     searchReloadNonce,
+    confirmSearchMatches,
     selectAndLoadBuilding,
   ]);
 
@@ -260,6 +281,7 @@ export function HomeMapContainer({
   );
 
   function handleSearchChange(next: string) {
+    pendingSearchConfirmRef.current = null;
     setSearchQuery(next);
     setSearchFailed(false);
     setDropdownDismissed(false);
@@ -270,7 +292,33 @@ export function HomeMapContainer({
     }
   }
 
+  function handleSearchSubmit() {
+    const trimmed = searchQuery.trim();
+    if (trimmed === "") {
+      return;
+    }
+    setDropdownDismissed(false);
+    if (
+      debouncedQuery === trimmed &&
+      rawSearchMatches !== null &&
+      !searchFailed
+    ) {
+      pendingSearchConfirmRef.current = null;
+      confirmSearchMatches(trimmed, searchResolution.filteredResults);
+      return;
+    }
+    pendingSearchConfirmRef.current = trimmed;
+    if (debouncedQuery !== trimmed) {
+      setSearchFailed(false);
+      setDebouncedQuery(trimmed);
+    } else if (searchFailed) {
+      setSearchFailed(false);
+      setSearchReloadNonce((n) => n + 1);
+    }
+  }
+
   function handleResetSearch() {
+    pendingSearchConfirmRef.current = null;
     searchControllerRef.current?.abort();
     setSearchQuery("");
     setDebouncedQuery("");
@@ -335,6 +383,7 @@ export function HomeMapContainer({
       buildings={buildings}
       searchQuery={searchQuery}
       onSearchQueryChange={handleSearchChange}
+      onSearchSubmit={handleSearchSubmit}
       searchResults={searchResolution.filteredResults}
       showSearchResults={showSearchResults}
       searchError={

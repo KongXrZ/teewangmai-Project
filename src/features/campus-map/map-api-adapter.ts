@@ -200,6 +200,32 @@ export function resolveMapSearch(
   };
 }
 
+export function findConfirmedSearchBuilding(
+  query: string,
+  filteredResults: readonly BuildingCardModel[],
+): BuildingCardModel | null {
+  const normalized = query.trim().toLowerCase();
+  if (normalized === "" || filteredResults.length === 0) {
+    return null;
+  }
+
+  const exactCodeMatch = filteredResults.find(
+    (item) => item.code.toLowerCase() === normalized,
+  );
+  if (exactCodeMatch) {
+    return exactCodeMatch;
+  }
+
+  const exactNameMatch = filteredResults.find(
+    (item) => item.name.toLowerCase() === normalized,
+  );
+  if (exactNameMatch) {
+    return exactNameMatch;
+  }
+
+  return filteredResults.length === 1 ? filteredResults[0] : null;
+}
+
 const VALID_CROWD_FILTERS: readonly CrowdLevel[] = ["low", "medium", "high"];
 
 export function parseCrowdFilterParam(

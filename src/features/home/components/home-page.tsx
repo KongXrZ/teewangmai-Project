@@ -8,6 +8,7 @@ import { useState, type ChangeEvent } from "react";
 import { BottomNavigation } from "@/components/layout/bottom-navigation";
 import { SearchInput } from "@/components/ui/search-input";
 import { CampusMap } from "@/features/campus-map/components/campus-map";
+import { findConfirmedSearchBuilding } from "@/features/campus-map/map-api-adapter";
 import type {
   CampusBuildingMarker,
   CrowdFilterValue,
@@ -25,6 +26,7 @@ export interface HomePageProps {
   readonly searchQuery?: string;
   readonly defaultSearchQuery?: string;
   readonly onSearchQueryChange?: (query: string) => void;
+  readonly onSearchSubmit?: () => void;
   readonly searchResults?: readonly BuildingCardModel[];
   readonly showSearchResults?: boolean;
   readonly selectedBuilding?: BuildingCardModel | null;
@@ -55,6 +57,7 @@ export function HomePage({
   searchQuery: controlledQuery,
   defaultSearchQuery = "",
   onSearchQueryChange,
+  onSearchSubmit,
   searchResults,
   showSearchResults,
   selectedBuilding = null,
@@ -98,6 +101,19 @@ export function HomePage({
     onSearchQueryChange?.(next);
   }
 
+  function handleSearchSubmit() {
+    if (onSearchSubmit) {
+      onSearchSubmit();
+      return;
+    }
+    if (searchResults) {
+      const confirmed = findConfirmedSearchBuilding(activeQuery, searchResults);
+      if (confirmed) {
+        onSelectBuilding?.(confirmed.id);
+      }
+    }
+  }
+
   function handleResetSearch() {
     if (controlledQuery === undefined) {
       setInternalQuery("");
@@ -121,6 +137,7 @@ export function HomePage({
         placeholder="ค้นหาสถานที่..."
         value={activeQuery}
         onChange={handleSearchChange}
+        onSubmit={handleSearchSubmit}
       />
 
       {isDropdownVisible ? (

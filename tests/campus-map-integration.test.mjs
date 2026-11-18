@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   buildHomeQueryString,
+  findConfirmedSearchBuilding,
   mergeBuildingFloors,
   mergeBuildingWithCrowd,
   parseCrowdFilterParam,
@@ -235,4 +236,40 @@ test("parseCrowdFilterParam and buildHomeQueryString preserve valid home and det
     }),
     "",
   );
+});
+
+test("findConfirmedSearchBuilding confirms exact code/name among prefix matches or a single result", () => {
+  const s1 = {
+    id: "1",
+    code: "S1",
+    name: "อาคารวิศวกรรมศาสตร์",
+    imageUrl: null,
+    crowdLevel: "low",
+    updatedAt: null,
+  };
+  const s10 = {
+    id: "10",
+    code: "S10",
+    name: "อาคารวิศวกรรมเคมี",
+    imageUrl: null,
+    crowdLevel: "medium",
+    updatedAt: null,
+  };
+  const s11 = {
+    id: "11",
+    code: "S11",
+    name: "อาคารปฏิบัติการรวม",
+    imageUrl: null,
+    crowdLevel: "high",
+    updatedAt: null,
+  };
+
+  assert.equal(findConfirmedSearchBuilding(" s1 ", [s10, s1, s11])?.id, "1");
+  assert.equal(
+    findConfirmedSearchBuilding("อาคารวิศวกรรมเคมี", [s1, s10])?.id,
+    "10",
+  );
+  assert.equal(findConfirmedSearchBuilding("ปฏิบัติการ", [s11])?.id, "11");
+  assert.equal(findConfirmedSearchBuilding("อาคาร", [s1, s10, s11]), null);
+  assert.equal(findConfirmedSearchBuilding("  ", [s1]), null);
 });
