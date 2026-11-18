@@ -8,6 +8,7 @@ import { RewardsPage } from "./rewards-page";
 export interface RedemptionFlowProps {
   rewardId: RewardId;
   reward: RewardCardModel;
+  points: number | null;
   onClose: () => void;
   onRedemptionConfirmed: () => void;
 }
@@ -28,12 +29,14 @@ export function RewardsCatalogContainer({
         state={state}
         onSelectReward={renderRedemption ? setSelected : undefined}
         selectionDisabled={isRefreshing || selected !== null}
+        vouchersHref="/rewards/vouchers"
       />
       {renderRedemption &&
         selected &&
         renderRedemption({
           rewardId: selected.id,
           reward: selected,
+          points: state.status === "ready" ? state.points : null,
           onClose: () => setSelected(null),
           onRedemptionConfirmed: () => {
             setSelected(null);
