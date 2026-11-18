@@ -1,9 +1,9 @@
 # Rewards and vouchers — BE-011
 
-Product rules confirmed November 17, 2026. Every route needs the Supabase session
+Product rules confirmed November 17, 2026. Every route except `POST /api/vouchers/verify` needs the Supabase session
 cookie, returns `Cache-Control: private, no-store`, accepts no query string and
-never returns `auth_id`, `user_id` or `idempotency_key`. Using a voucher and its
-QR belong to BE-012.
+never returns `auth_id`, `user_id` or `idempotency_key`. Voucher use and shop
+verification were added by BE-012.
 
 ## Rules
 
@@ -16,6 +16,16 @@ QR belong to BE-012.
   same reward up to that limit.
 - Each voucher expires `valid_days` after its own `redeemed_at`, not at the reward
   deadline. Defaults: `max_per_user` 1, `valid_days` 7.
+- Using a voucher (BE-012) marks it used immediately and returns a 32-character hex
+  `use_code` for the one-time QR. Each tap on use sends a new `Idempotency-Key`;
+  only a retry with the same key (lost response) returns the code again, and only
+  within 30 minutes and before the shop verifies it. Closing the QR and tapping
+  again does not, so the UI should confirm before calling use.
+- The shop scans that QR and calls verify within 30 minutes of use and before the
+  voucher expires (otherwise `expired`). The first verify marks the voucher
+  verified; later scans report `already_verified` with the earlier time, so a
+  screenshot cannot be accepted twice. Verify needs no login and never returns
+  who owns the voucher.
 - Points never go negative and stock never goes below 0.
 
 ## Endpoints
@@ -25,6 +35,8 @@ QR belong to BE-012.
 | GET | `/api/rewards` | `{points, rewards: [...]}` |
 | POST | `/api/rewards/{rewardId}/redeem` | `{replayed, points, voucher: {id, reward_id, used_points, redeemed_at, expires_at}}` |
 | GET | `/api/vouchers` | `[{id, reward_id, title, image_url, used_points, redeemed_at, expires_at, used_at, status}]` |
+| POST | `/api/vouchers/{voucherId}/use` + `Idempotency-Key` | `{id, used_at, use_code}` |
+| POST | `/api/vouchers/verify` `{code}` (no login) | `{reward_title, used_points, used_at, verified_at}` |
 
 Catalog rows contain `id, title, description, image_url, points_required, stock,
 starts_at, expires_at, valid_days, max_per_user, redeemed_count, availability`,
@@ -59,8 +71,8 @@ Body: `{success: false, code, error}` with a Thai `error` message.
 | --- | --- |
 | 400 | `validation` — bad ID, missing/non-UUID `Idempotency-Key`, query string |
 | 401 | `unauthorized` — no session, expired session or no profile |
-| 404 | `not_found` — reward missing |
-| 409 | `insufficient_points`, `out_of_stock`, `limit_reached`, `upcoming`, `expired` |
+| 404 | `not_found` — reward missing, voucher missing/not yours, or unknown verify code |
+| 409 | `insufficient_points`, `out_of_stock`, `limit_reached`, `upcoming`, `expired`, `already_used`, `already_verified` (with `data`) |
 | 422 | `key_conflict` |
 | 503 | `unavailable` — database or Auth service failure (not a lost session) |
 
@@ -96,3 +108,9 @@ $env:REWARDS_API_TEST_LAST_ONE_ID = "<reward id>"
 $env:REWARDS_API_TEST_STACK_ID = "<reward id>"
 node --test tests/rewards-api.integration.test.mjs
 ```
+
+`tests/voucher-use.integration.test.mjs` redeems, uses and verifies one voucher. Run it
+with a second Local account so it does not change the balance the test above
+checks: `VOUCHER_API_TEST_EMAIL`, `VOUCHER_API_TEST_PASSWORD` and
+`VOUCHER_API_TEST_REWARD_ID` (a redeemable reward with stock and a high
+`max_per_user`), plus `REWARDS_API_TEST_URL`.
