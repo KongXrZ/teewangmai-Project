@@ -703,78 +703,80 @@ export function CampusMap({
             : "top-3"
         }`}
       >
-        {topSlot ? <div className="pointer-events-auto">{topSlot}</div> : null}
+        {topSlot ? (
+          <div className="pointer-events-auto relative z-30">{topSlot}</div>
+        ) : null}
         <div className="pointer-events-auto">
           <CrowdLevelFilter
             selected={activeFilter}
             onChange={handleFilterChange}
           />
         </div>
+
+        {isLoading ? (
+          <div
+            role="status"
+            aria-live="polite"
+            className="pointer-events-none flex justify-center"
+          >
+            <span className="rounded-full bg-white/95 px-4 py-1.5 text-xs font-medium text-[#081828] shadow-sm">
+              กำลังโหลดข้อมูลแผนที่...
+            </span>
+          </div>
+        ) : null}
+
+        {errorMessage ? (
+          <div
+            role="alert"
+            className="pointer-events-auto mx-auto flex w-full max-w-[420px] flex-col items-center gap-2 rounded-2xl border border-[#fecaca] bg-[#fff5f5]/95 px-4 py-3 text-center text-xs font-medium text-[#b91c1c] shadow-sm"
+          >
+            <p>{errorMessage}</p>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {onRetry ? (
+                <button
+                  type="button"
+                  onClick={onRetry}
+                  className="min-h-11 min-w-11 cursor-pointer rounded-full border border-[#fca5a5] bg-white px-3.5 text-xs font-semibold text-[#b91c1c] transition-colors hover:bg-[#fef2f2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
+                >
+                  ลองใหม่
+                </button>
+              ) : null}
+              <Link
+                href="/locations"
+                className="inline-flex min-h-11 min-w-11 items-center rounded-full bg-[#ff5815] px-3.5 text-xs font-semibold text-white transition-colors hover:bg-[#e54e10] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
+              >
+                ดูรายชื่อสถานที่ทั้งหมด
+              </Link>
+            </div>
+          </div>
+        ) : null}
+
+        {!isLoading && !errorMessage && warningMessage ? (
+          <div
+            role="status"
+            className="pointer-events-auto mx-auto flex w-full max-w-[420px] items-center justify-between gap-2 rounded-2xl border border-[#fed7aa] bg-[#fff7ed]/95 px-3.5 py-2 text-xs font-medium text-[#9a3412] shadow-sm"
+          >
+            <span className="min-w-0 flex-1">{warningMessage}</span>
+            <div className="flex shrink-0 items-center gap-1.5">
+              {onRetry ? (
+                <button
+                  type="button"
+                  onClick={onRetry}
+                  className="min-h-11 min-w-11 cursor-pointer rounded-full border border-[#fdba74] bg-white px-2.5 text-[11px] font-semibold text-[#9a3412] transition-colors hover:bg-[#ffedd5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
+                >
+                  ลองใหม่
+                </button>
+              ) : null}
+              <Link
+                href="/locations"
+                className="inline-flex min-h-11 min-w-11 items-center rounded-full bg-[#ff5815] px-2.5 text-[11px] font-semibold text-white transition-colors hover:bg-[#e54e10] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
+              >
+                รายการสถานที่
+              </Link>
+            </div>
+          </div>
+        ) : null}
       </div>
-
-      {isLoading ? (
-        <div
-          role="status"
-          aria-live="polite"
-          className="pointer-events-none absolute inset-x-4 top-20 z-10 flex justify-center"
-        >
-          <span className="rounded-full bg-white/95 px-4 py-1.5 text-xs font-medium text-[#081828] shadow-sm">
-            กำลังโหลดข้อมูลแผนที่...
-          </span>
-        </div>
-      ) : null}
-
-      {errorMessage ? (
-        <div
-          role="alert"
-          className="absolute inset-x-4 top-20 z-20 mx-auto flex max-w-[420px] flex-col items-center gap-2 rounded-2xl border border-[#fecaca] bg-[#fff5f5]/95 px-4 py-3 text-center text-xs font-medium text-[#b91c1c] shadow-sm"
-        >
-          <p>{errorMessage}</p>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {onRetry ? (
-              <button
-                type="button"
-                onClick={onRetry}
-                className="min-h-11 min-w-11 cursor-pointer rounded-full border border-[#fca5a5] bg-white px-3.5 text-xs font-semibold text-[#b91c1c] transition-colors hover:bg-[#fef2f2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
-              >
-                ลองใหม่
-              </button>
-            ) : null}
-            <Link
-              href="/locations"
-              className="inline-flex min-h-11 min-w-11 items-center rounded-full bg-[#ff5815] px-3.5 text-xs font-semibold text-white transition-colors hover:bg-[#e54e10] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
-            >
-              ดูรายชื่อสถานที่ทั้งหมด
-            </Link>
-          </div>
-        </div>
-      ) : null}
-
-      {!isLoading && !errorMessage && warningMessage ? (
-        <div
-          role="status"
-          className="absolute inset-x-4 top-20 z-20 mx-auto flex max-w-[420px] items-center justify-between gap-2 rounded-2xl border border-[#fed7aa] bg-[#fff7ed]/95 px-3.5 py-2 text-xs font-medium text-[#9a3412] shadow-sm"
-        >
-          <span className="min-w-0 flex-1">{warningMessage}</span>
-          <div className="flex shrink-0 items-center gap-1.5">
-            {onRetry ? (
-              <button
-                type="button"
-                onClick={onRetry}
-                className="min-h-11 min-w-11 cursor-pointer rounded-full border border-[#fdba74] bg-white px-2.5 text-[11px] font-semibold text-[#9a3412] transition-colors hover:bg-[#ffedd5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
-              >
-                ลองใหม่
-              </button>
-            ) : null}
-            <Link
-              href="/locations"
-              className="inline-flex min-h-11 min-w-11 items-center rounded-full bg-[#ff5815] px-2.5 text-[11px] font-semibold text-white transition-colors hover:bg-[#e54e10] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
-            >
-              รายการสถานที่
-            </Link>
-          </div>
-        </div>
-      ) : null}
 
       {!isLoading && !errorMessage && showFallbackPlaceholder ? (
         <div className="pointer-events-none absolute inset-x-4 bottom-16 z-10 flex justify-center">
