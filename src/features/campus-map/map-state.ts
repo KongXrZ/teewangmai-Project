@@ -279,3 +279,47 @@ export function zoomAroundPoint(
     mapHeight,
   );
 }
+
+export interface MapPoint {
+  readonly x: number;
+  readonly y: number;
+}
+
+export function centerMapOnPoint(
+  current: MapTransform,
+  target: MapPoint,
+  viewportWidth: number,
+  viewportHeight: number,
+  mapWidth: number,
+  mapHeight: number,
+  options: {
+    readonly zoom?: number;
+    readonly anchorRatioY?: number;
+  } = {},
+): MapTransform {
+  const zoom = Math.min(
+    MAP_MAX_ZOOM,
+    Math.max(MAP_MIN_ZOOM, options.zoom ?? current.zoom),
+  );
+  const baseScale = computeBaseScale(
+    viewportWidth,
+    viewportHeight,
+    mapWidth,
+    mapHeight,
+  );
+  const totalScale = baseScale * zoom;
+  const anchorX = viewportWidth / 2;
+  const anchorY = viewportHeight * (options.anchorRatioY ?? 0.5);
+
+  return clampMapTransform(
+    {
+      zoom,
+      panX: anchorX - target.x * totalScale,
+      panY: anchorY - target.y * totalScale,
+    },
+    viewportWidth,
+    viewportHeight,
+    mapWidth,
+    mapHeight,
+  );
+}

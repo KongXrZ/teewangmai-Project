@@ -5,9 +5,11 @@ import {
   BUILDING_CODES,
   CAMPUS_BUILDING_SHAPES,
   CAMPUS_MAP_VIEWBOX,
+  getBuildingsBoundingCenter,
   isBuildingCode,
 } from "../src/features/campus-map/building-shapes.ts";
 import {
+  centerMapOnPoint,
   clampMapTransform,
   computeBaseScale,
   computeBuildingRenderState,
@@ -199,4 +201,40 @@ test("pan/zoom math centers map at min zoom, clamps bounds, and zooms around anc
   assert.equal(zoomed.zoom, MAP_MAX_ZOOM);
   assert.ok(zoomed.panX <= 0);
   assert.ok(zoomed.panX >= viewportW - mapW * baseScale * MAP_MAX_ZOOM);
+});
+
+test("getBuildingsBoundingCenter and centerMapOnPoint place target buildings at the viewport center", () => {
+  const s1Center = getBuildingsBoundingCenter(["S1"]);
+  assert.deepEqual(s1Center, {
+    x: CAMPUS_BUILDING_SHAPES.S1.labelX,
+    y: CAMPUS_BUILDING_SHAPES.S1.labelY,
+  });
+  assert.equal(getBuildingsBoundingCenter([]), null);
+
+  const multiCenter = getBuildingsBoundingCenter(["S1", "N16"]);
+  assert.ok(multiCenter !== null);
+  assert.ok(multiCenter.x > CAMPUS_BUILDING_SHAPES.S1.labelX);
+  assert.ok(multiCenter.x < CAMPUS_BUILDING_SHAPES.N16.labelX);
+
+  const viewportW = 390;
+  const viewportH = 480;
+  const mapW = CAMPUS_MAP_VIEWBOX.width;
+  const mapH = CAMPUS_MAP_VIEWBOX.height;
+  const baseScale = computeBaseScale(viewportW, viewportH, mapW, mapH);
+
+  const centeredN16 = centerMapOnPoint(
+    { zoom: 1.4, panX: 0, panY: 0 },
+    { x: CAMPUS_BUILDING_SHAPES.N16.labelX, y: CAMPUS_BUILDING_SHAPES.N16.labelY },
+    viewportW,
+    viewportH,
+    mapW,
+    mapH,
+    { zoom: 2.2, anchorRatioY: 0.42 },
+  );
+  assert.equal(centeredN16.zoom, 2.2);
+  const scale = baseScale * centeredN16.zoom;
+  const screenX = centeredN16.panX + CAMPUS_BUILDING_SHAPES.N16.labelX * scale;
+  const screenY = centeredN16.panY + CAMPUS_BUILDING_SHAPES.N16.labelY * scale;
+  assert.ok(Math.abs(screenX - viewportW / 2) < 1e-6);
+  assert.ok(Math.abs(screenY - viewportH * 0.42) < 1e-6);
 });
