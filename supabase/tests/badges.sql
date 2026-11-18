@@ -6,12 +6,9 @@ declare
   user_a integer;
   user_b integer;
   building_one integer;
-  building_two integer;
   floor_one integer;
-  floor_two integer;
   floor_other integer;
   count_badge integer;
-  building_badge integer;
   inactive_badge integer;
   third_checkin_at timestamptz;
 begin
@@ -25,18 +22,19 @@ begin
 
   insert into public.locations (building, name, category, gps_lat, gps_lng)
     values ('N999991', 'Badge test only', '{}', 0, 0) returning id into building_one;
-  insert into public.locations (building, name, category, gps_lat, gps_lng)
-    values ('N999992', 'Badge test only', '{}', 0, 0) returning id into building_two;
   insert into public.floors (location_id, floor_name, qr_code_id)
     values (building_one, '1', gen_random_uuid()::text) returning id into floor_one;
   insert into public.floors (location_id, floor_name, qr_code_id)
     values (building_one, '2', gen_random_uuid()::text) returning id into floor_other;
-  insert into public.floors (location_id, floor_name, qr_code_id)
-    values (building_two, '1', gen_random_uuid()::text) returning id into floor_two;
 
   begin
     insert into public.badges (name, requirement_type, requirement_value) values ('x', 'points_total', 1);
     raise exception 'Unsupported requirement type accepted';
+  exception when check_violation then null;
+  end;
+  begin
+    insert into public.badges (name, requirement_type, requirement_value) values ('x', 'distinct_building_count', 1);
+    raise exception 'Unapproved requirement type accepted';
   exception when check_violation then null;
   end;
   begin
@@ -47,12 +45,9 @@ begin
 
   insert into public.badges (name, requirement_type, requirement_value)
     values ('Badge test count 3', 'checkin_count', 3) returning id into count_badge;
-  insert into public.badges (name, requirement_type, requirement_value)
-    values ('Badge test buildings 2', 'distinct_building_count', 2) returning id into building_badge;
   insert into public.badges (name, requirement_type, requirement_value, is_active)
     values ('Badge test inactive', 'checkin_count', 1, false) returning id into inactive_badge;
   perform set_config('badge_test.count_badge', count_badge::text, true);
-  perform set_config('badge_test.building_badge', building_badge::text, true);
   perform set_config('badge_test.inactive_badge', inactive_badge::text, true);
 
   insert into public.checkins (user_id, floor_id, crowd_level, created_at) values
@@ -69,21 +64,15 @@ begin
     and badge_id = count_badge and earned_at = third_checkin_at) then
     raise exception 'Count badge not awarded exactly at threshold with its crossing time';
   end if;
-  if exists (select 1 from public.user_badges where user_id = user_a
-    and badge_id in (building_badge, inactive_badge)) then
-    raise exception 'Building or inactive badge awarded without meeting rules';
-  end if;
-
-  insert into public.checkins (user_id, floor_id, crowd_level) values (user_a, floor_two, 2);
-  if not exists (select 1 from public.user_badges where user_id = user_a and badge_id = building_badge) then
-    raise exception 'Distinct building badge not awarded';
+  if exists (select 1 from public.user_badges where user_id = user_a and badge_id = inactive_badge) then
+    raise exception 'Inactive badge awarded';
   end if;
 
   if private.award_user_badges(user_a) <> 0 or private.award_user_badges(user_b) <> 0 then
     raise exception 'Re-evaluation must not award again';
   end if;
-  insert into public.checkins (user_id, floor_id, crowd_level) values (user_a, floor_two, 2);
-  if (select count(*) from public.user_badges where user_id = user_a) <> 2 then
+  insert into public.checkins (user_id, floor_id, crowd_level) values (user_a, floor_one, 2);
+  if (select count(*) from public.user_badges where user_id = user_a) <> 1 then
     raise exception 'Repeated events created duplicate badges';
   end if;
   begin
@@ -117,7 +106,6 @@ select set_config('request.jwt.claims',
 do $$
 declare
   count_badge integer := current_setting('badge_test.count_badge')::integer;
-  building_badge integer := current_setting('badge_test.building_badge')::integer;
   inactive_badge integer := current_setting('badge_test.inactive_badge')::integer;
   row record;
 begin
@@ -135,7 +123,7 @@ begin
   end if;
   begin
     insert into public.user_badges (user_id, badge_id)
-      select u.id, building_badge from public.users u limit 1;
+      select u.id, count_badge from public.users u limit 1;
     raise exception 'Client granted a badge';
   exception when insufficient_privilege then null;
   end;

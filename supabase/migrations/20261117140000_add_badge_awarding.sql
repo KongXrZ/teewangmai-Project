@@ -1,6 +1,6 @@
 alter table public.badges
   add constraint badges_requirement_type_supported
-  check (requirement_type in ('checkin_count', 'distinct_building_count'));
+  check (requirement_type = 'checkin_count');
 
 create index if not exists idx_user_badges_badge on public.user_badges (badge_id);
 
@@ -40,32 +40,12 @@ begin
       row_number() over (order by c.created_at, c.id) as reached
     from public.checkins c
     where c.user_id = p_user_id
-  ),
-  building_progress as (
-    select first_at as reached_at,
-      row_number() over (order by first_at, location_id) as reached
-    from (
-      select f.location_id, min(c.created_at) as first_at
-      from public.checkins c
-      join public.floors f on f.id = c.floor_id
-      where c.user_id = p_user_id
-      group by f.location_id
-    ) visited
-  ),
-  qualified as (
-    select b.id as badge_id, p.reached_at
-    from public.badges b
-    join checkin_progress p on p.reached = b.requirement_value
-    where b.is_active and b.requirement_type = 'checkin_count'
-    union all
-    select b.id, p.reached_at
-    from public.badges b
-    join building_progress p on p.reached = b.requirement_value
-    where b.is_active and b.requirement_type = 'distinct_building_count'
   )
   insert into public.user_badges (user_id, badge_id, earned_at)
-  select p_user_id, q.badge_id, q.reached_at
-  from qualified q
+  select p_user_id, b.id, p.reached_at
+  from public.badges b
+  join checkin_progress p on p.reached = b.requirement_value
+  where b.is_active and b.requirement_type = 'checkin_count'
   on conflict (user_id, badge_id) do nothing;
 
   get diagnostics awarded = row_count;

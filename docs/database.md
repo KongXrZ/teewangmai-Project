@@ -124,9 +124,8 @@ or prevent double use. Those operations and voucher QR verification need trusted
 APIs. Direct clients cannot issue/consume vouchers.
 
 `badges.requirement_value` is a positive threshold interpreted together with
-`requirement_type`. BE-013 restricts types to `checkin_count` (accepted check-ins)
-and `distinct_building_count` (distinct buildings via `checkins.floor_id`); both
-await owner confirmation. An `after insert` trigger on `checkins` evaluates active
+`requirement_type`. BE-013 supports only `checkin_count` (accepted check-ins),
+pending owner confirmation. An `after insert` trigger on `checkins` evaluates active
 badges under a per-user advisory lock and inserts `user_badges` with
 `on conflict do nothing`; `earned_at` is the crossing check-in's `created_at`.
 `private.award_all_user_badges()` backfills after imports or reactivation and is

@@ -24,12 +24,12 @@ function row(overrides = {}) {
 }
 
 test("supported vocabulary matches the database constraint", () => {
-  assert.deepEqual([...BADGE_REQUIREMENT_TYPES], ["checkin_count", "distinct_building_count"]);
+  assert.deepEqual([...BADGE_REQUIREMENT_TYPES], ["checkin_count"]);
 });
 
 test("requirement text is derived from type and threshold", () => {
   assert.equal(requirementText("checkin_count", 5), "เช็กอินครบ 5 ครั้ง");
-  assert.equal(requirementText("distinct_building_count", 3), "เช็กอินครบ 3 อาคาร");
+  assert.equal(requirementText("distinct_building_count", 3), null);
   assert.equal(requirementText("points_total", 3), null);
 });
 

@@ -1,6 +1,4 @@
-export const BADGE_REQUIREMENT_TYPES = ["checkin_count", "distinct_building_count"] as const;
-
-export type BadgeRequirementType = (typeof BADGE_REQUIREMENT_TYPES)[number];
+export const BADGE_REQUIREMENT_TYPES = ["checkin_count"] as const;
 
 export interface BadgeRow {
   id: number;
@@ -17,14 +15,8 @@ export interface BadgeDto extends BadgeRow {
   requirement_text: string | null;
 }
 
-const requirementUnits: Record<BadgeRequirementType, string> = {
-  checkin_count: "ครั้ง",
-  distinct_building_count: "อาคาร",
-};
-
 export function requirementText(type: string, value: number): string | null {
-  if (!(BADGE_REQUIREMENT_TYPES as readonly string[]).includes(type)) return null;
-  return `เช็กอินครบ ${value} ${requirementUnits[type as BadgeRequirementType]}`;
+  return type === "checkin_count" ? `เช็กอินครบ ${value} ครั้ง` : null;
 }
 
 export function toBadgeDto(row: BadgeRow): BadgeDto {

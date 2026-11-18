@@ -52,7 +52,7 @@ are not guaranteed unique. Do not add a schema key without agreement.
   e.g. an ISO timestamp with `+07:00` for a Bangkok date. All issued vouchers copy
   that deadline. Status permits upcoming/active/expired; start must precede expiry.
 - Badge threshold is a positive integer. `requirement_type` must be
-  `checkin_count` or `distinct_building_count`; run
+  `checkin_count`; run
   `select private.award_all_user_badges();` after importing or reactivating badges.
 
 Import order: buildings → floors → floor hours; reward/badge definitions can
