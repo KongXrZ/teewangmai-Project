@@ -190,7 +190,7 @@ function ProfileOverview({
                 {stat.label}
               </dt>
               <dd className="text-2xl leading-none font-bold text-[#ea580c] tabular-nums">
-                {numberFormat.format(stat.value)}
+                {stat.value === null ? "–" : numberFormat.format(stat.value)}
               </dd>
             </div>
           ))}
