@@ -35,6 +35,7 @@ export interface RedemptionDialogProps {
   onConfirm: RedemptionConfirmHandler;
   onClose: (reason: RedemptionCloseReason) => void;
   qr?: ReactNode;
+  onViewVoucher?: () => void;
 }
 
 const resultCopy: Record<
@@ -73,6 +74,7 @@ export function RedemptionDialog({
   onConfirm,
   onClose,
   qr,
+  onViewVoucher,
 }: RedemptionDialogProps) {
   const titleId = useId();
   const descriptionId = useId();
@@ -80,6 +82,8 @@ export function RedemptionDialog({
   const submitLockRef = useRef(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const isOpen = open && reward !== null;
+  const showViewVoucher =
+    view.step === "success" && onViewVoucher !== undefined;
 
   useRestoreFocus(isOpen);
 
@@ -217,10 +221,23 @@ export function RedemptionDialog({
                     ลองใหม่
                   </button>
                 )}
+                {showViewVoucher && (
+                  <button
+                    type="button"
+                    onClick={onViewVoucher}
+                    className={primaryButton}
+                  >
+                    ดูสิทธิ์ของฉัน
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={dismiss}
-                  className={view.canRetry ? secondaryButton : primaryButton}
+                  className={
+                    view.canRetry || showViewVoucher
+                      ? secondaryButton
+                      : primaryButton
+                  }
                 >
                   ปิดหน้าต่าง
                 </button>

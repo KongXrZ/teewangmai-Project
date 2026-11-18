@@ -13,7 +13,6 @@ const LOGIN_ROUTE = "/login";
 
 export interface RewardsCatalogController {
   state: RewardsCatalogState;
-  /** Re-fetch points and catalog while keeping the current view on screen. */
   refresh: () => void;
   isRefreshing: boolean;
 }

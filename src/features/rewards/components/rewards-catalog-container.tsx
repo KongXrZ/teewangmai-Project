@@ -8,17 +8,12 @@ import { RewardsPage } from "./rewards-page";
 export interface RedemptionFlowProps {
   rewardId: RewardId;
   reward: RewardCardModel;
-  /** Close the flow without a confirmed redemption. */
+  points: number | null;
   onClose: () => void;
-  /** Call only after the backend has confirmed the redemption result. */
   onRedemptionConfirmed: () => void;
 }
 
 export interface RewardsCatalogContainerProps {
-  /**
-   * Redemption confirmation/result UI (FE-010). Until it is provided,
-   * the "แลก" buttons stay disabled because nothing can confirm a redemption.
-   */
   renderRedemption?: (props: RedemptionFlowProps) => ReactNode;
 }
 
@@ -34,12 +29,14 @@ export function RewardsCatalogContainer({
         state={state}
         onSelectReward={renderRedemption ? setSelected : undefined}
         selectionDisabled={isRefreshing || selected !== null}
+        vouchersHref="/rewards/vouchers"
       />
       {renderRedemption &&
         selected &&
         renderRedemption({
           rewardId: selected.id,
           reward: selected,
+          points: state.status === "ready" ? state.points : null,
           onClose: () => setSelected(null),
           onRedemptionConfirmed: () => {
             setSelected(null);

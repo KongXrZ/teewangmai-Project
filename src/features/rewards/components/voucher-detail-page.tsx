@@ -113,6 +113,7 @@ function VoucherDetailContent({
           key={state.voucher.id}
           voucher={state.voucher}
           qr={state.qr}
+          useQr={state.useQr}
           onUseVoucher={onUseVoucher}
           usePending={usePending}
           useError={useError}
@@ -124,12 +125,14 @@ function VoucherDetailContent({
 function ReadyVoucherDetail({
   voucher,
   qr,
+  useQr,
   onUseVoucher,
   usePending,
   useError,
 }: {
   voucher: VoucherModel;
   qr?: ReactNode;
+  useQr?: ReactNode;
   onUseVoucher?: VoucherSelectHandler;
   usePending?: boolean;
   useError?: string;
@@ -137,6 +140,7 @@ function ReadyVoucherDetail({
   const view = getVoucherDetailView(voucher, {
     hasQr: qr !== undefined && qr !== null,
     hasUseAction: onUseVoucher !== undefined,
+    hasUseQr: useQr !== undefined && useQr !== null,
   });
 
   function handleUse() {
@@ -200,6 +204,12 @@ function ReadyVoucherDetail({
       )}
 
       {view.showQr && <RedemptionQrArea>{qr}</RedemptionQrArea>}
+
+      {view.showUseQr && (
+        <RedemptionQrArea instruction="ยื่น QR Code นี้ให้พนักงานสแกนภายใน 30 นาที">
+          {useQr}
+        </RedemptionQrArea>
+      )}
 
       {view.showQrPending && (
         <p
