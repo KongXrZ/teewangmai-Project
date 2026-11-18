@@ -189,7 +189,8 @@ BE-002 ไม่เพิ่มหน้ากู้รหัสผ่าน/แ
 - `availability`: `redeemable`, `insufficient_points` (แสดงล็อก), `out_of_stock`, `limit_reached` (แลกครบสิทธิ์), `upcoming` รางวัลหมดเขตไม่ถูกส่งมา
 - สร้าง UUID ใหม่ทุกครั้งที่ผู้ใช้กดยืนยันแลก ถ้าเน็ตหลุดแล้วกดลองใหม่ ให้ส่ง UUID เดิม จะได้คูปองใบเดิมโดยไม่หักแต้มซ้ำ
 - คูปองหมดอายุหลังแลก `valid_days` วัน (ค่าเริ่มต้น 7) แต่ละใบหมดไม่พร้อมกัน
-- การกดใช้คูปองและ QR อยู่ใน BE-012
+- กดใช้ (BE-012): `POST /api/vouchers/{voucherId}/use` + header `Idempotency-Key: <uuid>` → `{id, used_at, use_code}` เอา `use_code` ไปทำ QR กดใช้ 1 ครั้งสร้าง UUID ใหม่ 1 ตัว เน็ตหลุดให้ลองใหม่ด้วย UUID เดิมจะได้โค้ดเดิม ปิด QR แล้วกดใหม่ได้ 409 `already_used` ไม่มีโค้ด ควรมีหน้ายืนยันก่อนกดใช้
+- ร้านตรวจ: `POST /api/vouchers/verify` body `{code}` ไม่ต้องล็อกอิน ต้องตรวจภายใน 30 นาทีหลังกดใช้ ครั้งแรกได้ 200 ครั้งต่อไปได้ 409 `already_verified` พร้อมเวลาที่ตรวจครั้งแรก เกิน 30 นาทีได้ 409 `expired` โค้ดผิดได้ 404 (UUID เดิมของการกดใช้ขอโค้ดซ้ำได้แค่ภายใน 30 นาทีและก่อนร้านตรวจ)
 - 401 = session หาย/หมดอายุ ให้ไปหน้า login ส่วน 503 = ระบบ Auth หรือ DB มีปัญหา ให้แสดงลองใหม่ ไม่ต้องพาไป login
 - ข้อผิดพลาดอื่น: 400 `validation`, 404 `not_found`, 409 `insufficient_points` / `out_of_stock` / `limit_reached` / `upcoming` / `expired`, 422 `key_conflict`, 503 `unavailable`
 

@@ -230,6 +230,8 @@ docker cp supabase/tests/rewards_redemption.sql supabase_db_teewangmai:/tmp/rewa
 docker exec supabase_db_teewangmai psql -U postgres -d postgres --no-psqlrc -v ON_ERROR_STOP=1 -f /tmp/rewards_redemption.sql
 docker cp supabase/tests/checkin_history.sql supabase_db_teewangmai:/tmp/checkin_history.sql
 docker exec supabase_db_teewangmai psql -U postgres -d postgres --no-psqlrc -v ON_ERROR_STOP=1 -f /tmp/checkin_history.sql
+docker cp supabase/tests/voucher_use.sql supabase_db_teewangmai:/tmp/voucher_use.sql
+docker exec supabase_db_teewangmai psql -U postgres -d postgres --no-psqlrc -v ON_ERROR_STOP=1 -f /tmp/voucher_use.sql
 ```
 
 `floor_schema.sql` checks relations, indexes, RLS, profile column grants, and the
@@ -253,6 +255,8 @@ per-user limits, stock, voucher status and that anon cannot call the functions.
 `checkin_history.sql` creates throwaway accounts and reports inside a rolled-back
 transaction and checks own-only history, paging over equal timestamps, old
 reports, empty history, the bounded limit and that anon cannot call it.
+`voucher_use.sql` checks one-time use with the same-key retry, expired and other
+users' vouchers, and that a shop verifies a code once without seeing the owner.
 `floor_hours_seed.sql` checks the 1,120 weekday `floor_hours` rows
 (Monday–Friday `08:00:00`–`17:00:00`, active, with Saturday–Sunday omitted). Fresh replay and
 existing-data import verification also check repeated imports preserve IDs,

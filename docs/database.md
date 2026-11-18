@@ -17,7 +17,7 @@ private `floor_crowd_summaries` snapshot table. Supabase-managed
 | `badges` | Badge definitions | `id`, `name`, `description`, `requirement_type`, `requirement_value`, `icon_url`, `is_active` |
 | `user_badges` | Earned badges | `user_id`, `badge_id`, `earned_at` |
 | `rewards` | Catalog and stock | `id`, `title`, `description`, `points_required`, `stock`, `image_url`, `status`, `starts_at`, `expires_at`, `max_per_user`, `valid_days` |
-| `redemptions` | Successful exchanges and vouchers | `id`, `user_id`, `reward_id`, `used_points`, `status`, `redeemed_at`, `expires_at`, `used_at`, `idempotency_key` |
+| `redemptions` | Successful exchanges and vouchers | `id`, `user_id`, `reward_id`, `used_points`, `status`, `redeemed_at`, `expires_at`, `used_at`, `idempotency_key`, `use_code`, `use_key`, `verified_at` |
 
 ## Buildings, floors and schedules
 
@@ -119,8 +119,14 @@ carries an `idempotency_key` (UUID, unique per user): repeating a key returns
 the original voucher without charging again; a key reused for another reward is
 rejected.
 
-Completed exchange and voucher use differ. Using a voucher (setting `used_at`
-once, atomically, before expiry, with its QR) belongs to BE-012. The constraint
+Completed exchange and voucher use differ. The owner uses a voucher through
+`public.use_voucher` (BE-012), which sets `used_at`, a random `use_code` and the
+request's `use_key` once, atomically, before expiry; the code is returned only
+by that call or a retry with the same `use_key`, and shown as a one-time QR.
+`public.verify_voucher_code` lets a shop confirm a code once: it sets
+`verified_at` the first time and reports later scans as already verified.
+`use_code` and `use_key` exist only together on a used voucher; `verified_at`
+needs a code and is not before `used_at`. The constraint
 requires `redeemed_at <= used_at < expires_at` when present. Personal display
 derives:
 
