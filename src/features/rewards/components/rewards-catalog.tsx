@@ -155,7 +155,7 @@ function RewardSection({
   );
 }
 
-function CatalogMessage({
+export function CatalogMessage({
   icon,
   title,
   description,
