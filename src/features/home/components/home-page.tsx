@@ -1,5 +1,7 @@
 "use client";
 
+import FormatListBulletedRounded from "@mui/icons-material/FormatListBulletedRounded";
+import RestartAltRounded from "@mui/icons-material/RestartAltRounded";
 import Image from "next/image";
 import Link from "next/link";
 import { useState, type ChangeEvent } from "react";
@@ -137,14 +139,14 @@ export function HomePage({
                   <button
                     type="button"
                     onClick={onRetrySearch}
-                    className="rounded-full border border-[#fca5a5] bg-white px-4 py-2 text-xs font-medium text-[#b91c1c] transition-colors hover:bg-[#fef2f2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
+                    className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full border border-[#fca5a5] bg-white px-4 text-xs font-medium text-[#b91c1c] transition-colors hover:bg-[#fef2f2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
                   >
                     ลองค้นหาใหม่
                   </button>
                 ) : null}
                 <Link
                   href="/locations"
-                  className="rounded-full bg-[#ff5815] px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[#e54e10] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full bg-[#ff5815] px-4 text-xs font-medium text-white transition-colors hover:bg-[#e54e10] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
                 >
                   ดูสถานที่ทั้งหมด
                 </Link>
@@ -162,33 +164,35 @@ export function HomePage({
               ))}
             </ul>
           ) : (
-            <div className="flex flex-col items-center px-4 py-5 text-center">
+            <div className="flex flex-col items-center px-4 py-6 text-center">
               <Image
                 src="/images/location-empty-state.png"
                 alt="ไม่พบสถานที่ที่ค้นหา"
-                width={160}
-                height={96}
+                width={175}
+                height={175}
                 unoptimized
-                className="h-24 w-auto object-contain"
+                className="h-28 w-auto object-contain"
               />
-              <p className="mt-3 text-base font-bold text-[#081828]">
+              <p className="mt-3 text-xl font-bold text-[#081828]">
                 ไม่พบสถานที่ที่ค้นหา
               </p>
-              <p className="mt-1 text-xs text-[#64748b]">
-                ลองเปลี่ยนคำค้นหา หรือดูรายชื่ออาคารทั้งหมด
+              <p className="mt-1 text-xs text-[#334155]">
+                ลองค้นหาด้วยชื่ออาคาร รหัสอาคาร หรือคำอื่นๆ อีกครั้ง
               </p>
-              <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
                 <button
                   type="button"
                   onClick={handleResetSearch}
-                  className="rounded-full border border-[#cbd5e1] bg-white px-4 py-2 text-xs font-medium text-[#081828] transition-colors hover:bg-[#f8fafc] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
+                  className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[#ff5815] bg-white px-4 text-xs font-semibold text-[#ff5815] transition-colors hover:bg-[#fff7ed] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
                 >
+                  <RestartAltRounded aria-hidden="true" sx={{ fontSize: 18 }} />
                   ล้างคำค้นหา
                 </button>
                 <Link
                   href="/locations"
-                  className="rounded-full bg-[#ff5815] px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[#e54e10] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-full bg-[#ff5815] px-4 text-xs font-semibold text-white transition-colors hover:bg-[#e54e10] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
                 >
+                  <FormatListBulletedRounded aria-hidden="true" sx={{ fontSize: 18 }} />
                   ดูสถานที่ทั้งหมด
                 </Link>
               </div>
