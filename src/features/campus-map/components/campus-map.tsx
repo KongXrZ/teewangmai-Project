@@ -650,14 +650,14 @@ export function CampusMap({
               <button
                 type="button"
                 onClick={onRetry}
-                className="min-h-9 cursor-pointer rounded-full border border-[#fca5a5] bg-white px-3.5 text-xs font-semibold text-[#b91c1c] transition-colors hover:bg-[#fef2f2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
+                className="min-h-11 min-w-11 cursor-pointer rounded-full border border-[#fca5a5] bg-white px-3.5 text-xs font-semibold text-[#b91c1c] transition-colors hover:bg-[#fef2f2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
               >
                 ลองใหม่
               </button>
             ) : null}
             <Link
               href="/locations"
-              className="inline-flex min-h-9 items-center rounded-full bg-[#ff5815] px-3.5 text-xs font-semibold text-white transition-colors hover:bg-[#e54e10] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
+              className="inline-flex min-h-11 min-w-11 items-center rounded-full bg-[#ff5815] px-3.5 text-xs font-semibold text-white transition-colors hover:bg-[#e54e10] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
             >
               ดูรายชื่อสถานที่ทั้งหมด
             </Link>
@@ -676,14 +676,14 @@ export function CampusMap({
               <button
                 type="button"
                 onClick={onRetry}
-                className="min-h-8 cursor-pointer rounded-full border border-[#fdba74] bg-white px-2.5 text-[11px] font-semibold text-[#9a3412] transition-colors hover:bg-[#ffedd5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
+                className="min-h-11 min-w-11 cursor-pointer rounded-full border border-[#fdba74] bg-white px-2.5 text-[11px] font-semibold text-[#9a3412] transition-colors hover:bg-[#ffedd5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
               >
                 ลองใหม่
               </button>
             ) : null}
             <Link
               href="/locations"
-              className="inline-flex min-h-8 items-center rounded-full bg-[#ff5815] px-2.5 text-[11px] font-semibold text-white transition-colors hover:bg-[#e54e10] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
+              className="inline-flex min-h-11 min-w-11 items-center rounded-full bg-[#ff5815] px-2.5 text-[11px] font-semibold text-white transition-colors hover:bg-[#e54e10] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
             >
               รายการสถานที่
             </Link>
