@@ -17,8 +17,14 @@ export async function POST(request: Request) {
     if (new URL(request.url).search) return checkinError("validation");
     const parsed = resolveSchema.safeParse(input.body);
     if (!parsed.success) {
-      const body = input.body as { qr?: unknown } | null;
-      return checkinError(typeof body?.qr === "string" ? "invalid_qr" : "validation");
+      const body = input.body as Record<string, unknown> | null;
+      const onlyQr =
+        body !== null &&
+        typeof body === "object" &&
+        !Array.isArray(body) &&
+        Object.keys(body).length === 1 &&
+        typeof body.qr === "string";
+      return checkinError(onlyQr ? "invalid_qr" : "validation");
     }
 
     const [profile, floor] = await Promise.all([

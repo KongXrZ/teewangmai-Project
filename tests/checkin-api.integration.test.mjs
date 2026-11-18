@@ -49,6 +49,10 @@ test(
     assert.equal(notFloorQr.status, 404);
     assert.equal(notFloorQr.body.code, "invalid_qr");
     assert.equal((await post("/api/checkins/resolve", { code: "x" }, cookie)).status, 400);
+    const extraField = await post("/api/checkins/resolve", { qr, extra: 1 }, cookie);
+    assert.equal(extraField.status, 400);
+    assert.equal(extraField.body.code, "validation");
+    assert.equal((await post("/api/checkins/resolve", { qr: "bad", extra: 1 }, cookie)).status, 400);
     assert.equal(
       (await post("/api/checkins/resolve", { qr: "00000000-0000-4000-8000-00000000dead" }, cookie)).status,
       404,
