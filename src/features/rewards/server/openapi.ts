@@ -21,8 +21,11 @@ function ok(description: string, data: object) {
   };
 }
 
-function error(description: string) {
-  return { description, content: { "application/json": { schema: errorBody } } };
+function error(description: string, data?: object) {
+  const schema = data
+    ? { ...errorBody, properties: { ...errorBody.properties, data } }
+    : errorBody;
+  return { description, content: { "application/json": { schema } } };
 }
 
 const reward = {
@@ -182,7 +185,10 @@ export const rewardPaths = {
         }),
         400: error("Missing code or extra fields"),
         404: error("Unknown or malformed code"),
-        409: error("already_verified: genuine but checked before (data has the earlier verified_at); expired: shown more than 30 minutes ago or after the voucher expired"),
+        409: error("already_verified: genuine but checked before (data has the earlier verified_at); expired: shown more than 30 minutes ago or after the voucher expired", {
+          type: "object",
+          properties: { reward_title: { type: "string" }, used_points: { type: "integer" }, used_at: dateTime, verified_at: nullableDateTime },
+        }),
         503: error("Rewards unavailable"),
       },
     },
