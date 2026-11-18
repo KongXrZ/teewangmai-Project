@@ -137,7 +137,8 @@ Keep schema changes in migrations and initial records in seeds. Make repeated
 data imports preserve identities and history, and avoid resetting live balances
 or consumed stock. The approved building seed upserts by canonical building code
 and preserves IDs. The 224 floor rows and their UUID identifiers are provisioned;
-QR images and floor hours remain future work. Floor reimports preserve IDs and
+Printable QR assets can be generated using [Floor QR](floor-qr.md); real floor
+hours remain pending. Floor reimports preserve IDs and
 QR identifiers. Schema deployment can happen before all reference data is ready.
 The current reference-data format is in [Reference Data](reference-data.md).
 Floor schedules use Monday=1 through Sunday=7, Bangkok time, with 08:00–16:00

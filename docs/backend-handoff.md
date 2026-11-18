@@ -47,12 +47,12 @@ request/response contracts and update Swagger during implementation.
 | BE-004 | Building/floor/hour CSV import; 35 buildings and 224 floors imported, temporary weekday hours seeded, real hour CSV pending |
 | BE-005 | Building search/list and selected-floor detail; search code/name/category-array members/aliases, building hours derived from floors, floor capacity and metadata |
 | BE-006 | Scheduled floor summaries: 30-minute lookback, refresh every 10 minutes; count estimates and capacity percentage, score-based labels, busiest-floor building cards. Timing configuration deferred. See [Crowd API](crowd-api.md) |
-| BE-007 | Floor QR generation and printable assets; 224 stable floor identifiers are provisioned in Local |
+| BE-007 | Operator CLI `npm run qr:generate`; SVG/PNG, A4 print HTML and manifest from existing floor UUIDs. See [Floor QR](floor-qr.md) |
 | BE-008 | QR resolution and verified check-in: Auth, active reference data, GPS, integer score 1–5, atomic independent 30-minute user/floor cooldown |
 | BE-009 | Own check-in history only, retained logs, pagination ordered by created_at DESC then id DESC; no reward/badge responsibilities |
 | BE-010 | Authorized profile-photo upload and avatar update |
-| BE-011 | Rewards catalog, immediate atomic exchange and own voucher history; fixed reward deadline copied at issuance |
-| BE-012 | Authorized voucher QR verification and single atomic consumption before deadline |
+| BE-011 | Rewards catalog, immediate atomic idempotent exchange, per-user limits and own voucher history; voucher expiry counted from redemption (`valid_days`) |
+| BE-012 | Owner uses a voucher (marked used immediately, one-time QR) and the shop verifies the QR is genuine |
 | BE-013 | Badge catalog, requirement evaluation and own earned badges |
 | BE-014 | Approved reward/badge CSV import, preserving catalog identities, balances, stock and existing activity |
 
