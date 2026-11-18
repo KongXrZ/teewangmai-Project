@@ -195,9 +195,12 @@ export type Database = {
           redeemed_at: string;
           reward_id: number;
           status: string;
+          use_code: string | null;
+          use_key: string | null;
           used_at: string | null;
           used_points: number;
           user_id: number;
+          verified_at: string | null;
         };
         Insert: {
           expires_at: string;
@@ -206,9 +209,12 @@ export type Database = {
           redeemed_at?: string;
           reward_id: number;
           status?: string;
+          use_code?: string | null;
+          use_key?: string | null;
           used_at?: string | null;
           used_points: number;
           user_id: number;
+          verified_at?: string | null;
         };
         Update: {
           expires_at?: string;
@@ -217,9 +223,12 @@ export type Database = {
           redeemed_at?: string;
           reward_id?: number;
           status?: string;
+          use_code?: string | null;
+          use_key?: string | null;
           used_at?: string | null;
           used_points?: number;
           user_id?: number;
+          verified_at?: string | null;
         };
         Relationships: [
           {
@@ -443,6 +452,25 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
+      };
+      use_voucher: {
+        Args: { p_redemption_id: number; p_use_key: string };
+        Returns: {
+          id: number;
+          outcome: string;
+          use_code: string;
+          used_at: string;
+        }[];
+      };
+      verify_voucher_code: {
+        Args: { p_use_code: string };
+        Returns: {
+          outcome: string;
+          reward_title: string;
+          used_at: string;
+          used_points: number;
+          verified_at: string;
+        }[];
       };
     };
     Enums: {
