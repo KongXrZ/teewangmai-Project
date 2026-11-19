@@ -9,7 +9,7 @@ import {
 } from "../api/rewards-catalog-adapter";
 import type { RewardsCatalogState } from "../types";
 
-const LOGIN_ROUTE = "/login";
+const LOGIN_ROUTE = "/login?next=%2Frewards";
 
 export interface RewardsCatalogController {
   state: RewardsCatalogState;
