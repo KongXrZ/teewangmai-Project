@@ -4,7 +4,7 @@ export interface ProfileModel {
   name: string;
   avatarUrl: string | null;
   points: number;
-  reportCount: number;
+  reportCount: number | null;
   badgeCount: number;
 }
 
@@ -29,6 +29,7 @@ export type ReportHistoryState =
       reports: ReportHistoryItem[];
       hasMore?: boolean;
       loadingMore?: boolean;
+      loadMoreFailed?: boolean;
     };
 
 export type ReportHistoryFilter = "all" | "week" | "month";
