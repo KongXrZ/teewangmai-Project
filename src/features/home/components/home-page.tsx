@@ -1,11 +1,14 @@
 "use client";
 
+import FormatListBulletedRounded from "@mui/icons-material/FormatListBulletedRounded";
+import RestartAltRounded from "@mui/icons-material/RestartAltRounded";
 import Image from "next/image";
 import Link from "next/link";
 import { useState, type ChangeEvent } from "react";
 import { BottomNavigation } from "@/components/layout/bottom-navigation";
 import { SearchInput } from "@/components/ui/search-input";
 import { CampusMap } from "@/features/campus-map/components/campus-map";
+import { findConfirmedSearchBuilding } from "@/features/campus-map/map-api-adapter";
 import type {
   CampusBuildingMarker,
   CrowdFilterValue,
@@ -23,11 +26,13 @@ export interface HomePageProps {
   readonly searchQuery?: string;
   readonly defaultSearchQuery?: string;
   readonly onSearchQueryChange?: (query: string) => void;
+  readonly onSearchSubmit?: () => void;
   readonly searchResults?: readonly BuildingCardModel[];
   readonly showSearchResults?: boolean;
   readonly selectedBuilding?: BuildingCardModel | null;
   readonly expandedBuilding?: ExpandedBuildingModel | null;
   readonly highlightedBuildingIds?: readonly string[];
+  readonly mapFocusNonce?: number;
   readonly crowdFilter?: CrowdFilterValue;
   readonly defaultCrowdFilter?: CrowdFilterValue;
   readonly onCrowdFilterChange?: (value: CrowdFilterValue) => void;
@@ -41,7 +46,11 @@ export interface HomePageProps {
   readonly onFullscreenChange?: (fullscreen: boolean) => void;
   readonly isLoading?: boolean;
   readonly errorMessage?: string | null;
+  readonly warningMessage?: string | null;
   readonly emptyMessage?: string | null;
+  readonly searchError?: string | null;
+  readonly onRetry?: () => void;
+  readonly onRetrySearch?: () => void;
 }
 
 export function HomePage({
@@ -49,11 +58,13 @@ export function HomePage({
   searchQuery: controlledQuery,
   defaultSearchQuery = "",
   onSearchQueryChange,
+  onSearchSubmit,
   searchResults,
   showSearchResults,
   selectedBuilding = null,
   expandedBuilding = null,
   highlightedBuildingIds = [],
+  mapFocusNonce = 0,
   crowdFilter,
   defaultCrowdFilter = "all",
   onCrowdFilterChange,
@@ -67,7 +78,11 @@ export function HomePage({
   onFullscreenChange,
   isLoading = false,
   errorMessage = null,
+  warningMessage = null,
   emptyMessage = null,
+  searchError = null,
+  onRetry,
+  onRetrySearch,
 }: HomePageProps) {
   const [internalQuery, setInternalQuery] = useState(defaultSearchQuery);
   const [internalFullscreen, setInternalFullscreen] =
@@ -86,6 +101,19 @@ export function HomePage({
       setInternalQuery(next);
     }
     onSearchQueryChange?.(next);
+  }
+
+  function handleSearchSubmit() {
+    if (onSearchSubmit) {
+      onSearchSubmit();
+      return;
+    }
+    if (searchResults) {
+      const confirmed = findConfirmedSearchBuilding(activeQuery, searchResults);
+      if (confirmed) {
+        onSelectBuilding?.(confirmed.id);
+      }
+    }
   }
 
   function handleResetSearch() {
@@ -111,6 +139,7 @@ export function HomePage({
         placeholder="ค้นหาสถานที่..."
         value={activeQuery}
         onChange={handleSearchChange}
+        onSubmit={handleSearchSubmit}
       />
 
       {isDropdownVisible ? (
@@ -119,7 +148,30 @@ export function HomePage({
           aria-label="ผลการค้นหาสถานที่"
           className="absolute inset-x-0 top-full mt-2 max-h-[min(50dvh,360px)] overflow-y-auto rounded-[24px] border border-[#e5e7eb] bg-white p-2.5 shadow-[0_12px_32px_rgba(8,24,40,0.18)]"
         >
-          {searchResults && searchResults.length > 0 ? (
+          {searchError ? (
+            <div className="flex flex-col items-center px-4 py-5 text-center">
+              <p role="alert" className="text-sm font-semibold text-[#b91c1c]">
+                {searchError}
+              </p>
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                {onRetrySearch ? (
+                  <button
+                    type="button"
+                    onClick={onRetrySearch}
+                    className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full border border-[#fca5a5] bg-white px-4 text-xs font-medium text-[#b91c1c] transition-colors hover:bg-[#fef2f2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
+                  >
+                    ลองค้นหาใหม่
+                  </button>
+                ) : null}
+                <Link
+                  href="/locations"
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full bg-[#ff5815] px-4 text-xs font-medium text-white transition-colors hover:bg-[#e54e10] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
+                >
+                  ดูสถานที่ทั้งหมด
+                </Link>
+              </div>
+            </div>
+          ) : searchResults && searchResults.length > 0 ? (
             <ul className="flex flex-col gap-2.5">
               {searchResults.map((building) => (
                 <li key={building.id}>
@@ -131,33 +183,35 @@ export function HomePage({
               ))}
             </ul>
           ) : (
-            <div className="flex flex-col items-center px-4 py-5 text-center">
+            <div className="flex flex-col items-center px-4 py-6 text-center">
               <Image
                 src="/images/location-empty-state.png"
                 alt="ไม่พบสถานที่ที่ค้นหา"
-                width={160}
-                height={96}
+                width={175}
+                height={175}
                 unoptimized
-                className="h-24 w-auto object-contain"
+                className="h-28 w-auto object-contain"
               />
-              <p className="mt-3 text-base font-bold text-[#081828]">
+              <p className="mt-3 text-xl font-bold text-[#081828]">
                 ไม่พบสถานที่ที่ค้นหา
               </p>
-              <p className="mt-1 text-xs text-[#64748b]">
-                ลองเปลี่ยนคำค้นหา หรือดูรายชื่ออาคารทั้งหมด
+              <p className="mt-1 text-xs text-[#334155]">
+                ลองค้นหาด้วยชื่ออาคาร รหัสอาคาร หรือคำอื่นๆ อีกครั้ง
               </p>
-              <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
                 <button
                   type="button"
                   onClick={handleResetSearch}
-                  className="rounded-full border border-[#cbd5e1] bg-white px-4 py-2 text-xs font-medium text-[#081828] transition-colors hover:bg-[#f8fafc] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
+                  className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[#ff5815] bg-white px-4 text-xs font-semibold text-[#ff5815] transition-colors hover:bg-[#fff7ed] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
                 >
+                  <RestartAltRounded aria-hidden="true" sx={{ fontSize: 18 }} />
                   ล้างคำค้นหา
                 </button>
                 <Link
                   href="/locations"
-                  className="rounded-full bg-[#ff5815] px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[#e54e10] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-full bg-[#ff5815] px-4 text-xs font-semibold text-white transition-colors hover:bg-[#e54e10] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
                 >
+                  <FormatListBulletedRounded aria-hidden="true" sx={{ fontSize: 18 }} />
                   ดูสถานที่ทั้งหมด
                 </Link>
               </div>
@@ -199,6 +253,7 @@ export function HomePage({
             selectedBuilding={selectedBuilding}
             expandedBuilding={expandedBuilding}
             highlightedBuildingIds={highlightedBuildingIds}
+            mapFocusNonce={mapFocusNonce}
             crowdFilter={crowdFilter}
             defaultCrowdFilter={defaultCrowdFilter}
             onCrowdFilterChange={onCrowdFilterChange}
@@ -212,7 +267,9 @@ export function HomePage({
             topSlot={isFullscreen ? searchFieldWithDropdown : undefined}
             isLoading={isLoading}
             errorMessage={errorMessage}
+            warningMessage={warningMessage}
             emptyMessage={emptyMessage}
+            onRetry={onRetry}
           />
         </main>
       </div>

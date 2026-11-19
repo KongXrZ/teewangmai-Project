@@ -18,19 +18,52 @@ import type {
 import { buildingSummaryGridClass, BuildingSummary } from "./building-card";
 import { FloorStats, toFloorStats } from "./floor-stats";
 
+export type ExpandedBuildingCardVariant = "list" | "map";
+
 export interface ExpandedBuildingCardProps {
   building: BuildingCardModel;
   floors: FloorListState;
+  variant?: ExpandedBuildingCardVariant;
   onSelectFloor?: FloorSelectHandler;
   onViewDetail?: BuildingSelectHandler;
 }
 
+const cardVariants: Record<
+  ExpandedBuildingCardVariant,
+  {
+    container: string;
+    dropdown: string;
+    verticalDivider: string;
+    statsDivider: string;
+    statsLabel: string;
+  }
+> = {
+  list: {
+    container:
+      "rounded-2xl border-2 border-solid border-[#ff5815] bg-[#ff6200]/13 outline-none",
+    dropdown: "bg-white",
+    verticalDivider: "bg-[#ff5815]",
+    statsDivider: "border-[#ff5815]",
+    statsLabel: "text-[#b9b9b9]",
+  },
+  map: {
+    container:
+      "rounded-2xl bg-white shadow-[0_8px_24px_rgba(8,24,40,0.18)] outline-none",
+    dropdown: "bg-[#f4f5f7]",
+    verticalDivider: "bg-[#e5e7eb]",
+    statsDivider: "border-[#e5e7eb]",
+    statsLabel: "text-[#878787]",
+  },
+};
+
 export function ExpandedBuildingCard({
   building,
   floors,
+  variant = "list",
   onSelectFloor,
   onViewDetail,
 }: ExpandedBuildingCardProps) {
+  const styles = cardVariants[variant];
   const cardRef = useRef<HTMLDivElement>(null);
   const floorList = floors.status === "ready" ? floors.floors : [];
   const [selectedFloorId, setSelectedFloorId] = useState<FloorId | undefined>(
@@ -54,7 +87,7 @@ export function ExpandedBuildingCard({
       tabIndex={-1}
       aria-current="true"
       aria-label={`${building.code} ${building.name}`}
-      className="rounded-2xl border-2 border-solid border-[#ff5815] bg-[#ff6200]/13 outline-none"
+      className={styles.container}
     >
       <div className={buildingSummaryGridClass}>
         <BuildingSummary
@@ -64,6 +97,7 @@ export function ExpandedBuildingCard({
               <FloorDropdown
                 floors={floorList}
                 selectedId={selectedFloor.id}
+                bgClassName={styles.dropdown}
                 onSelect={handleSelectFloor}
               />
             )
@@ -72,11 +106,16 @@ export function ExpandedBuildingCard({
       </div>
       <div className="flex items-center gap-1 px-1.5 pb-2">
         <div className="flex min-w-0 flex-1 flex-col items-stretch">
-          <FloorSummary floors={floors} floor={selectedFloor} />
+          <FloorSummary
+            floors={floors}
+            floor={selectedFloor}
+            dividerClassName={styles.statsDivider}
+            labelClassName={styles.statsLabel}
+          />
         </div>
         <span
           aria-hidden="true"
-          className="h-[38px] w-px shrink-0 bg-[#ff5815]"
+          className={`h-[38px] w-px shrink-0 ${styles.verticalDivider}`}
         />
         <button
           type="button"
@@ -95,10 +134,12 @@ export function ExpandedBuildingCard({
 function FloorDropdown({
   floors,
   selectedId,
+  bgClassName,
   onSelect,
 }: {
   floors: FloorModel[];
   selectedId: FloorId;
+  bgClassName: string;
   onSelect: (id: FloorId) => void;
 }) {
   const menuId = useId();
@@ -119,7 +160,7 @@ function FloorDropdown({
         aria-expanded={anchor !== null}
         aria-controls={anchor ? menuId : undefined}
         onClick={(event) => setAnchor(event.currentTarget)}
-        className="flex h-11 shrink-0 cursor-pointer items-center gap-0.5 rounded-[7px] border-0 bg-white pr-1 pl-2 text-xs whitespace-nowrap text-black focus-visible:outline-2 focus-visible:outline-[#ff5815]"
+        className={`flex h-11 shrink-0 cursor-pointer items-center gap-0.5 rounded-[7px] border-0 pr-1 pl-2 text-xs whitespace-nowrap text-black focus-visible:outline-2 focus-visible:outline-[#ff5815] ${bgClassName}`}
       >
         ชั้น {selected?.label}
         <KeyboardArrowDown aria-hidden="true" sx={{ fontSize: 16 }} />
@@ -177,9 +218,13 @@ function FloorDropdown({
 function FloorSummary({
   floors,
   floor,
+  dividerClassName,
+  labelClassName,
 }: {
   floors: FloorListState;
   floor: FloorModel | undefined;
+  dividerClassName: string;
+  labelClassName: string;
 }) {
   if (floors.status !== "ready" || !floor) {
     const message = {
@@ -200,8 +245,8 @@ function FloorSummary({
         <FloorStats
           stats={toFloorStats(floor)}
           iconClassName="text-black"
-          dividerClassName="border-[#ff5815]"
-          labelClassName="text-[#b9b9b9]"
+          dividerClassName={dividerClassName}
+          labelClassName={labelClassName}
         />
       )}
       {floor.crowd.status === "loading" && (

@@ -313,3 +313,33 @@ export const CAMPUS_BUILDING_SHAPES: Record<BuildingCode, BuildingShape> = {
     bbox: { x: 1532, y: 1055, width: 129, height: 167 },
   },
 };
+
+export function getBuildingsBoundingCenter(
+  codes: readonly BuildingCode[],
+): { readonly x: number; readonly y: number } | null {
+  if (codes.length === 0) {
+    return null;
+  }
+  if (codes.length === 1) {
+    const shape = CAMPUS_BUILDING_SHAPES[codes[0]];
+    return { x: shape.labelX, y: shape.labelY };
+  }
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  for (const code of codes) {
+    const { bbox } = CAMPUS_BUILDING_SHAPES[code];
+    minX = Math.min(minX, bbox.x);
+    minY = Math.min(minY, bbox.y);
+    maxX = Math.max(maxX, bbox.x + bbox.width);
+    maxY = Math.max(maxY, bbox.y + bbox.height);
+  }
+
+  return {
+    x: (minX + maxX) / 2,
+    y: (minY + maxY) / 2,
+  };
+}

@@ -6,6 +6,7 @@ import OpenInFullRounded from "@mui/icons-material/OpenInFullRounded";
 import RemoveRounded from "@mui/icons-material/RemoveRounded";
 import RestartAltRounded from "@mui/icons-material/RestartAltRounded";
 import Image from "next/image";
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CrowdLevelFilter } from "@/components/ui/crowd-level-filter";
@@ -22,8 +23,12 @@ import {
   CAMPUS_BUILDING_SHAPES,
   CAMPUS_MAP_IMAGE_SRC,
   CAMPUS_MAP_VIEWBOX,
+  getBuildingsBoundingCenter,
+  isBuildingCode,
+  type BuildingCode,
 } from "../building-shapes";
 import {
+  centerMapOnPoint,
   clampMapTransform,
   computeBaseScale,
   computeBuildingRenderStates,
@@ -40,6 +45,7 @@ export interface CampusMapProps {
   readonly selectedBuilding?: BuildingCardModel | null;
   readonly expandedBuilding?: ExpandedBuildingModel | null;
   readonly highlightedBuildingIds?: readonly string[];
+  readonly mapFocusNonce?: number;
   readonly crowdFilter?: CrowdFilterValue;
   readonly defaultCrowdFilter?: CrowdFilterValue;
   readonly onCrowdFilterChange?: (value: CrowdFilterValue) => void;
@@ -55,7 +61,9 @@ export interface CampusMapProps {
   readonly topSlot?: ReactNode;
   readonly isLoading?: boolean;
   readonly errorMessage?: string | null;
+  readonly warningMessage?: string | null;
   readonly emptyMessage?: string | null;
+  readonly onRetry?: () => void;
 }
 
 const DEFAULT_TRANSFORM: MapTransform = { zoom: 1, panX: 0, panY: 0 };
@@ -67,6 +75,7 @@ export function CampusMap({
   selectedBuilding = null,
   expandedBuilding = null,
   highlightedBuildingIds = [],
+  mapFocusNonce = 0,
   crowdFilter: controlledFilter,
   defaultCrowdFilter = "all",
   onCrowdFilterChange,
@@ -82,7 +91,9 @@ export function CampusMap({
   topSlot,
   isLoading = false,
   errorMessage = null,
+  warningMessage = null,
   emptyMessage = null,
+  onRetry,
 }: CampusMapProps) {
   const [internalFilter, setInternalFilter] =
     useState<CrowdFilterValue>(defaultCrowdFilter);
@@ -91,7 +102,9 @@ export function CampusMap({
   const [transform, setTransform] = useState<MapTransform>(DEFAULT_TRANSFORM);
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   const [imageFailed, setImageFailed] = useState(false);
+  const [isFocusAnimating, setIsFocusAnimating] = useState(false);
   const hasInitializedViewRef = useRef(false);
+  const lastAppliedFocusKeyRef = useRef<string | null>(null);
 
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const activePointersRef = useRef(new Map<number, { x: number; y: number }>());
@@ -173,6 +186,7 @@ export function CampusMap({
 
     const handleWheel = (event: WheelEvent) => {
       event.preventDefault();
+      setIsFocusAnimating(false);
       const rect = el.getBoundingClientRect();
       const anchorX = event.clientX - rect.left;
       const anchorY = event.clientY - rect.top;
@@ -222,6 +236,78 @@ export function CampusMap({
     onClearSelection,
     onFullscreenChange,
   ]);
+
+  const highlightedKey = highlightedBuildingIds.join(",");
+  const focusKey = selectedBuilding
+    ? `selected:${selectedBuilding.id}:${mapFocusNonce}`
+    : highlightedKey !== ""
+      ? `highlight:${highlightedKey}:${mapFocusNonce}`
+      : null;
+
+  useEffect(() => {
+    if (!focusKey) {
+      lastAppliedFocusKeyRef.current = null;
+      return;
+    }
+    if (viewportSize.width <= 0 || viewportSize.height <= 0) return;
+    if (lastAppliedFocusKeyRef.current === focusKey) return;
+
+    const targetCodes: BuildingCode[] = [];
+    if (selectedBuilding) {
+      const code = selectedBuilding.code.toUpperCase();
+      if (isBuildingCode(code)) {
+        targetCodes.push(code);
+      }
+    } else {
+      for (const id of highlightedBuildingIds) {
+        const marker = buildings.find((item) => item.id === id);
+        if (!marker) continue;
+        const code = marker.code.toUpperCase();
+        if (isBuildingCode(code)) {
+          targetCodes.push(code);
+        }
+      }
+    }
+    if (targetCodes.length === 0) return;
+
+    const center = getBuildingsBoundingCenter(targetCodes);
+    if (!center) return;
+
+    lastAppliedFocusKeyRef.current = focusKey;
+    const isSingleTarget = Boolean(selectedBuilding) || targetCodes.length === 1;
+    const targetAnchorY = selectedBuilding ? 0.42 : 0.5;
+    const frame = requestAnimationFrame(() => {
+      setIsFocusAnimating(true);
+      setTransform((prev) =>
+        centerMapOnPoint(
+          prev,
+          center,
+          viewportSize.width,
+          viewportSize.height,
+          CAMPUS_MAP_VIEWBOX.width,
+          CAMPUS_MAP_VIEWBOX.height,
+          {
+            zoom: isSingleTarget ? Math.max(prev.zoom, 2) : prev.zoom,
+            anchorRatioY: targetAnchorY,
+          },
+        ),
+      );
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [
+    focusKey,
+    selectedBuilding,
+    highlightedBuildingIds,
+    buildings,
+    viewportSize.width,
+    viewportSize.height,
+  ]);
+
+  useEffect(() => {
+    if (!isFocusAnimating) return;
+    const timer = setTimeout(() => setIsFocusAnimating(false), 320);
+    return () => clearTimeout(timer);
+  }, [isFocusAnimating]);
 
   const clampedTransform = useMemo(
     () =>
@@ -286,6 +372,7 @@ export function CampusMap({
 
   function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
     if (event.button !== 0 && event.pointerType === "mouse") return;
+    setIsFocusAnimating(false);
     activePointersRef.current.set(event.pointerId, {
       x: event.clientX,
       y: event.clientY,
@@ -405,8 +492,10 @@ export function CampusMap({
   const selectedCardContent = selectedBuilding ? (
     expandedBuilding && expandedBuilding.buildingId === selectedBuilding.id ? (
       <ExpandedBuildingCard
+        key={selectedBuilding.id}
         building={selectedBuilding}
         floors={expandedBuilding.floors}
+        variant="map"
         onSelectFloor={onSelectFloor}
         onViewDetail={onViewDetail}
       />
@@ -445,7 +534,10 @@ export function CampusMap({
             transform: `translate3d(${clampedTransform.panX}px, ${clampedTransform.panY}px, 0) scale(${totalScale})`,
             transformOrigin: "0 0",
           }}
-          className="absolute top-0 left-0 will-change-transform"
+          onTransitionEnd={() => setIsFocusAnimating(false)}
+          className={`absolute top-0 left-0 will-change-transform ${
+            isFocusAnimating ? "transition-transform duration-300 ease-out" : ""
+          }`}
         >
           {mapImageSrc && !imageFailed ? (
             <Image
@@ -568,6 +660,13 @@ export function CampusMap({
               {BUILDING_CODES.map((code) => {
                 const shape = CAMPUS_BUILDING_SHAPES[code];
                 const state = renderStates.get(code);
+                if (
+                  !state &&
+                  buildings.length > 0 &&
+                  !showFallbackPlaceholder
+                ) {
+                  return null;
+                }
 
                 return (
                   <text
@@ -604,35 +703,80 @@ export function CampusMap({
             : "top-3"
         }`}
       >
-        {topSlot ? <div className="pointer-events-auto">{topSlot}</div> : null}
+        {topSlot ? (
+          <div className="pointer-events-auto relative z-30">{topSlot}</div>
+        ) : null}
         <div className="pointer-events-auto">
           <CrowdLevelFilter
             selected={activeFilter}
             onChange={handleFilterChange}
           />
         </div>
+
+        {isLoading ? (
+          <div
+            role="status"
+            aria-live="polite"
+            className="pointer-events-none flex justify-center"
+          >
+            <span className="rounded-full bg-white/95 px-4 py-1.5 text-xs font-medium text-[#081828] shadow-sm">
+              กำลังโหลดข้อมูลแผนที่...
+            </span>
+          </div>
+        ) : null}
+
+        {errorMessage ? (
+          <div
+            role="alert"
+            className="pointer-events-auto mx-auto flex w-full max-w-[420px] flex-col items-center gap-2 rounded-2xl border border-[#fecaca] bg-[#fff5f5]/95 px-4 py-3 text-center text-xs font-medium text-[#b91c1c] shadow-sm"
+          >
+            <p>{errorMessage}</p>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {onRetry ? (
+                <button
+                  type="button"
+                  onClick={onRetry}
+                  className="min-h-11 min-w-11 cursor-pointer rounded-full border border-[#fca5a5] bg-white px-3.5 text-xs font-semibold text-[#b91c1c] transition-colors hover:bg-[#fef2f2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
+                >
+                  ลองใหม่
+                </button>
+              ) : null}
+              <Link
+                href="/locations"
+                className="inline-flex min-h-11 min-w-11 items-center rounded-full bg-[#ff5815] px-3.5 text-xs font-semibold text-white transition-colors hover:bg-[#e54e10] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
+              >
+                ดูรายชื่อสถานที่ทั้งหมด
+              </Link>
+            </div>
+          </div>
+        ) : null}
+
+        {!isLoading && !errorMessage && warningMessage ? (
+          <div
+            role="status"
+            className="pointer-events-auto mx-auto flex w-full max-w-[420px] items-center justify-between gap-2 rounded-2xl border border-[#fed7aa] bg-[#fff7ed]/95 px-3.5 py-2 text-xs font-medium text-[#9a3412] shadow-sm"
+          >
+            <span className="min-w-0 flex-1">{warningMessage}</span>
+            <div className="flex shrink-0 items-center gap-1.5">
+              {onRetry ? (
+                <button
+                  type="button"
+                  onClick={onRetry}
+                  className="min-h-11 min-w-11 cursor-pointer rounded-full border border-[#fdba74] bg-white px-2.5 text-[11px] font-semibold text-[#9a3412] transition-colors hover:bg-[#ffedd5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
+                >
+                  ลองใหม่
+                </button>
+              ) : null}
+              <Link
+                href="/locations"
+                className="inline-flex min-h-11 min-w-11 items-center rounded-full bg-[#ff5815] px-2.5 text-[11px] font-semibold text-white transition-colors hover:bg-[#e54e10] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
+              >
+                รายการสถานที่
+              </Link>
+            </div>
+          </div>
+        ) : null}
       </div>
-
-      {isLoading ? (
-        <div
-          role="status"
-          aria-live="polite"
-          className="pointer-events-none absolute inset-x-4 top-20 z-10 flex justify-center"
-        >
-          <span className="rounded-full bg-white/95 px-4 py-1.5 text-xs font-medium text-[#081828] shadow-sm">
-            กำลังโหลดข้อมูลแผนที่...
-          </span>
-        </div>
-      ) : null}
-
-      {errorMessage ? (
-        <div
-          role="alert"
-          className="absolute inset-x-4 top-20 z-20 mx-auto max-w-[420px] rounded-2xl border border-[#fecaca] bg-[#fff5f5]/95 px-4 py-3 text-center text-xs font-medium text-[#b91c1c] shadow-sm"
-        >
-          {errorMessage}
-        </div>
-      ) : null}
 
       {!isLoading && !errorMessage && showFallbackPlaceholder ? (
         <div className="pointer-events-none absolute inset-x-4 bottom-16 z-10 flex justify-center">

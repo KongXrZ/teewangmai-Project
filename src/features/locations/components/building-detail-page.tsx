@@ -22,11 +22,7 @@ import {
   crowdLevelLabels,
   unknownCrowdLabel,
 } from "./building-card";
-import {
-  crowdThemes,
-  FloorStats,
-  toFloorStats,
-} from "./floor-stats";
+import { crowdThemes, FloorStats, toFloorStats } from "./floor-stats";
 
 export interface BuildingDetailPageProps {
   state: BuildingDetailState;
@@ -53,6 +49,15 @@ export function BuildingDetailPage({
       if (value) {
         params.set(key, value);
       }
+    }
+    if (current.get("from") === "home") {
+      const building = current.get("building");
+      if (building) {
+        params.set("building", building);
+      }
+      const search = params.toString();
+      router.push(search ? `/?${search}` : "/");
+      return;
     }
     const search = params.toString();
     router.push(search ? `/locations?${search}` : "/locations");
@@ -152,7 +157,9 @@ function BuildingDetail({
   onBack: () => void;
 }) {
   const [selectedFloorId, setSelectedFloorId] = useState<FloorId | undefined>(
-    initialFloorId ?? building.floors.find((floor) => floor.label.trim() === "1")?.id ?? building.floors[0]?.id,
+    initialFloorId ??
+      building.floors.find((floor) => floor.label.trim() === "1")?.id ??
+      building.floors[0]?.id,
   );
   const selectedFloor =
     building.floors.find((floor) => floor.id === selectedFloorId) ??
@@ -288,10 +295,7 @@ function FloorPanel({ floor }: { floor: FloorModel }) {
           />
         </div>
       )}
-      <span
-        aria-hidden="true"
-        className={`mt-2 block h-px ${theme.divider}`}
-      />
+      <span aria-hidden="true" className={`mt-2 block h-px ${theme.divider}`} />
       <FloorDetails details={floor.details} />
     </div>
   );
