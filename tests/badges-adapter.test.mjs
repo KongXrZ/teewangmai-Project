@@ -7,6 +7,7 @@ import {
   parseBadgesResponse,
   toAchievementsState,
 } from '../src/features/achievements/api/badges-adapter.ts';
+import { createBadgesRefreshRunner } from '../src/features/achievements/refresh-controller.ts';
 
 const earnedAt = '2026-11-01T03:15:00+00:00';
 
@@ -137,4 +138,107 @@ test('unauthenticated state has no retry', () => {
   const state = toAchievementsState({ kind: 'unauthenticated' }, () => {});
   assert.equal(state.status, 'error');
   assert.equal(state.onRetry, undefined);
+});
+
+test('blank icon_url is normalized to null without failing schema', () => {
+  const result = parseBadgesResponse(200, ok([dto({ icon_url: '   ' })]));
+  assert.equal(result.kind, 'ok');
+  assert.equal(result.badges[0].iconUrl, null);
+});
+
+test('503 unavailable preserves server message and exposes retry', () => {
+  const parsed = parseBadgesResponse(503, {
+    success: false,
+    code: 'unavailable',
+    error: 'ไม่สามารถโหลดความสำเร็จได้ โปรดลองใหม่อีกครั้ง',
+  });
+  assert.deepEqual(parsed, {
+    kind: 'unavailable',
+    message: 'ไม่สามารถโหลดความสำเร็จได้ โปรดลองใหม่อีกครั้ง',
+  });
+  let retried = false;
+  const state = toAchievementsState(parsed, () => {
+    retried = true;
+  });
+  assert.equal(state.status, 'unavailable');
+  assert.equal(state.message, 'ไม่สามารถโหลดความสำเร็จได้ โปรดลองใหม่อีกครั้ง');
+  state.onRetry();
+  assert.equal(retried, true);
+});
+
+test('fetchBadges throws instead of returning error when aborted while reading body', async () => {
+  const controller = new AbortController();
+  const fakeResponse = {
+    status: 200,
+    headers: new Headers({ 'content-type': 'application/json' }),
+    json() {
+      controller.abort();
+      return Promise.reject(new DOMException('Aborted', 'AbortError'));
+    },
+  };
+
+  await assert.rejects(
+    () => fetchBadges(async () => fakeResponse, controller.signal),
+    { name: 'AbortError' },
+  );
+});
+
+test('overlapping refresh ignores aborted first request reading body and delivers second result', async () => {
+  const runner = createBadgesRefreshRunner();
+  const outcomes = [];
+  let errorCalls = 0;
+
+  let resolveFirstBody;
+  let firstSignal;
+  const firstPromise = runner.start(
+    (signal) => {
+      firstSignal = signal;
+      return fetchBadges(async () => ({
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: () =>
+          new Promise((resolve, reject) => {
+            resolveFirstBody = { resolve, reject };
+          }),
+      }), signal);
+    },
+    {
+      onSuccess: (next) => outcomes.push({ from: 1, next }),
+      onError: () => {
+        errorCalls += 1;
+      },
+    },
+  );
+
+  await Promise.resolve();
+
+  const secondPromise = runner.start(
+    (signal) =>
+      fetchBadges(
+        async () =>
+          new Response(JSON.stringify(ok([dto({ id: 2, earned_at: earnedAt })])), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          }),
+        signal,
+      ),
+    {
+      onSuccess: (next) => outcomes.push({ from: 2, next }),
+      onError: () => {
+        errorCalls += 1;
+      },
+    },
+  );
+
+  assert.equal(firstSignal.aborted, true);
+  resolveFirstBody.reject(new SyntaxError('aborted mid-stream'));
+
+  await Promise.all([firstPromise, secondPromise]);
+
+  assert.equal(errorCalls, 0);
+  assert.equal(outcomes.length, 1);
+  assert.equal(outcomes[0].from, 2);
+  assert.equal(outcomes[0].next.kind, 'ok');
+  assert.equal(outcomes[0].next.badges[0].id, 2);
+  assert.equal(outcomes[0].next.badges[0].earnedAt, earnedAt);
 });

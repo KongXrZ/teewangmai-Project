@@ -3,6 +3,8 @@ import test from 'node:test';
 
 import {
   REQUIREMENT_FALLBACK,
+  countEarnedBadges,
+  findSelectedBadge,
   formatEarnedDate,
   getBadgeCollectionView,
   getRequirementText,
@@ -54,4 +56,16 @@ test('earned date renders only for a valid server timestamp', () => {
   assert.equal(formatEarnedDate(null), null);
   assert.equal(formatEarnedDate('not-a-date'), null);
   assert.match(formatEarnedDate('2026-11-01T03:00:00Z'), /2569/);
+});
+
+test('countEarnedBadges counts only badges with server earnedAt', () => {
+  assert.equal(countEarnedBadges(badges), 2);
+  assert.equal(countEarnedBadges([]), 0);
+});
+
+test('findSelectedBadge returns latest refreshed badge or null when removed', () => {
+  const updated = [badge(2, '2026-11-19T12:00:00Z', 'เช็กอินครบ 5 ครั้ง')];
+  assert.equal(findSelectedBadge(updated, 2)?.earnedAt, '2026-11-19T12:00:00Z');
+  assert.equal(findSelectedBadge(updated, 1), null);
+  assert.equal(findSelectedBadge(updated, null), null);
 });
