@@ -11,7 +11,7 @@ const badgeDtoSchema = z.object({
   id: z.number().int().positive(),
   name: z.string().min(1),
   description: z.string().nullable().optional(),
-  icon_url: z.string().min(1).nullable(),
+  icon_url: z.string().nullable(),
   requirement_type: z.string(),
   requirement_value: z.number().int(),
   requirement_text: z.string().nullable().optional(),
@@ -31,7 +31,7 @@ export type BadgeDto = z.infer<typeof badgeDtoSchema>;
 export type BadgesResult =
   | { kind: "ok"; badges: BadgeModel[] }
   | { kind: "unauthenticated" }
-  | { kind: "unavailable" }
+  | { kind: "unavailable"; message?: string }
   | { kind: "error"; message?: string };
 
 const unavailableStatuses = new Set([404, 501, 503]);
@@ -45,7 +45,7 @@ export function toBadgeModel(dto: BadgeDto): BadgeModel {
     id: dto.id,
     name: dto.name,
     description: dto.description?.trim() || null,
-    iconUrl: dto.icon_url,
+    iconUrl: dto.icon_url?.trim() || null,
     requirement: {
       type: dto.requirement_type,
       value: dto.requirement_value,
@@ -63,7 +63,8 @@ export function parseBadgesResponse(
     return { kind: "unauthenticated" };
   }
   if (unavailableStatuses.has(status)) {
-    return { kind: "unavailable" };
+    const message = readErrorMessage(body);
+    return message ? { kind: "unavailable", message } : { kind: "unavailable" };
   }
   if (status < 200 || status >= 300) {
     return { kind: "error", message: readErrorMessage(body) };
@@ -80,10 +81,18 @@ export function parseBadgesResponse(
   };
 }
 
+function createAbortError(signal: AbortSignal): unknown {
+  return signal.reason ?? new DOMException("The operation was aborted.", "AbortError");
+}
+
 export async function fetchBadges(
   fetchImpl: typeof fetch = fetch,
   signal?: AbortSignal,
 ): Promise<BadgesResult> {
+  if (signal?.aborted) {
+    throw createAbortError(signal);
+  }
+
   let response: Response;
   try {
     response = await fetchImpl(BADGES_ENDPOINT, {
@@ -100,9 +109,24 @@ export async function fetchBadges(
     return { kind: "error" };
   }
 
+  if (signal?.aborted) {
+    throw createAbortError(signal);
+  }
+
   let body: unknown = null;
   if (response.headers.get("content-type")?.includes("application/json")) {
-    body = await response.json().catch(() => null);
+    try {
+      body = await response.json();
+    } catch (error) {
+      if (signal?.aborted) {
+        throw error;
+      }
+      body = null;
+    }
+  }
+
+  if (signal?.aborted) {
+    throw createAbortError(signal);
   }
 
   return parseBadgesResponse(response.status, body);
@@ -116,7 +140,7 @@ export function toAchievementsState(
     case "ok":
       return { status: "ready", badges: result.badges };
     case "unavailable":
-      return { status: "unavailable" };
+      return { status: "unavailable", message: result.message, onRetry };
     case "unauthenticated":
       return {
         status: "error",
