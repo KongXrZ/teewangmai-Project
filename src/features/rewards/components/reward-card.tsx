@@ -15,6 +15,7 @@ const pointsFormatter = new Intl.NumberFormat("th-TH");
 const availabilityNote: Partial<Record<RewardAvailability, string>> = {
   insufficient_points: "แต้มไม่พอ",
   out_of_stock: "หมดแล้ว",
+  limit_reached: "ครบสิทธิ์แล้ว",
   unavailable: "ยังแลกไม่ได้",
 };
 
