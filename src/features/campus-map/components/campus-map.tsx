@@ -495,6 +495,8 @@ export function CampusMap({
         key={selectedBuilding.id}
         building={selectedBuilding}
         floors={expandedBuilding.floors}
+        initialFloorId={expandedBuilding.defaultFloorId ?? undefined}
+        buildingAvailability={expandedBuilding.buildingAvailability}
         variant="map"
         onSelectFloor={onSelectFloor}
         onViewDetail={onViewDetail}

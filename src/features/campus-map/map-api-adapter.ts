@@ -1,35 +1,37 @@
 import type { CrowdLevelFilterValue } from "@/components/ui/crowd-level-filter";
+import {
+  toAvailabilityModel,
+  toOpeningHours,
+  type ApiAvailabilityDto,
+  type ApiIntervalDto,
+} from "../locations/api/availability-display.ts";
 import type {
   BuildingCardModel,
   CrowdLevel,
+  CrowdSummaryStatus,
   FloorCrowdState,
   FloorModel,
-  OpeningHours,
 } from "@/features/locations/components/location-view-models";
 import type { CrowdFilterValue } from "./map-state";
 
-export interface ApiLocationInterval {
-  readonly open_time: string;
-  readonly close_time: string;
-}
+export type ApiLocationInterval = ApiIntervalDto;
 
 export interface ApiLocationBuilding {
   readonly id: number;
   readonly building: string;
   readonly name: string;
   readonly image_url: string | null;
+  readonly availability?: ApiAvailabilityDto;
 }
 
 export interface ApiLocationFloor {
   readonly id: number;
   readonly floor_name: string;
-  readonly availability: {
-    readonly status: "open" | "closed" | "unknown";
-    readonly today_intervals: readonly ApiLocationInterval[];
-  };
+  readonly capacity?: number | null;
+  readonly availability: ApiAvailabilityDto;
 }
 
-export type CrowdSummaryStatus = "ready" | "unknown" | "pending" | "stale";
+export type { CrowdSummaryStatus };
 
 export interface ApiCrowdFloor {
   readonly floor_id: number;
@@ -93,22 +95,10 @@ export function mergeBuildingWithCrowd(
     defaultFloorId:
       crowd?.default_floor_id != null ? String(crowd.default_floor_id) : null,
     crowdStatus: busiest?.status ?? "unknown",
+    latestReportAt: isReady ? busiest.latest_report_at : null,
+    calculatedAt: busiest?.calculated_at ?? null,
+    buildingAvailability: toAvailabilityModel(building.availability),
   };
-}
-
-function toOpeningHours(
-  availability: ApiLocationFloor["availability"],
-): OpeningHours | "closed" | null {
-  if (availability.today_intervals.length === 1) {
-    return {
-      open: availability.today_intervals[0].open_time,
-      close: availability.today_intervals[0].close_time,
-    };
-  }
-  return availability.today_intervals.length === 0 &&
-    availability.status === "closed"
-    ? "closed"
-    : null;
 }
 
 function toFloorCrowdState(
@@ -150,12 +140,29 @@ export function mergeBuildingFloors(
 
   return catalogFloors.map((floor) => {
     const id = String(floor.id);
+    const crowdFloor = crowdByFloorId.get(id);
+    const details =
+      typeof floor.capacity === "number"
+        ? [{ label: "ความจุชั้น", value: `${floor.capacity} คน` }]
+        : [];
+
     return {
       id,
       label: floor.floor_name,
       openingHours: toOpeningHours(floor.availability),
-      crowd: toFloorCrowdState(crowdByFloorId.get(id), crowdFailed),
-      details: [],
+      availabilityStatus: floor.availability.status,
+      crowd: toFloorCrowdState(crowdFloor, crowdFailed),
+      crowdMeta: crowdFailed
+        ? undefined
+        : {
+            status: crowdFloor?.status ?? "unknown",
+            latestReportAt:
+              crowdFloor?.status === "ready"
+                ? crowdFloor.latest_report_at
+                : null,
+            calculatedAt: crowdFloor?.calculated_at ?? null,
+          },
+      details,
     };
   });
 }
