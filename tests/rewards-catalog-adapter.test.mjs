@@ -58,6 +58,22 @@ test('keeps limit_reached from the server', () => {
   assert.equal(result.rewards[0].availability, 'limit_reached');
 });
 
+test('blank image_url falls back to null without failing the catalog', () => {
+  const result = parseRewardsCatalogResponse(
+    200,
+    ok([
+      { ...reward, id: 1, image_url: '' },
+      { ...reward, id: 2, image_url: '   ' },
+      { ...reward, id: 3, image_url: ' /rewards/coffee.png ' },
+    ]),
+  );
+  assert.equal(result.kind, 'ok');
+  assert.deepEqual(
+    result.rewards.map((item) => item.imageUrl),
+    [null, null, '/rewards/coffee.png'],
+  );
+});
+
 test('unknown availability falls back to unavailable', () => {
   const result = parseRewardsCatalogResponse(200, ok([{ ...reward, availability: 'maybe' }]));
   assert.equal(result.rewards[0].availability, 'unavailable');

@@ -20,7 +20,7 @@ const rewardDtoSchema = z.object({
   id: z.number().int().positive(),
   title: z.string().min(1),
   points_required: z.number().int().nonnegative(),
-  image_url: z.string().min(1).nullable(),
+  image_url: z.string().nullable(),
   availability: z.string(),
 });
 
@@ -51,7 +51,7 @@ export function toRewardCardModel(dto: RewardDto): RewardCardModel {
     id: dto.id,
     title: dto.title,
     pointsRequired: dto.points_required,
-    imageUrl: dto.image_url,
+    imageUrl: dto.image_url?.trim() || null,
     availability: toAvailability(dto.availability),
   };
 }
