@@ -14,7 +14,7 @@ declare
 begin
   foreach role_name in array array['anon', 'authenticated'] loop
     foreach relation_name in array array['locations', 'floors', 'floor_hours',
-      'checkins', 'badges', 'user_badges', 'rewards', 'redemptions'] loop
+      'checkins', 'rewards', 'redemptions'] loop
       if exists (select 1 from pg_policies where schemaname = 'public'
         and tablename = relation_name) then
         raise exception 'Unexpected client policy on %', relation_name;

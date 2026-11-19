@@ -371,6 +371,19 @@ export type Database = {
           report_count: number;
         }[];
       };
+      get_my_badges: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          description: string;
+          earned_at: string;
+          icon_url: string;
+          id: number;
+          is_active: boolean;
+          name: string;
+          requirement_type: string;
+          requirement_value: number;
+        }[];
+      };
       get_my_checkins: {
         Args: {
           p_before_created_at?: string;

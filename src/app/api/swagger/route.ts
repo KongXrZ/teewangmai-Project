@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { locationPaths, locationSchemas } from '@/features/locations/api/openapi';
 import { crowdPaths } from '@/features/crowd/openapi';
+import { badgePaths } from '@/features/achievements/server/openapi';
 import { rewardPaths } from '@/features/rewards/server/openapi';
 import { checkinPaths } from '@/features/checkins/server/openapi';
 
@@ -36,6 +37,7 @@ export async function GET() {
     tags: [
       { name: 'Locations', description: 'Public active building and floor catalog' },
       { name: 'Crowd', description: 'Scheduled floor and building crowd summaries' },
+      { name: 'Badges', description: 'Own badge collection; awarding is server-only' },
       { name: 'Check-in', description: 'Floor QR resolution and verified crowd reports' },
       { name: 'Rewards', description: 'Reward catalog, redemption and vouchers' },
       {
@@ -54,6 +56,7 @@ export async function GET() {
     paths: {
       ...locationPaths,
       ...crowdPaths,
+      ...badgePaths,
       ...rewardPaths,
       ...checkinPaths,
       '/api/health': {

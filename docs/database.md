@@ -143,8 +143,14 @@ executable by `authenticated` only (not `anon`). See
 [Rewards API](rewards-api.md).
 
 `badges.requirement_value` is a positive threshold interpreted together with
-`requirement_type`. Supported types/evaluation are future work. Earned badges
-use composite primary key `(user_id, badge_id)`.
+`requirement_type`. BE-013 supports only `checkin_count` (accepted check-ins),
+pending owner confirmation. An `after insert` trigger on `checkins` evaluates active
+badges under a per-user advisory lock and inserts `user_badges` with
+`on conflict do nothing`; `earned_at` is the crossing check-in's `created_at`.
+`private.award_all_user_badges()` backfills after imports or reactivation and is
+idempotent. Earned badges use composite primary key `(user_id, badge_id)`.
+Authenticated users read active badges plus their own earned ones through RLS and
+`public.get_my_badges()`; clients have no badge write grants.
 
 ## Identity and access
 

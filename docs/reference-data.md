@@ -53,8 +53,9 @@ are not guaranteed unique. Do not add a schema key without agreement.
   `max_per_user` (vouchers per user, at least 1) and `valid_days` (voucher
   lifetime after redemption, above 0) fall back to 1 and 7. Status permits
   upcoming/active/expired; start must precede expiry.
-- Badge threshold is a positive integer. Confirm supported requirement types
-  with the awarding API before supplying executable badge definitions.
+- Badge threshold is a positive integer. `requirement_type` must be
+  `checkin_count`; run
+  `select private.award_all_user_badges();` after importing or reactivating badges.
 
 Import order: buildings → floors → floor hours; reward/badge definitions can
 be imported separately. Validate all rows before applying a transactional batch.
