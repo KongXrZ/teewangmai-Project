@@ -123,6 +123,7 @@ function HistoryContent({
           reports={state.reports}
           hasMore={state.hasMore ?? false}
           loadingMore={state.loadingMore ?? false}
+          loadMoreFailed={state.loadMoreFailed ?? false}
           onLoadMore={onLoadMore}
         />
       );
@@ -133,11 +134,13 @@ function ReportList({
   reports,
   hasMore,
   loadingMore,
+  loadMoreFailed,
   onLoadMore,
 }: {
   reports: ReportHistoryItem[];
   hasMore: boolean;
   loadingMore: boolean;
+  loadMoreFailed: boolean;
   onLoadMore?: () => void;
 }) {
   const [filter, setFilter] = useState<ReportHistoryFilter>("all");
@@ -187,6 +190,12 @@ function ReportList({
             <ReportGroup key={group.id} group={group} />
           ))}
         </div>
+      )}
+
+      {loadMoreFailed && !loadingMore && (
+        <p role="alert" className="mt-5 text-center text-sm text-[#dc2626]">
+          โหลดรายการเพิ่มไม่สำเร็จ กรุณาลองอีกครั้ง
+        </p>
       )}
 
       {hasMore && onLoadMore && (
