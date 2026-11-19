@@ -9,6 +9,7 @@ import Diversity3 from "@mui/icons-material/Diversity3";
 import HelpOutlineRounded from "@mui/icons-material/HelpOutlineRounded";
 import PeopleAlt from "@mui/icons-material/PeopleAlt";
 import Person from "@mui/icons-material/Person";
+import { formatTimeOnly } from "../api/availability-display";
 import { formatUpdatedTime } from "./format-updated-time";
 import type {
   BuildingCardModel,
@@ -105,7 +106,13 @@ export function BuildingSummary({
   building: BuildingCardModel;
   floorControl?: ReactNode;
 }) {
-  const updatedTime = formatUpdatedTime(building.updatedAt);
+  const reportTime = formatTimeOnly(building.latestReportAt);
+  const calculatedTime = formatTimeOnly(building.calculatedAt);
+  const updatedTime = reportTime
+    ? `รายงานล่าสุด ${reportTime}`
+    : calculatedTime
+      ? `คำนวณรอบล่าสุด ${calculatedTime}`
+      : formatUpdatedTime(building.updatedAt);
 
   return (
     <>

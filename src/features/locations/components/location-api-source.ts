@@ -1,33 +1,30 @@
+import {
+  toAvailabilityModel,
+  toOpeningHours,
+  type ApiAvailabilityDto,
+} from "../api/availability-display";
 import type {
   BuildingCardModel,
   BuildingId,
   FloorModel,
-  OpeningHours,
 } from "./location-view-models";
 import type { LocationDataSource } from "./location-data-source";
 
 const pageSize = 20;
 const maxSearchLength = 200;
 
-interface ApiInterval {
-  open_time: string;
-  close_time: string;
-}
-
 interface ApiBuilding {
   id: number;
   building: string;
   name: string;
   image_url: string | null;
+  availability?: ApiAvailabilityDto;
 }
 
 interface ApiFloor {
   id: number;
   floor_name: string;
-  availability: {
-    status: "open" | "closed" | "unknown";
-    today_intervals: ApiInterval[];
-  };
+  availability: ApiAvailabilityDto;
 }
 
 interface ApiPagination {
@@ -53,17 +50,8 @@ export function toBuildingCard(building: ApiBuilding): BuildingCardModel {
     imageUrl: building.image_url,
     crowdLevel: null,
     updatedAt: null,
+    buildingAvailability: toAvailabilityModel(building.availability),
   };
-}
-
-function toOpeningHours({
-  status,
-  today_intervals: intervals,
-}: ApiFloor["availability"]): OpeningHours | "closed" | null {
-  if (intervals.length === 1) {
-    return { open: intervals[0].open_time, close: intervals[0].close_time };
-  }
-  return intervals.length === 0 && status === "closed" ? "closed" : null;
 }
 
 export function toFloor(floor: ApiFloor): FloorModel {
@@ -71,6 +59,7 @@ export function toFloor(floor: ApiFloor): FloorModel {
     id: String(floor.id),
     label: floor.floor_name,
     openingHours: toOpeningHours(floor.availability),
+    availabilityStatus: floor.availability.status,
     crowd: {
       status: "ready",
       level: null,
