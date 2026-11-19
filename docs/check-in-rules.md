@@ -2,9 +2,10 @@
 
 Product decisions confirmed on November 8, updated November 16, 2026. The v4
 model has nine application tables: QR identifiers belong to `floors`, and
-`checkins.floor_id` identifies the reported floor. Cooldown, GPS/QR submission
-validation and administrative settings remain future implementation. BE-006
-implements scheduled summaries; see [Crowd API](crowd-api.md).
+`checkins.floor_id` identifies the reported floor. BE-008 implements QR
+resolution and GPS/QR/cooldown submission validation; administrative settings
+remain future implementation. BE-006 implements scheduled summaries; see
+[Crowd API](crowd-api.md).
 
 ## Buildings, floors, and reports
 
@@ -42,8 +43,14 @@ These IDs follow the current plan; schema availability alone does not implement
 those APIs. See [Backend Handoff](backend-handoff.md).
 
 GPS verifies proximity to the building; QR identifies the floor. Validate GPS
-on the server against building coordinates and an allowed distance. The radius
-and exact permission-request timing remain to be decided. Personal GPS
+on the server against building coordinates and an allowed distance. BE-008
+(owner decision, November 18, 2026) rejects fixes whose reported accuracy is
+above 100 m and accepts a distance of at most 100 m plus min(accuracy, 50 m)
+from the building point, so never more than 150 m. Reason: one coordinate per
+building, 34 active buildings, nearest neighbours 17–97 m apart (median 37 m);
+100 m covers a large building's footprint and a good fix, and the allowance
+tolerates indoor GPS error without accepting reports from across campus.
+Permission-request timing remains a frontend decision. Personal GPS
 coordinates are used for verification and are not stored in check-in logs.
 Do not add `gps_verified`, `qr_verified`, or `verification_method` columns.
 
@@ -146,7 +153,6 @@ defaults and `is_active` for closed weekdays. Full day is 00:00:00–23:59:59.
 
 ## Remaining implementation decisions
 
-- Server-side GPS radius/accuracy rules and atomic cooldown enforcement.
 - Timing configuration storage and admin UI; cooldown editability (separate task).
 - Display rounding and history-retention/deletion policy.
 - Feature access policies, point earning, and reward/badge business rules.

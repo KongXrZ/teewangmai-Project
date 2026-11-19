@@ -1,3 +1,5 @@
+begin;
+
 alter table public.badges
   add constraint badges_requirement_type_supported
   check (requirement_type = 'checkin_count');
@@ -100,3 +102,6 @@ language sql stable security invoker set search_path = '' as $$
 $$;
 revoke all on function public.get_my_badges() from public, anon;
 grant execute on function public.get_my_badges() to authenticated, service_role;
+
+notify pgrst, 'reload schema';
+commit;

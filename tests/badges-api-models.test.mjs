@@ -46,6 +46,13 @@ test("dto keeps real earned_at and inactive flags without inventing values", () 
   ]);
 });
 
+test("blank icon_url becomes null so the adapter accepts the badge", () => {
+  assert.equal(toBadgeDto(row({ icon_url: "" })).icon_url, null);
+  assert.equal(toBadgeDto(row({ icon_url: "   " })).icon_url, null);
+  const data = badgeCollection([row({ icon_url: "" })]);
+  assert.equal(parseBadgesResponse(200, { success: true, data }).kind, "ok");
+});
+
 test("collection counts earned and locked badges", () => {
   const data = badgeCollection([row(), row({ id: 2, earned_at: "2026-11-01T03:15:00Z" })]);
   assert.equal(data.total_count, 2);

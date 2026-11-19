@@ -3,6 +3,7 @@ import { locationPaths, locationSchemas } from '@/features/locations/api/openapi
 import { crowdPaths } from '@/features/crowd/openapi';
 import { badgePaths } from '@/features/achievements/server/openapi';
 import { rewardPaths } from '@/features/rewards/server/openapi';
+import { checkinPaths } from '@/features/checkins/server/openapi';
 
 export async function GET() {
   let sessionCookie = 'sb-project-ref-auth-token';
@@ -37,6 +38,7 @@ export async function GET() {
       { name: 'Locations', description: 'Public active building and floor catalog' },
       { name: 'Crowd', description: 'Scheduled floor and building crowd summaries' },
       { name: 'Badges', description: 'Own badge collection; awarding is server-only' },
+      { name: 'Check-in', description: 'Floor QR resolution and verified crowd reports' },
       { name: 'Rewards', description: 'Reward catalog, redemption and vouchers' },
       {
         name: 'Auth',
@@ -56,6 +58,7 @@ export async function GET() {
       ...crowdPaths,
       ...badgePaths,
       ...rewardPaths,
+      ...checkinPaths,
       '/api/health': {
         get: {
           tags: ['Health'],

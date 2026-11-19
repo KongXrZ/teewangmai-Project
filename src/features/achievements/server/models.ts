@@ -24,7 +24,7 @@ export function toBadgeDto(row: BadgeRow): BadgeDto {
     id: row.id,
     name: row.name,
     description: row.description,
-    icon_url: row.icon_url,
+    icon_url: row.icon_url?.trim() || null,
     requirement_type: row.requirement_type,
     requirement_value: row.requirement_value,
     requirement_text: requirementText(row.requirement_type, row.requirement_value),
