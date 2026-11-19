@@ -54,6 +54,17 @@ export function BadgeCollection({
             state.message ??
             "ระบบเหรียญความสำเร็จยังไม่พร้อมใช้งาน โปรดกลับมาอีกครั้ง"
           }
+          action={
+            state.onRetry && (
+              <button
+                type="button"
+                onClick={state.onRetry}
+                className="mt-2 h-11 cursor-pointer rounded-lg border-0 bg-[#e0622a] px-5 text-sm font-semibold text-white hover:bg-[#c9531f] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e0622a]"
+              >
+                ลองใหม่
+              </button>
+            )
+          }
         />
       );
     case "error":

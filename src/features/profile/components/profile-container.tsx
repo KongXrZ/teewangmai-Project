@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { fetchBadges } from "@/features/achievements/api/badges-adapter";
+import { countEarnedBadges } from "@/features/achievements/view-model";
 import { useAuth } from "@/features/auth/components/auth-provider";
 import { fetchCheckinHistory } from "./checkin-history-client";
 import { ProfilePage } from "./profile-page";
@@ -12,6 +14,7 @@ export function ProfileContainer() {
   const auth = useAuth();
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const [reportTotal, setReportTotal] = useState<{ userId: string; total: number } | null>(null);
+  const [badgeTotal, setBadgeTotal] = useState<{ userId: string; total: number } | null>(null);
   const userId = auth.status === "authenticated" ? (auth.user?.id ?? null) : null;
   const { refresh } = auth;
 
@@ -20,9 +23,20 @@ export function ProfileContainer() {
     const controller = new AbortController();
     fetchCheckinHistory({ limit: 1, signal: controller.signal })
       .then((result) => {
+        if (controller.signal.aborted) return;
         if (result.ok && result.total !== null) {
           setReportTotal({ userId, total: result.total });
         } else if (!result.ok && result.unauthorized) {
+          void refresh();
+        }
+      })
+      .catch(() => {});
+    fetchBadges(fetch, controller.signal)
+      .then((result) => {
+        if (controller.signal.aborted) return;
+        if (result.kind === "ok") {
+          setBadgeTotal({ userId, total: countEarnedBadges(result.badges) });
+        } else if (result.kind === "unauthenticated") {
           void refresh();
         }
       })
@@ -45,7 +59,7 @@ export function ProfileContainer() {
         avatarUrl: auth.profile.avatar_url,
         points: auth.profile.points,
         reportCount: reportTotal?.userId === userId ? reportTotal.total : null,
-        badgeCount: 0,
+        badgeCount: badgeTotal?.userId === userId ? badgeTotal.total : null,
       },
     };
   }

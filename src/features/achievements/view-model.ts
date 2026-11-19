@@ -20,6 +20,20 @@ export function isEarned(badge: BadgeModel): boolean {
   return badge.earnedAt !== null;
 }
 
+export function countEarnedBadges(badges: readonly BadgeModel[]): number {
+  return badges.filter(isEarned).length;
+}
+
+export function findSelectedBadge(
+  badges: readonly BadgeModel[],
+  selectedId: BadgeModel["id"] | null,
+): BadgeModel | null {
+  if (selectedId === null) {
+    return null;
+  }
+  return badges.find((badge) => badge.id === selectedId) ?? null;
+}
+
 export function getBadgeCollectionView(
   badges: readonly BadgeModel[],
   filter: BadgeFilter,
