@@ -4,7 +4,6 @@ import type { ComponentType, ReactNode } from "react";
 import Avatar from "@mui/material/Avatar";
 import type { SvgIconProps } from "@mui/material/SvgIcon";
 import ChevronRightRounded from "@mui/icons-material/ChevronRightRounded";
-import EditOutlined from "@mui/icons-material/EditOutlined";
 import HistoryRounded from "@mui/icons-material/HistoryRounded";
 import LogoutRounded from "@mui/icons-material/LogoutRounded";
 import PersonOutlineRounded from "@mui/icons-material/PersonOutlineRounded";
@@ -169,14 +168,6 @@ function ProfileOverview({
           <p className="line-clamp-2 min-w-0 flex-1 text-lg leading-snug font-semibold break-words text-[#141414] min-[360px]:text-xl">
             {profile.name}
           </p>
-          <button
-            type="button"
-            onClick={onEdit}
-            aria-label="แก้ไขข้อมูลส่วนตัว"
-            className="flex h-11 w-11 shrink-0 cursor-pointer touch-manipulation items-center justify-center rounded-xl border border-[#e5e7eb] bg-white text-[#475569] transition-colors duration-150 [-webkit-tap-highlight-color:transparent] hover:bg-[#f7f7f8] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ea580c] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <EditOutlined aria-hidden="true" sx={{ fontSize: 22 }} />
-          </button>
         </div>
         <dl className="mt-4 grid grid-cols-3 rounded-2xl bg-[#fff3ec] py-4">
           {stats.map((stat, index) => (
@@ -315,7 +306,6 @@ function ProfileSkeleton() {
         <div className="flex items-center gap-4">
           <SkeletonBlock className="h-[72px] w-[72px] rounded-full" />
           <SkeletonBlock className="h-5 flex-1 rounded-md" />
-          <SkeletonBlock className="h-11 w-11 rounded-xl" />
         </div>
         <SkeletonBlock className="mt-4 h-[84px] w-full rounded-2xl" />
       </div>
