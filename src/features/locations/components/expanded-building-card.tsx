@@ -7,10 +7,7 @@ import ArticleOutlined from "@mui/icons-material/ArticleOutlined";
 import CheckRounded from "@mui/icons-material/CheckRounded";
 import ChevronRight from "@mui/icons-material/ChevronRight";
 import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
-import {
-  formatBuildingHoursLabel,
-  formatCrowdTimestampLines,
-} from "../api/availability-display";
+import { formatBuildingHoursLabel } from "../api/availability-display";
 import type {
   BuildingAvailabilityModel,
   BuildingCardModel,
@@ -262,24 +259,15 @@ function FloorSummary({
     );
   }
 
-  const timestamps = formatCrowdTimestampLines(floor.crowdMeta);
-
   return (
     <>
       {floor.crowd.status === "ready" && (
-        <>
-          <FloorStats
-            stats={toFloorStats(floor)}
-            iconClassName="text-black"
-            dividerClassName={dividerClassName}
-            labelClassName={labelClassName}
-          />
-          {timestamps && (
-            <p className="m-0 mt-1 px-1 text-center text-[10px] leading-normal text-[#6b7280]">
-              {timestamps.reportText} • {timestamps.calculatedText}
-            </p>
-          )}
-        </>
+        <FloorStats
+          stats={toFloorStats(floor)}
+          iconClassName="text-black"
+          dividerClassName={dividerClassName}
+          labelClassName={labelClassName}
+        />
       )}
       {floor.crowd.status === "loading" && (
         <StatusText>กำลังโหลดข้อมูลชั้นนี้...</StatusText>
