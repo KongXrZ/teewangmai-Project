@@ -4,6 +4,7 @@ export type RewardAvailability =
   | "redeemable"
   | "insufficient_points"
   | "out_of_stock"
+  | "limit_reached"
   | "upcoming"
   | "unavailable";
 

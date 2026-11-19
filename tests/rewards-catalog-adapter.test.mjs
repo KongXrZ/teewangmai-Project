@@ -11,8 +11,14 @@ const reward = {
   id: 1,
   title: 'กาแฟ',
   description: 'ignored',
-  points_required: 50,
   image_url: null,
+  points_required: 50,
+  stock: 10,
+  starts_at: null,
+  expires_at: '2026-12-31T16:59:59+00:00',
+  valid_days: 7,
+  max_per_user: 1,
+  redeemed_count: 0,
   availability: 'redeemable',
 };
 
@@ -44,6 +50,14 @@ test('keeps server availability and does not recompute from points', () => {
   assert.equal(locked.rewards[0].availability, 'out_of_stock');
 });
 
+test('keeps limit_reached from the server', () => {
+  const result = parseRewardsCatalogResponse(
+    200,
+    ok([{ ...reward, redeemed_count: 1, availability: 'limit_reached' }]),
+  );
+  assert.equal(result.rewards[0].availability, 'limit_reached');
+});
+
 test('unknown availability falls back to unavailable', () => {
   const result = parseRewardsCatalogResponse(200, ok([{ ...reward, availability: 'maybe' }]));
   assert.equal(result.rewards[0].availability, 'unavailable');
@@ -58,10 +72,9 @@ test('empty catalog is a real empty ready state', () => {
   });
 });
 
-test('pending API statuses map to unavailable, not empty', () => {
-  for (const status of [404, 501, 503]) {
-    assert.deepEqual(parseRewardsCatalogResponse(status, null), { kind: 'unavailable' });
-  }
+test('503 maps to unavailable, not empty', () => {
+  const body = { success: false, code: 'unavailable', error: 'ระบบรางวัลไม่พร้อมใช้งาน' };
+  assert.deepEqual(parseRewardsCatalogResponse(503, body), { kind: 'unavailable' });
 });
 
 test('401 maps to unauthenticated', () => {
@@ -85,7 +98,7 @@ test('malformed payload and server errors map to error with retry', () => {
   });
 });
 
-test('fetch handles network failure and non-JSON 404 pages', async () => {
+test('fetch handles network failure and non-JSON error pages', async () => {
   const offline = await fetchRewardsCatalog(async () => {
     throw new TypeError('offline');
   });
@@ -94,7 +107,7 @@ test('fetch handles network failure and non-JSON 404 pages', async () => {
   const missing = await fetchRewardsCatalog(
     async () => new Response('<html></html>', { status: 404, headers: { 'content-type': 'text/html' } }),
   );
-  assert.deepEqual(missing, { kind: 'unavailable' });
+  assert.equal(missing.kind, 'error');
 
   const ready = await fetchRewardsCatalog(
     async (url) => {

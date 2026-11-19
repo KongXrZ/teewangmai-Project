@@ -11,6 +11,7 @@ const availabilityValues = [
   "redeemable",
   "insufficient_points",
   "out_of_stock",
+  "limit_reached",
   "upcoming",
   "unavailable",
 ] as const satisfies readonly RewardAvailability[];
@@ -39,8 +40,6 @@ export type RewardsCatalogResult =
   | { kind: "unavailable" }
   | { kind: "error"; message?: string };
 
-const unavailableStatuses = new Set([404, 501, 503]);
-
 function toAvailability(value: string): RewardAvailability {
   return (availabilityValues as readonly string[]).includes(value)
     ? (value as RewardAvailability)
@@ -64,7 +63,7 @@ export function parseRewardsCatalogResponse(
   if (status === 401) {
     return { kind: "unauthenticated" };
   }
-  if (unavailableStatuses.has(status)) {
+  if (status === 503) {
     return { kind: "unavailable" };
   }
   if (status < 200 || status >= 300) {
