@@ -124,6 +124,7 @@ export function EditProfilePage({
 
   function handleDone() {
     setAvatarFile(null);
+    setPreviewUrl(null);
     onDone();
   }
 
