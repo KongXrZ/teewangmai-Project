@@ -20,7 +20,9 @@ import type {
   VoucherModel,
 } from "../vouchers";
 
-const LOGIN_ROUTE = "/login";
+function loginRoute(path: string) {
+  return `/login?next=${encodeURIComponent(path)}`;
+}
 const USE_CODE_LIFETIME_MS = 30 * 60 * 1000;
 const USE_RETRY_MESSAGE = "ยังยืนยันผลการใช้สิทธิ์ไม่ได้ โปรดลองใหม่อีกครั้ง";
 
@@ -51,7 +53,7 @@ export function useVoucherCollection(): VoucherCollectionState {
       .then((next) => {
         setResult(next);
         if (next.kind === "unauthenticated") {
-          router.replace(LOGIN_ROUTE);
+          router.replace(loginRoute("/rewards/vouchers"));
         }
       })
       .catch(() => {
@@ -111,7 +113,7 @@ export function useVoucherDetail(
       }
       setResult(next);
       if (next.kind === "unauthenticated") {
-        router.replace(LOGIN_ROUTE);
+        router.replace(loginRoute(`/rewards/vouchers/${id}`));
         return;
       }
       if (next.kind !== "ok") {
@@ -203,7 +205,7 @@ export function useVoucherDetail(
               return;
             case "unauthenticated":
               clearAttemptKey(scope);
-              router.replace(LOGIN_ROUTE);
+              router.replace(loginRoute(`/rewards/vouchers/${target.id}`));
               return;
             case "conflict":
               clearAttemptKey(scope);

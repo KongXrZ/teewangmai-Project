@@ -42,7 +42,7 @@ export function RedemptionFlow({
           clearAttemptKey(scope);
         }
         if (next.kind === "unauthenticated") {
-          router.replace("/login");
+          router.replace("/login?next=%2Frewards");
           return;
         }
         if (next.kind === "ok") {
