@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth/components/auth-provider";
 import {
   fetchBadges,
@@ -11,8 +10,6 @@ import {
 import { createBadgesRefreshRunner } from "../refresh-controller";
 import type { AchievementsState } from "../types";
 
-const LOGIN_ROUTE = "/login?next=%2Fachievements";
-
 export interface AchievementsController {
   state: AchievementsState;
   refresh: () => void;
@@ -20,8 +17,8 @@ export interface AchievementsController {
 }
 
 export function useAchievements(): AchievementsController {
-  const router = useRouter();
-  const { refresh: refreshAuth } = useAuth();
+  const { status: authStatus, refresh: refreshAuth } = useAuth();
+  const enabled = authStatus === "authenticated" || authStatus === "error";
   const [runner] = useState(createBadgesRefreshRunner);
   const [result, setResult] = useState<BadgesResult | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -29,19 +26,22 @@ export function useAchievements(): AchievementsController {
   const startLoad = useCallback(() => {
     void runner.start((signal) => fetchBadges(fetch, signal), {
       onSuccess(next) {
+        if (next.kind === "unauthenticated") {
+          void refreshAuth().finally(() => {
+            setResult({ kind: "error" });
+            setIsRefreshing(false);
+          });
+          return;
+        }
         setResult(next);
         setIsRefreshing(false);
-        if (next.kind === "unauthenticated") {
-          void refreshAuth();
-          router.replace(LOGIN_ROUTE);
-        }
       },
       onError() {
         setResult({ kind: "error" });
         setIsRefreshing(false);
       },
     });
-  }, [refreshAuth, router, runner]);
+  }, [refreshAuth, runner]);
 
   const refresh = useCallback(() => {
     setIsRefreshing(true);
@@ -55,13 +55,15 @@ export function useAchievements(): AchievementsController {
   }, [startLoad]);
 
   useEffect(() => {
+    if (!enabled) return;
     startLoad();
     return () => {
       runner.cancel();
     };
-  }, [runner, startLoad]);
+  }, [enabled, runner, startLoad]);
 
   useEffect(() => {
+    if (!enabled) return;
     function handleVisibility() {
       if (document.visibilityState === "visible") {
         refresh();
@@ -78,7 +80,7 @@ export function useAchievements(): AchievementsController {
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("pageshow", handlePageShow);
     };
-  }, [refresh]);
+  }, [enabled, refresh]);
 
   const state: AchievementsState =
     result === null
