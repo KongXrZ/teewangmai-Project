@@ -92,13 +92,21 @@ export function LocationListContainer({
     floorsControllerRef.current = controller;
     setExpandedBuilding({ buildingId, floors: { status: "loading" } });
     Promise.resolve()
-      .then(() => dataSource.listFloors(buildingId, controller.signal))
+      .then(() =>
+        dataSource.loadBuildingFloors
+          ? dataSource.loadBuildingFloors(buildingId, controller.signal)
+          : dataSource
+              .listFloors(buildingId, controller.signal)
+              .then((floors) => ({ floors, defaultFloorId: null })),
+      )
       .then(
-        (floors) => {
+        ({ floors, defaultFloorId, buildingAvailability }) => {
           if (!controller.signal.aborted) {
             setExpandedBuilding({
               buildingId,
               floors: { status: "ready", floors },
+              defaultFloorId,
+              buildingAvailability,
             });
           }
         },
