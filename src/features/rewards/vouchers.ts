@@ -14,7 +14,7 @@ export interface VoucherModel {
   redeemedAt: string;
   expiresAt: string;
   usedAt: string | null;
-  status: VoucherStatus;
+  status: VoucherStatus | "unknown";
 }
 
 export type VoucherCollectionState =
@@ -26,7 +26,12 @@ export type VoucherDetailState =
   | { status: "loading" }
   | { status: "error"; message?: string; onRetry?: () => void }
   | { status: "empty"; message?: string }
-  | { status: "ready"; voucher: VoucherModel; qr?: ReactNode };
+  | {
+      status: "ready";
+      voucher: VoucherModel;
+      qr?: ReactNode;
+      useQr?: ReactNode;
+    };
 
 export type VoucherSelectHandler = (voucher: VoucherModel) => void;
 
@@ -35,6 +40,7 @@ export interface VoucherDetailView {
   label: string;
   notice: string | null;
   showQr: boolean;
+  showUseQr: boolean;
   showUseAction: boolean;
   showQrPending: boolean;
 }
@@ -67,15 +73,22 @@ export function getVoucherStatusLabel(status: VoucherDisplayStatus): string {
 
 export function getVoucherDetailView(
   voucher: Pick<VoucherModel, "status" | "usedAt">,
-  { hasQr, hasUseAction }: { hasQr: boolean; hasUseAction: boolean },
+  {
+    hasQr,
+    hasUseAction,
+    hasUseQr = false,
+  }: { hasQr: boolean; hasUseAction: boolean; hasUseQr?: boolean },
 ): VoucherDetailView {
   const status = getVoucherDisplayStatus(voucher);
   const ready = status === "available";
+  const showUseQr = status === "used" && hasUseQr;
 
   return {
     status,
     ...statusCopy[status],
+    notice: showUseQr ? null : statusCopy[status].notice,
     showQr: ready && hasQr,
+    showUseQr,
     showUseAction: ready && !hasQr && hasUseAction,
     showQrPending: ready && !hasQr && !hasUseAction,
   };

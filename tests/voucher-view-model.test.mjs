@@ -96,6 +96,36 @@ test("used and expired vouchers close QR and action even when both are passed", 
   }
 });
 
+test("a used voucher shows the use QR only when the server issued one", () => {
+  const used = { status: "used", usedAt: "2026-11-18T03:00:00Z" };
+  const issued = getVoucherDetailView(used, {
+    hasQr: false,
+    hasUseAction: true,
+    hasUseQr: true,
+  });
+  assert.equal(issued.showUseQr, true);
+  assert.equal(issued.showUseAction, false);
+  assert.equal(issued.notice, null);
+
+  const closed = getVoucherDetailView(used, {
+    hasQr: false,
+    hasUseAction: true,
+  });
+  assert.equal(closed.showUseQr, false);
+  assert.notEqual(closed.notice, null);
+});
+
+test("an available or expired voucher never shows the use QR", () => {
+  for (const voucher of [available, { status: "expired", usedAt: null }]) {
+    const view = getVoucherDetailView(voucher, {
+      hasQr: false,
+      hasUseAction: true,
+      hasUseQr: true,
+    });
+    assert.equal(view.showUseQr, false);
+  }
+});
+
 test("dates use the Bangkok day and Buddhist year", () => {
   assert.equal(formatVoucherDate("2026-11-18T17:30:00Z"), "19 พ.ย. 2569");
   assert.equal(
