@@ -5,7 +5,7 @@ export interface ProfileModel {
   avatarUrl: string | null;
   points: number;
   reportCount: number | null;
-  badgeCount: number;
+  badgeCount: number | null;
 }
 
 export type ProfileState =

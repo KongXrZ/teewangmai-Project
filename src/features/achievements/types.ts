@@ -19,7 +19,7 @@ export type BadgeFilter = "all" | "earned" | "locked";
 
 export type AchievementsState =
   | { status: "loading" }
-  | { status: "unavailable"; message?: string }
+  | { status: "unavailable"; message?: string; onRetry?: () => void }
   | { status: "error"; message?: string; onRetry?: () => void }
   | { status: "ready"; badges: BadgeModel[] };
 
