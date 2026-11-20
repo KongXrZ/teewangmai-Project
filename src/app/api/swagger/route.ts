@@ -119,6 +119,29 @@ export async function GET() {
             503: { description: 'Storage unavailable (code: unavailable)' },
           },
         },
+        delete: {
+          tags: ['Users'],
+          summary: 'Delete profile photo',
+          description:
+            'Clears users.avatar_url to null for the signed-in user without modifying other profile fields, then removes all files in their avatars/<auth-user-id>/ folder. Idempotent when avatar_url is already null or no files exist; if the database update fails, existing storage files are preserved.',
+          security: [{ cookieAuth: [] }],
+          responses: {
+            200: {
+              description: 'Profile photo deleted (or already empty)',
+              content: {
+                'application/json': {
+                  example: {
+                    success: true,
+                    data: { avatar_url: null },
+                  },
+                },
+              },
+            },
+            400: { description: 'Unsupported query parameter (code: validation)' },
+            401: { description: 'No session, expired session or no profile (code: unauthorized)' },
+            503: { description: 'Auth, database or storage unavailable (code: unavailable)' },
+          },
+        },
       },
       '/api/profile/checkins': {
         get: {
