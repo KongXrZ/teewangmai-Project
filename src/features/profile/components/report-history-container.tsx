@@ -27,10 +27,6 @@ export function ReportHistoryContainer() {
   const loadedKey = useRef<string | null>(null);
 
   useEffect(() => {
-    if (status === "unauthenticated") router.replace("/login?next=%2Fprofile%2Freports");
-  }, [status, router]);
-
-  useEffect(() => {
     if (!userId) return;
     const key = `${userId}:${attempt}`;
     if (loadedKey.current === key) return;

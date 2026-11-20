@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import WarningAmberRounded from "@mui/icons-material/WarningAmberRounded";
 import { BottomNavigation } from "@/components/layout/bottom-navigation";
@@ -27,10 +27,6 @@ export function EditProfileContainer() {
   const [status, setStatus] = useState<EditProfileStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const uploaded = useRef<{ userId: string; file: File; url: string } | null>(null);
-
-  useEffect(() => {
-    if (authStatus === "unauthenticated") router.replace("/login?next=%2Fprofile%2Fedit");
-  }, [authStatus, router]);
 
   function fail(message: string | null) {
     setErrorMessage(message);
