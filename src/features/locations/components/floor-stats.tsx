@@ -3,6 +3,7 @@ import type { SvgIconProps } from "@mui/material/SvgIcon";
 import AccessTime from "@mui/icons-material/AccessTime";
 import DataUsage from "@mui/icons-material/DataUsage";
 import Diversity3 from "@mui/icons-material/Diversity3";
+import { formatFloorHoursValue } from "../api/availability-display";
 import type {
   CrowdLevel,
   FloorModel,
@@ -49,6 +50,9 @@ export const crowdThemes: Record<CrowdLevel | "unknown", CrowdTheme> = {
 };
 
 const peopleFormatter = new Intl.NumberFormat("th-TH");
+const percentFormatter = new Intl.NumberFormat("th-TH", {
+  maximumFractionDigits: 1,
+});
 
 interface StatItem {
   key: string;
@@ -62,11 +66,10 @@ function toStatItems(stats: FloorStatsModel): StatItem[] {
     {
       key: "people",
       icon: Diversity3,
-      value: `~${
+      value:
         stats.estimatedPeople === null
-          ? "000"
-          : peopleFormatter.format(stats.estimatedPeople)
-      } คน`,
+          ? "ไม่มีข้อมูล"
+          : `~${peopleFormatter.format(stats.estimatedPeople)} คน`,
       label: "จำนวนคนโดยประมาณ",
     },
     {
@@ -74,20 +77,15 @@ function toStatItems(stats: FloorStatsModel): StatItem[] {
       icon: DataUsage,
       value:
         stats.densityPercent === null
-          ? "00%"
-          : `${Math.round(stats.densityPercent)}%`,
+          ? "ไม่มีข้อมูล"
+          : `${percentFormatter.format(stats.densityPercent)}%`,
       label: "ความหนาแน่น",
     },
     {
       key: "hours",
       icon: AccessTime,
-      value:
-        stats.openingHours === null
-          ? "00:00 - 23:59"
-          : stats.openingHours === "closed"
-            ? "ปิดวันนี้"
-            : `${stats.openingHours.open.slice(0, 5)} - ${stats.openingHours.close.slice(0, 5)}`,
-      label: "ช่วงเวลาเปิด/ปิด",
+      value: formatFloorHoursValue(stats.openingHours),
+      label: "เวลาเปิดชั้นนี้",
     },
   ];
 }

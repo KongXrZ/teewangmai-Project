@@ -97,11 +97,13 @@ export function HomeMapContainer({
           dataSource.loadBuildingFloors(buildingId, controller.signal),
         )
         .then(
-          ({ floors }) => {
+          ({ floors, defaultFloorId, buildingAvailability }) => {
             if (!controller.signal.aborted) {
               setExpandedBuilding({
                 buildingId,
                 floors: { status: "ready", floors },
+                defaultFloorId,
+                buildingAvailability,
               });
             }
           },

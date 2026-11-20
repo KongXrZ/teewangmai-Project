@@ -4,6 +4,21 @@ export type BuildingId = string;
 
 export type CrowdLevel = Exclude<CrowdLevelFilterValue, "all">;
 
+export type CrowdSummaryStatus = "ready" | "unknown" | "pending" | "stale";
+
+export type AvailabilityStatus = "open" | "closed" | "unknown";
+
+export interface BuildingAvailabilityModel {
+  status: AvailabilityStatus;
+  displayHours: string | null;
+}
+
+export interface FloorCrowdMeta {
+  status: CrowdSummaryStatus;
+  latestReportAt: string | null;
+  calculatedAt: string | null;
+}
+
 export interface BuildingCardModel {
   id: BuildingId;
   code: string;
@@ -11,6 +26,10 @@ export interface BuildingCardModel {
   imageUrl: string | null;
   crowdLevel: CrowdLevel | null;
   updatedAt: string | null;
+  crowdStatus?: CrowdSummaryStatus;
+  latestReportAt?: string | null;
+  calculatedAt?: string | null;
+  buildingAvailability?: BuildingAvailabilityModel;
 }
 
 export type LocationListState =
@@ -30,6 +49,7 @@ export type FloorId = string;
 export interface OpeningHours {
   open: string;
   close: string;
+  display?: string;
 }
 
 export interface CrowdEstimate {
@@ -61,6 +81,8 @@ export interface FloorModel {
   openingHours: OpeningHours | "closed" | null;
   crowd: FloorCrowdState;
   details: FloorDetailItem[];
+  availabilityStatus?: AvailabilityStatus;
+  crowdMeta?: FloorCrowdMeta;
 }
 
 export interface BuildingDetailModel {
@@ -69,10 +91,16 @@ export interface BuildingDetailModel {
   name: string;
   imageUrl: string | null;
   floors: FloorModel[];
+  availability?: BuildingAvailabilityModel;
+  categories?: string[];
+  aliases?: string[];
+  description?: string | null;
+  metadataDetails?: FloorDetailItem[];
 }
 
 export type BuildingDetailState =
   | { status: "loading" }
+  | { status: "not_found" }
   | { status: "unavailable" }
   | { status: "error" }
   | { status: "ready"; building: BuildingDetailModel };
@@ -85,6 +113,8 @@ export type FloorListState =
 export interface ExpandedBuildingModel {
   buildingId: BuildingId;
   floors: FloorListState;
+  defaultFloorId?: FloorId | null;
+  buildingAvailability?: BuildingAvailabilityModel;
 }
 
 export type FloorSelectHandler = (floorId: FloorId) => void;

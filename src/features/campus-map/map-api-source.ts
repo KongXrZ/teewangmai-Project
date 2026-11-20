@@ -1,4 +1,9 @@
+import {
+  toAvailabilityModel,
+  type ApiAvailabilityDto,
+} from "@/features/locations/api/availability-display";
 import type {
+  BuildingAvailabilityModel,
   BuildingCardModel,
   BuildingId,
   FloorModel,
@@ -26,6 +31,7 @@ export interface CampusMapCatalogResult {
 export interface CampusMapFloorsResult {
   readonly floors: FloorModel[];
   readonly defaultFloorId: string | null;
+  readonly buildingAvailability?: BuildingAvailabilityModel;
 }
 
 export interface CampusMapDataSource {
@@ -155,10 +161,10 @@ export const campusMapApiSource: CampusMapDataSource = {
   async loadBuildingFloors(buildingId, signal) {
     const encodedId = encodeURIComponent(buildingId);
     const [detailOutcome, crowdOutcome] = await Promise.all([
-      fetchJson<{ floors: ApiLocationFloor[] }>(
-        `/api/locations/${encodedId}`,
-        signal,
-      ),
+      fetchJson<{
+        availability?: ApiAvailabilityDto;
+        floors: ApiLocationFloor[];
+      }>(`/api/locations/${encodedId}`, signal),
       fetchJson<{
         default_floor_id?: number | null;
         floors?: ApiCrowdFloor[];
@@ -197,6 +203,9 @@ export const campusMapApiSource: CampusMapDataSource = {
         crowdFailed,
       ),
       defaultFloorId,
+      buildingAvailability: toAvailabilityModel(
+        detailOutcome.data.availability,
+      ),
     };
   },
 };

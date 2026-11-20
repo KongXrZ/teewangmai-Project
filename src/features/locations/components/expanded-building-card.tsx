@@ -7,7 +7,9 @@ import ArticleOutlined from "@mui/icons-material/ArticleOutlined";
 import CheckRounded from "@mui/icons-material/CheckRounded";
 import ChevronRight from "@mui/icons-material/ChevronRight";
 import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
+import { formatBuildingHoursLabel } from "../api/availability-display";
 import type {
+  BuildingAvailabilityModel,
   BuildingCardModel,
   BuildingSelectHandler,
   FloorId,
@@ -23,6 +25,8 @@ export type ExpandedBuildingCardVariant = "list" | "map";
 export interface ExpandedBuildingCardProps {
   building: BuildingCardModel;
   floors: FloorListState;
+  initialFloorId?: FloorId;
+  buildingAvailability?: BuildingAvailabilityModel;
   variant?: ExpandedBuildingCardVariant;
   onSelectFloor?: FloorSelectHandler;
   onViewDetail?: BuildingSelectHandler;
@@ -59,6 +63,8 @@ const cardVariants: Record<
 export function ExpandedBuildingCard({
   building,
   floors,
+  initialFloorId,
+  buildingAvailability,
   variant = "list",
   onSelectFloor,
   onViewDetail,
@@ -66,11 +72,20 @@ export function ExpandedBuildingCard({
   const styles = cardVariants[variant];
   const cardRef = useRef<HTMLDivElement>(null);
   const floorList = floors.status === "ready" ? floors.floors : [];
+  const defaultFloorId =
+    initialFloorId ??
+    floorList.find((floor) => floor.label.trim() === "1")?.id ??
+    floorList[0]?.id;
   const [selectedFloorId, setSelectedFloorId] = useState<FloorId | undefined>(
-    floorList[0]?.id,
+    defaultFloorId,
   );
   const selectedFloor =
-    floorList.find((floor) => floor.id === selectedFloorId) ?? floorList[0];
+    floorList.find((floor) => floor.id === selectedFloorId) ??
+    floorList.find((floor) => floor.id === defaultFloorId) ??
+    floorList[0];
+  const buildingHoursLabel = formatBuildingHoursLabel(
+    buildingAvailability ?? building.buildingAvailability,
+  );
 
   useEffect(() => {
     cardRef.current?.focus();
@@ -104,6 +119,11 @@ export function ExpandedBuildingCard({
           }
         />
       </div>
+      {buildingHoursLabel && (
+        <p className="m-0 px-2 pb-1 text-[11px] leading-normal text-[#5f5f5f]">
+          {buildingHoursLabel}
+        </p>
+      )}
       <div className="flex items-center gap-1 px-1.5 pb-2">
         <div className="flex min-w-0 flex-1 flex-col items-stretch">
           <FloorSummary

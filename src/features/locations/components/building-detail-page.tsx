@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AccessTime from "@mui/icons-material/AccessTime";
 import ArrowBackIosNewRounded from "@mui/icons-material/ArrowBackIosNewRounded";
@@ -8,6 +9,10 @@ import InfoOutlined from "@mui/icons-material/InfoOutlined";
 import Layers from "@mui/icons-material/Layers";
 import WhereToVoteOutlined from "@mui/icons-material/WhereToVoteOutlined";
 import { BottomNavigation } from "@/components/layout/bottom-navigation";
+import {
+  formatBuildingHoursLabel,
+  formatCrowdTimestampLines,
+} from "../api/availability-display";
 import { formatUpdatedTime } from "./format-updated-time";
 import type {
   BuildingDetailModel,
@@ -30,6 +35,7 @@ export interface BuildingDetailPageProps {
   onSelectFloor?: FloorSelectHandler;
   onCheckIn?: () => void;
   onBack?: () => void;
+  onRetry?: () => void;
 }
 
 export function BuildingDetailPage({
@@ -38,6 +44,7 @@ export function BuildingDetailPage({
   onSelectFloor,
   onCheckIn,
   onBack,
+  onRetry,
 }: BuildingDetailPageProps) {
   const router = useRouter();
 
@@ -76,6 +83,7 @@ export function BuildingDetailPage({
       >
         {state.status === "ready" ? (
           <BuildingDetail
+            key={state.building.id}
             building={state.building}
             initialFloorId={initialFloorId}
             onSelectFloor={onSelectFloor}
@@ -85,7 +93,7 @@ export function BuildingDetailPage({
         ) : (
           <>
             <BackButton onClick={handleBack} className="mb-3 self-start" />
-            <DetailMessage status={state.status} />
+            <DetailMessage status={state.status} onRetry={onRetry} />
           </>
         )}
       </main>
@@ -96,11 +104,17 @@ export function BuildingDetailPage({
 
 function DetailMessage({
   status,
+  onRetry,
 }: {
-  status: "loading" | "unavailable" | "error";
+  status: "loading" | "not_found" | "unavailable" | "error";
+  onRetry?: () => void;
 }) {
   const content = {
     loading: { title: "กำลังโหลดข้อมูลอาคาร...", description: undefined },
+    not_found: {
+      title: "ไม่พบข้อมูลอาคาร",
+      description: "อาคารนี้อาจไม่มีอยู่ในระบบ หรือปิดให้บริการแล้ว",
+    },
     unavailable: {
       title: "ยังไม่มีข้อมูลอาคาร",
       description: "ระบบข้อมูลอาคารยังไม่พร้อมใช้งาน โปรดกลับมาอีกครั้ง",
@@ -119,6 +133,23 @@ function DetailMessage({
       <h1 className="text-2xl leading-snug font-bold">{content.title}</h1>
       {content.description && (
         <p className="mt-1 text-[13px] leading-normal">{content.description}</p>
+      )}
+      {status === "error" && onRetry && (
+        <button
+          type="button"
+          onClick={onRetry}
+          className="mt-4 inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full bg-[#ff5815] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#e94e10] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
+        >
+          ลองใหม่อีกครั้ง
+        </button>
+      )}
+      {status === "not_found" && (
+        <Link
+          href="/locations"
+          className="mt-4 inline-flex min-h-11 items-center justify-center rounded-full bg-[#ff5815] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#e94e10] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815]"
+        >
+          ดูรายการสถานที่ทั้งหมด
+        </Link>
       )}
     </div>
   );
@@ -173,6 +204,13 @@ function BuildingDetail({
     onSelectFloor?.(id);
   }
 
+  const buildingHoursLabel = formatBuildingHoursLabel(building.availability);
+  const hasBuildingMeta =
+    Boolean(buildingHoursLabel) ||
+    Boolean(building.description) ||
+    (building.categories?.length ?? 0) > 0 ||
+    (building.aliases?.length ?? 0) > 0;
+
   return (
     <>
       <div className="relative">
@@ -190,6 +228,48 @@ function BuildingDetail({
         <span className="min-w-0 wrap-anywhere">{building.name}</span>
         <span className="whitespace-nowrap">( {building.code} )</span>
       </h1>
+
+      {hasBuildingMeta && (
+        <section
+          aria-label="ข้อมูลอาคาร"
+          className="mt-1.5 flex flex-col gap-1 rounded-[10px] bg-white px-3 py-2 text-xs text-[#4b5563]"
+        >
+          {buildingHoursLabel && (
+            <p className="m-0 flex items-center gap-1.5 font-medium text-[#111827]">
+              <AccessTime
+                aria-hidden="true"
+                sx={{ fontSize: 15 }}
+                className="shrink-0 text-[#ff5815]"
+              />
+              <span>{buildingHoursLabel}</span>
+            </p>
+          )}
+          {building.description && (
+            <p className="m-0 leading-relaxed">{building.description}</p>
+          )}
+          {((building.categories?.length ?? 0) > 0 ||
+            (building.aliases?.length ?? 0) > 0) && (
+            <div className="flex flex-wrap gap-1.5 pt-0.5">
+              {building.categories?.map((cat) => (
+                <span
+                  key={`cat-${cat}`}
+                  className="rounded-full bg-[#fff3ec] px-2.5 py-0.5 text-[11px] font-medium text-[#c2410c]"
+                >
+                  {cat}
+                </span>
+              ))}
+              {building.aliases?.map((alias) => (
+                <span
+                  key={`alias-${alias}`}
+                  className="rounded-full bg-[#f4f5f7] px-2.5 py-0.5 text-[11px] text-[#4b5563]"
+                >
+                  {alias}
+                </span>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       <section
         aria-label="ข้อมูลรายชั้น"
@@ -320,12 +400,21 @@ function CrowdSummary({ floor }: { floor: FloorModel }) {
   const level = crowd.level ?? "unknown";
   const theme = crowdThemes[level];
   const Icon = crowdLevelIcons[level];
-  const label = crowd.level ? crowdLevelLabels[crowd.level] : unknownCrowdLabel;
-  const updatedTime = formatUpdatedTime(crowd.updatedAt);
+  const crowdStatus = floor.crowdMeta?.status;
+  const label = crowd.level
+    ? crowdLevelLabels[crowd.level]
+    : crowdStatus === "pending"
+      ? "รอคำนวณความหนาแน่น"
+      : crowdStatus === "stale"
+        ? "ข้อมูลความหนาแน่นเกินกำหนด"
+        : unknownCrowdLabel;
+  const timestamps = formatCrowdTimestampLines(floor.crowdMeta);
+  const legacyUpdatedTime = timestamps ? null : formatUpdatedTime(crowd.updatedAt);
 
   return (
     <div
       data-crowd-level={level}
+      data-crowd-status={crowdStatus ?? (crowd.level ? "ready" : "unknown")}
       className="flex items-center justify-center gap-3"
     >
       <span
@@ -335,15 +424,31 @@ function CrowdSummary({ floor }: { floor: FloorModel }) {
       </span>
       <div className="min-w-0">
         <p className="text-2xl leading-snug font-bold">{label}</p>
-        {updatedTime && (
-          <p className="flex items-center gap-1 text-xs leading-normal">
-            <AccessTime
-              aria-hidden="true"
-              sx={{ fontSize: 12 }}
-              className={theme.accent}
-            />
-            {updatedTime}
-          </p>
+        {timestamps ? (
+          <div className="mt-0.5 flex flex-col gap-0.5 text-xs leading-normal text-[#4b5563]">
+            <p className="m-0 flex items-center gap-1">
+              <AccessTime
+                aria-hidden="true"
+                sx={{ fontSize: 12 }}
+                className={theme.accent}
+              />
+              <span>{timestamps.reportText}</span>
+            </p>
+            <p className="m-0 pl-4 text-[11px] text-[#6b7280]">
+              {timestamps.calculatedText}
+            </p>
+          </div>
+        ) : (
+          legacyUpdatedTime && (
+            <p className="flex items-center gap-1 text-xs leading-normal">
+              <AccessTime
+                aria-hidden="true"
+                sx={{ fontSize: 12 }}
+                className={theme.accent}
+              />
+              {legacyUpdatedTime}
+            </p>
+          )
         )}
       </div>
     </div>
