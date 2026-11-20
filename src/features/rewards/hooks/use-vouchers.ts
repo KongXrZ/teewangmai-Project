@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/features/auth/components/auth-provider";
 import {
   clearAttemptKey,
   getAttemptKey,
@@ -38,6 +39,7 @@ function millisecondsUntil(deadline: number) {
 
 export function useVoucherCollection(): VoucherCollectionState {
   const router = useRouter();
+  const { refresh: refreshAuth } = useAuth();
   const [result, setResult] = useState<VouchersResult | null>(null);
   const [requestId, setRequestId] = useState(0);
 
@@ -51,8 +53,12 @@ export function useVoucherCollection(): VoucherCollectionState {
 
     fetchVouchers(fetch, controller.signal)
       .then((next) => {
+        if (controller.signal.aborted) {
+          return;
+        }
         setResult(next);
         if (next.kind === "unauthenticated") {
+          void refreshAuth();
           router.replace(loginRoute("/rewards/vouchers"));
         }
       })
@@ -63,7 +69,7 @@ export function useVoucherCollection(): VoucherCollectionState {
       });
 
     return () => controller.abort();
-  }, [requestId, router]);
+  }, [refreshAuth, requestId, router]);
 
   if (result === null || result.kind === "unauthenticated") {
     return { status: "loading" };
@@ -86,6 +92,7 @@ export function useVoucherDetail(
   voucherId: VoucherId | null,
 ): VoucherDetailController {
   const router = useRouter();
+  const { refresh: refreshAuth } = useAuth();
   const [result, setResult] = useState<VouchersResult | null>(null);
   const [requestId, setRequestId] = useState(0);
   const [activeUse, setActiveUse] = useState<ActiveVoucherUse | null>(null);
@@ -111,35 +118,35 @@ export function useVoucherDetail(
       if (signal.aborted) {
         return;
       }
-      setResult(next);
       if (next.kind === "unauthenticated") {
+        setResult(next);
+        void refreshAuth();
         router.replace(loginRoute(`/rewards/vouchers/${id}`));
         return;
       }
-      if (next.kind !== "ok") {
-        return;
-      }
 
-      const voucher = next.vouchers.find((item) => item.id === id);
+      const voucher =
+        next.kind === "ok"
+          ? next.vouchers.find((item) => item.id === id)
+          : undefined;
       const key = readAttemptKey(scope);
-      if (!voucher || voucher.usedAt === null || key === null) {
-        return;
+      if (voucher && voucher.usedAt !== null && key !== null) {
+        const recovered = await requestVoucherUse(id, key, fetch, signal);
+        if (signal.aborted) {
+          return;
+        }
+        if (recovered.kind === "ok") {
+          setActiveUse({
+            id: recovered.id,
+            usedAt: recovered.usedAt,
+            useCode: recovered.useCode,
+          });
+        } else if (recovered.kind !== "unknown") {
+          clearAttemptKey(scope);
+          setActiveUse(null);
+        }
       }
-
-      const recovered = await requestVoucherUse(id, key, fetch, signal);
-      if (signal.aborted) {
-        return;
-      }
-      if (recovered.kind === "ok") {
-        setActiveUse({
-          id: recovered.id,
-          usedAt: recovered.usedAt,
-          useCode: recovered.useCode,
-        });
-      } else if (recovered.kind !== "unknown") {
-        clearAttemptKey(scope);
-        setActiveUse(null);
-      }
+      setResult(next);
     }
 
     load(voucherId).catch(() => {
@@ -149,7 +156,7 @@ export function useVoucherDetail(
     });
 
     return () => controller.abort();
-  }, [requestId, router, voucherId]);
+  }, [refreshAuth, requestId, router, voucherId]);
 
   useEffect(() => () => useControllerRef.current?.abort(), []);
 
@@ -205,6 +212,7 @@ export function useVoucherDetail(
               return;
             case "unauthenticated":
               clearAttemptKey(scope);
+              void refreshAuth();
               router.replace(loginRoute(`/rewards/vouchers/${target.id}`));
               return;
             case "conflict":
@@ -232,7 +240,7 @@ export function useVoucherDetail(
           }
         });
     },
-    [router],
+    [refreshAuth, router],
   );
 
   const useCode = activeUse?.id === voucherId ? activeUse.useCode : null;

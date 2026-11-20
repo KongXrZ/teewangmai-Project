@@ -99,7 +99,10 @@ test("only an unknown outcome stays retryable with the same key", async () => {
   });
   assert.equal(offline.kind, "unknown");
   assert.equal(toRedemptionResult(offline).retryable, true);
-  assert.equal(parseRedeemResponse(503, { code: "unavailable" }).kind, "unknown");
+  assert.equal(
+    parseRedeemResponse(503, { code: "unavailable" }).kind,
+    "unknown",
+  );
 
   const conflict = parseRedeemResponse(422, { code: "key_conflict" });
   assert.equal(conflict.kind, "rejected");
@@ -155,6 +158,46 @@ test("an unknown voucher status is kept as unknown", () => {
     data: [{ ...voucher, status: "paused" }],
   });
   assert.equal(result.vouchers[0].status, "unknown");
+});
+
+test("a blank voucher image is treated as missing", () => {
+  const result = parseVouchersResponse(200, {
+    success: true,
+    data: [
+      { ...voucher, image_url: "" },
+      { ...voucher, id: 10, image_url: "   " },
+      { ...voucher, id: 11, image_url: " https://example.com/a.png " },
+    ],
+  });
+  assert.equal(result.kind, "ok");
+  assert.deepEqual(
+    result.vouchers.map((item) => item.imageUrl),
+    [null, null, "https://example.com/a.png"],
+  );
+});
+
+test("an abort while reading the body is rethrown, not an error state", async () => {
+  const controller = new AbortController();
+  const fetchImpl = async () => ({
+    status: 200,
+    headers: new Headers({ "content-type": "application/json" }),
+    json: async () => {
+      controller.abort();
+      throw new DOMException("aborted", "AbortError");
+    },
+  });
+  await assert.rejects(fetchVouchers(fetchImpl, controller.signal));
+  await assert.rejects(redeemReward(1, key, fetchImpl, controller.signal));
+});
+
+test("a broken JSON body without abort stays a normal failure", async () => {
+  const fetchImpl = async () =>
+    new Response("{", {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  assert.deepEqual(await fetchVouchers(fetchImpl), { kind: "error" });
+  assert.equal((await redeemReward(1, key, fetchImpl)).kind, "unknown");
 });
 
 test("voucher list failures become a retryable error", async () => {

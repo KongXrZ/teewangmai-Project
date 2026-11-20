@@ -16,7 +16,7 @@ const redeemResponseSchema = z.object({
 const voucherDtoSchema = z.object({
   id: z.number().int().positive(),
   title: z.string().min(1),
-  image_url: z.string().min(1).nullable(),
+  image_url: z.string().nullable(),
   used_points: z.number().int().nonnegative(),
   redeemed_at: z.string().min(1),
   expires_at: z.string().min(1),
@@ -153,7 +153,7 @@ export function parseVouchersResponse(
     vouchers: parsed.data.data.map((voucher) => ({
       id: voucher.id,
       title: voucher.title,
-      imageUrl: voucher.image_url,
+      imageUrl: voucher.image_url?.trim() || null,
       usedPoints: voucher.used_points,
       redeemedAt: voucher.redeemed_at,
       expiresAt: voucher.expires_at,
@@ -209,7 +209,12 @@ async function send(
     const body = response.headers
       .get("content-type")
       ?.includes("application/json")
-      ? await response.json().catch(() => null)
+      ? await response.json().catch((error: unknown) => {
+          if (signal?.aborted) {
+            throw error;
+          }
+          return null;
+        })
       : null;
     return { status: response.status, body };
   } catch (error) {

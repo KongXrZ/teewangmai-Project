@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/features/auth/components/auth-provider";
 import {
   clearAttemptKey,
   getAttemptKey,
@@ -20,6 +21,7 @@ export function RedemptionFlow({
   onRedemptionConfirmed,
 }: RedemptionFlowProps) {
   const router = useRouter();
+  const { refresh: refreshAuth } = useAuth();
   const [result, setResult] = useState<RedemptionResult>({ status: "idle" });
   const [voucherId, setVoucherId] = useState<number | null>(null);
   const controllerRef = useRef<AbortController | null>(null);
@@ -40,6 +42,9 @@ export function RedemptionFlow({
         }
         if (next.kind !== "unknown") {
           clearAttemptKey(scope);
+        }
+        if (next.kind === "ok" || next.kind === "unauthenticated") {
+          void refreshAuth();
         }
         if (next.kind === "unauthenticated") {
           router.replace("/login?next=%2Frewards");
