@@ -7,6 +7,12 @@ export const primaryButtonClass =
 export const secondaryButtonClass =
   "flex h-[52px] w-full cursor-pointer touch-manipulation items-center justify-center gap-2 rounded-[14px] border border-[#e5e7eb] bg-white px-4 text-base font-semibold text-[#141414] transition-colors duration-150 [-webkit-tap-highlight-color:transparent] hover:bg-[#f7f7f8] active:bg-[#f0f1f3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#081828] disabled:cursor-not-allowed disabled:text-[#9ca3af]";
 
+export const dangerPrimaryButtonClass =
+  "flex h-[52px] w-full cursor-pointer touch-manipulation items-center justify-center gap-2 rounded-[14px] border-0 bg-[#dc2626] px-4 text-base font-semibold text-white transition-colors duration-150 [-webkit-tap-highlight-color:transparent] hover:bg-[#b91c1c] active:bg-[#991b1b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#081828] disabled:cursor-progress disabled:bg-[#f29b9b]";
+
+export const dangerOutlineButtonClass =
+  "flex h-[52px] w-full cursor-pointer touch-manipulation items-center justify-center gap-2 rounded-[14px] border border-[#fecaca] bg-white px-4 text-base font-semibold text-[#dc2626] transition-colors duration-150 [-webkit-tap-highlight-color:transparent] hover:bg-[#fef2f2] active:bg-[#fee2e2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#081828] disabled:cursor-not-allowed disabled:border-[#e5e7eb] disabled:text-[#9ca3af]";
+
 export const pageMainClass =
   "flex min-w-0 flex-1 flex-col bg-white px-5 pb-[calc(7.625rem+env(safe-area-inset-bottom,0px))] sm:px-8";
 

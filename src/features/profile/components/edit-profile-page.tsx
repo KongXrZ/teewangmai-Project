@@ -15,6 +15,7 @@ import Avatar from "@mui/material/Avatar";
 import Dialog from "@mui/material/Dialog";
 import CheckRounded from "@mui/icons-material/CheckRounded";
 import CloseRounded from "@mui/icons-material/CloseRounded";
+import DeleteOutlineRounded from "@mui/icons-material/DeleteOutlineRounded";
 import ErrorOutlineRounded from "@mui/icons-material/ErrorOutlineRounded";
 import PersonOutlineRounded from "@mui/icons-material/PersonOutlineRounded";
 import PhotoCameraOutlined from "@mui/icons-material/PhotoCameraOutlined";
@@ -22,7 +23,18 @@ import { BottomNavigation } from "@/components/layout/bottom-navigation";
 import { Spinner } from "@/features/quick-scan/components/spinner";
 import { AVATAR_MAX_BYTES, checkAvatar } from "../avatar";
 import { editProfileSchema, type EditProfileValues } from "../form-schemas";
-import { PageHeader, pageMainClass, primaryButtonClass, secondaryButtonClass } from "./profile-ui";
+import {
+  DEFAULT_DELETE_AVATAR_ERROR,
+  getAvatarDeleteAction,
+} from "./avatar-delete-client";
+import {
+  PageHeader,
+  dangerOutlineButtonClass,
+  dangerPrimaryButtonClass,
+  pageMainClass,
+  primaryButtonClass,
+  secondaryButtonClass,
+} from "./profile-ui";
 
 export interface EditProfileInitial {
   name: string;
@@ -36,6 +48,7 @@ export interface EditProfileSubmit {
 }
 
 export type EditProfileStatus = "idle" | "saving" | "saved" | "failed";
+export type DeleteAvatarStatus = "idle" | "deleting" | "failed";
 
 export interface EditProfilePageProps {
   initial: EditProfileInitial;
@@ -46,6 +59,11 @@ export interface EditProfilePageProps {
   onDone: () => void;
   onDismissError: () => void;
   errorMessage?: string | null;
+  deleteStatus?: DeleteAvatarStatus;
+  deleteErrorMessage?: string | null;
+  onDeleteAvatar?: () => Promise<boolean>;
+  onClearDraftAvatar?: () => void;
+  onDismissDeleteError?: () => void;
 }
 
 const fieldClass =
@@ -60,6 +78,11 @@ export function EditProfilePage({
   onDone,
   onDismissError,
   errorMessage = null,
+  deleteStatus = "idle",
+  deleteErrorMessage = null,
+  onDeleteAvatar,
+  onClearDraftAvatar,
+  onDismissDeleteError,
 }: EditProfilePageProps) {
   const nameId = useId();
   const emailId = useId();
@@ -67,9 +90,18 @@ export function EditProfilePage({
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const pickRef = useRef(0);
   const submitLockRef = useRef(false);
+  const deleteLockRef = useRef(false);
+  const mountedRef = useRef(true);
   const saving = status === "saving";
+  const deleting = deleteStatus === "deleting";
+  const busy = saving || deleting;
+  const deleteAction = getAvatarDeleteAction({
+    savedAvatarUrl: initial.avatarUrl,
+    hasLocalFile: Boolean(avatarFile || previewUrl),
+  });
   const {
     register,
     handleSubmit,
@@ -91,11 +123,21 @@ export function EditProfilePage({
   }, [status]);
 
   useEffect(() => {
+    mountedRef.current = true;
     const picks = pickRef;
     return () => {
+      mountedRef.current = false;
       picks.current += 1;
     };
   }, []);
+
+  function clearDraftAvatar() {
+    pickRef.current += 1;
+    setAvatarFile(null);
+    setPreviewUrl(null);
+    setFileError(null);
+    onClearDraftAvatar?.();
+  }
 
   async function handleFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -117,24 +159,55 @@ export function EditProfilePage({
   }
 
   function submit(values: EditProfileValues) {
-    if (saving || submitLockRef.current) return;
+    if (busy || submitLockRef.current) return;
     submitLockRef.current = true;
     onSubmit({ name: values.name, avatarFile });
   }
 
   function handleDone() {
-    setAvatarFile(null);
-    setPreviewUrl(null);
+    clearDraftAvatar();
     onDone();
   }
 
   function handleCancel() {
-    pickRef.current += 1;
     reset({ name: initial.name });
-    setAvatarFile(null);
-    setPreviewUrl(null);
-    setFileError(null);
+    clearDraftAvatar();
     onCancel();
+  }
+
+  function handleDeleteButtonClick() {
+    if (busy || !deleteAction.visible) return;
+    if (deleteAction.mode === "clear-draft") {
+      clearDraftAvatar();
+      return;
+    }
+    setConfirmDeleteOpen(true);
+  }
+
+  function handleCloseDeleteDialog() {
+    if (deleting) return;
+    setConfirmDeleteOpen(false);
+  }
+
+  function handleClearDraftOnly() {
+    if (deleting) return;
+    clearDraftAvatar();
+    setConfirmDeleteOpen(false);
+  }
+
+  async function runDeleteAvatar() {
+    if (busy || deleteLockRef.current || !onDeleteAvatar) return;
+    deleteLockRef.current = true;
+    try {
+      const deleted = await onDeleteAvatar();
+      if (!mountedRef.current) return;
+      setConfirmDeleteOpen(false);
+      if (deleted) {
+        clearDraftAvatar();
+      }
+    } finally {
+      deleteLockRef.current = false;
+    }
   }
 
   const openPicker = () => fileInputRef.current?.click();
@@ -143,10 +216,10 @@ export function EditProfilePage({
 
   return (
     <>
-      <main aria-busy={saving || undefined} className={pageMainClass}>
+      <main aria-busy={busy || undefined} className={pageMainClass}>
         <PageHeader title="แก้ไขข้อมูลส่วนตัว" onBack={onBack} />
         <form noValidate onSubmit={submitForm} className="mt-6 flex flex-col gap-5">
-          <fieldset disabled={saving} className="m-0 flex min-w-0 flex-col gap-5 border-0 p-0">
+          <fieldset disabled={busy} className="m-0 flex min-w-0 flex-col gap-5 border-0 p-0">
             <div className="flex flex-col gap-1">
               <h2 className="text-xl leading-snug font-semibold text-[#141414]">ข้อมูลบัญชีของคุณ</h2>
               <p className="text-[15px] text-[#6b7280]">
@@ -168,8 +241,8 @@ export function EditProfilePage({
                   sx={{
                     width: 96,
                     height: 96,
-                    bgcolor: saving ? "#f3f4f6" : "#fdebe0",
-                    color: saving ? "#9ca3af" : "#ea580c",
+                    bgcolor: busy ? "#f3f4f6" : "#fdebe0",
+                    color: busy ? "#9ca3af" : "#ea580c",
                   }}
                 >
                   <PersonOutlineRounded aria-hidden="true" sx={{ fontSize: 52 }} />
@@ -177,15 +250,31 @@ export function EditProfilePage({
                 <span
                   aria-hidden="true"
                   className={`absolute right-0 bottom-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-white ${
-                    saving ? "bg-[#9ca3af]" : "bg-[#ea580c]"
+                    busy ? "bg-[#9ca3af]" : "bg-[#ea580c]"
                   }`}
                 >
                   <PhotoCameraOutlined sx={{ fontSize: 18 }} />
                 </span>
               </button>
-              <button type="button" onClick={openPicker} className={secondaryButtonClass}>
-                เปลี่ยนรูปโปรไฟล์
-              </button>
+              <div className="flex w-full flex-col gap-2.5">
+                <button type="button" onClick={openPicker} className={secondaryButtonClass}>
+                  เปลี่ยนรูปโปรไฟล์
+                </button>
+                {deleteAction.visible && (
+                  <button
+                    type="button"
+                    onClick={handleDeleteButtonClick}
+                    className={dangerOutlineButtonClass}
+                  >
+                    {deleting ? (
+                      <Spinner className="h-5 w-5 border-2 border-[#dc2626]/30 border-t-[#dc2626]" />
+                    ) : (
+                      <DeleteOutlineRounded aria-hidden="true" sx={{ fontSize: 20 }} />
+                    )}
+                    {deleting ? "กำลังลบรูป..." : "ลบรูปโปรไฟล์"}
+                  </button>
+                )}
+              </div>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -236,7 +325,7 @@ export function EditProfilePage({
           <div className="flex flex-col gap-3">
             <button
               type="submit"
-              disabled={saving}
+              disabled={busy}
               className={`${primaryButtonClass} disabled:cursor-progress disabled:bg-[#f0a27f]`}
             >
               {saving && <Spinner className="h-5 w-5 border-2 border-white/40 border-t-white" />}
@@ -245,7 +334,7 @@ export function EditProfilePage({
             <button
               type="button"
               onClick={handleCancel}
-              disabled={saving}
+              disabled={busy}
               className={secondaryButtonClass}
             >
               ยกเลิก
@@ -253,6 +342,72 @@ export function EditProfilePage({
           </div>
         </form>
       </main>
+
+      <ResultDialog
+        open={confirmDeleteOpen && deleteStatus !== "failed"}
+        tone="danger"
+        icon="delete"
+        title="ลบรูปโปรไฟล์"
+        description={
+          deleteAction.mode === "delete-saved-and-draft"
+            ? "รูปที่เลือกใหม่และรูปโปรไฟล์ปัจจุบันของคุณจะถูกลบ และกลับไปใช้ไอคอนโปรไฟล์เริ่มต้น"
+            : "รูปโปรไฟล์ปัจจุบันของคุณจะถูกลบ และกลับไปใช้ไอคอนโปรไฟล์เริ่มต้น"
+        }
+        onClose={handleCloseDeleteDialog}
+      >
+        <button
+          type="button"
+          onClick={() => void runDeleteAvatar()}
+          disabled={deleting}
+          className={dangerPrimaryButtonClass}
+        >
+          {deleting && <Spinner className="h-5 w-5 border-2 border-white/40 border-t-white" />}
+          {deleting ? "กำลังลบรูป..." : "ยืนยันลบรูปโปรไฟล์"}
+        </button>
+        {deleteAction.mode === "delete-saved-and-draft" && (
+          <button
+            type="button"
+            onClick={handleClearDraftOnly}
+            disabled={deleting}
+            className={secondaryButtonClass}
+          >
+            ล้างเฉพาะรูปที่เลือกใหม่
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={handleCloseDeleteDialog}
+          disabled={deleting}
+          className={secondaryButtonClass}
+        >
+          ยกเลิก
+        </button>
+      </ResultDialog>
+
+      <ResultDialog
+        open={deleteStatus === "failed"}
+        tone="danger"
+        title="ลบรูปโปรไฟล์ไม่สำเร็จ"
+        description={deleteErrorMessage ?? DEFAULT_DELETE_AVATAR_ERROR}
+        onClose={() => onDismissDeleteError?.()}
+      >
+        <button
+          type="button"
+          onClick={() => void runDeleteAvatar()}
+          disabled={deleting}
+          className={primaryButtonClass}
+        >
+          ลองอีกครั้ง
+        </button>
+        <button
+          type="button"
+          onClick={() => onDismissDeleteError?.()}
+          disabled={deleting}
+          className={secondaryButtonClass}
+        >
+          ยกเลิก
+        </button>
+      </ResultDialog>
 
       <ResultDialog
         open={status === "saved"}
@@ -300,6 +455,7 @@ function FieldError({ id, children }: { id?: string; children: ReactNode }) {
 function ResultDialog({
   open,
   tone,
+  icon,
   title,
   description,
   onClose,
@@ -307,6 +463,7 @@ function ResultDialog({
 }: {
   open: boolean;
   tone: "success" | "danger";
+  icon?: "delete";
   title: string;
   description: string;
   onClose: () => void;
@@ -314,7 +471,12 @@ function ResultDialog({
 }) {
   const titleId = useId();
   const descriptionId = useId();
-  const Icon = tone === "success" ? CheckRounded : CloseRounded;
+  const Icon =
+    icon === "delete"
+      ? DeleteOutlineRounded
+      : tone === "success"
+        ? CheckRounded
+        : CloseRounded;
 
   return (
     <Dialog
