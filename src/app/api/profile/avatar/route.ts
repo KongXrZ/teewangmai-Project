@@ -1,6 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { authJson } from "@/features/auth/server/http";
 import { AVATAR_BUCKET, AVATAR_MAX_BYTES, checkAvatar } from "@/features/profile/avatar";
+import {
+  createAvatarDeleteDeps,
+  deleteProfileAvatar,
+} from "@/features/profile/server/avatar-storage";
 
 const maxRequestBytes = AVATAR_MAX_BYTES + 64 * 1024;
 
@@ -60,5 +64,18 @@ export async function POST(request: Request) {
     });
   } catch {
     return fail(503, "unavailable", "อัปโหลดรูปไม่สำเร็จ โปรดลองใหม่อีกครั้ง");
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const supabase = await createClient();
+    const result = await deleteProfileAvatar(createAvatarDeleteDeps(supabase), request.url);
+    if (!result.ok) {
+      return fail(result.status, result.code, result.error);
+    }
+    return authJson({ success: true, data: result.data });
+  } catch {
+    return fail(503, "unavailable", "ลบรูปโปรไฟล์ไม่สำเร็จ โปรดลองใหม่อีกครั้ง");
   }
 }

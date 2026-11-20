@@ -176,6 +176,17 @@ BE-002 ไม่เพิ่มหน้ากู้รหัสผ่าน/แ
 ไฟล์เก็บใน bucket `avatars` (public) ที่ `{auth user id}/{uuid}.jpg|png`
 ผู้ใช้เขียน อ่านรายการ และลบได้เฉพาะโฟลเดอร์ของตัวเอง
 
+### ลบรูปโปรไฟล์ (BE-015)
+
+`DELETE /api/profile/avatar` ต้องมี session (same-origin cookies, ไม่รับ query parameter) ล้างเฉพาะ `users.avatar_url = null` โดยไม่แก้ฟิลด์อื่น แล้วลบไฟล์ทั้งหมดในโฟลเดอร์ `avatars/{auth user id}/` ของผู้ใช้เอง เป็น idempotent เมื่อยังไม่มีรูปหรือเรียกซ้ำ และหากอัปเดตฐานข้อมูลไม่สำเร็จจะไม่ลบไฟล์เดิมที่ยังใช้งานอยู่
+
+| ผล | HTTP | Body |
+| --- | --- | --- |
+| สำเร็จ / ไม่มีรูปอยู่แล้ว | 200 | `{success: true, data: {avatar_url: null}}` |
+| ส่ง query parameter ที่ไม่รองรับ | 400 | `{success: false, code: "validation", error}` |
+| ไม่มี session หรือไม่มีโปรไฟล์ | 401 | `{success: false, code: "unauthorized", error}` |
+| Auth, DB หรือ Storage ล้มเหลว | 503 | `{success: false, code: "unavailable", error}` |
+
 ## รางวัลและคูปอง (BE-011)
 
 ทุก route ต้องมี session ไม่มี session ได้ 401 `unauthorized` รายละเอียดเต็มอยู่ใน [Rewards API](rewards-api.md)
