@@ -1,15 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useAuth } from "@/features/auth/components/auth-provider";
 import {
   fetchRewardsCatalog,
   toRewardsCatalogState,
   type RewardsCatalogResult,
 } from "../api/rewards-catalog-adapter";
 import type { RewardsCatalogState } from "../types";
-
-const LOGIN_ROUTE = "/login?next=%2Frewards";
 
 export interface RewardsCatalogController {
   state: RewardsCatalogState;
@@ -18,7 +16,8 @@ export interface RewardsCatalogController {
 }
 
 export function useRewardsCatalog(): RewardsCatalogController {
-  const router = useRouter();
+  const { status: authStatus, refresh: refreshAuth } = useAuth();
+  const enabled = authStatus === "authenticated" || authStatus === "error";
   const [result, setResult] = useState<RewardsCatalogResult | null>(null);
   const [requestId, setRequestId] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -34,15 +33,22 @@ export function useRewardsCatalog(): RewardsCatalogController {
   }, []);
 
   useEffect(() => {
+    if (!enabled) return;
     const controller = new AbortController();
 
     fetchRewardsCatalog(fetch, controller.signal)
       .then((next) => {
+        if (next.kind === "unauthenticated") {
+          void refreshAuth().finally(() => {
+            if (!controller.signal.aborted) {
+              setResult({ kind: "error" });
+              setIsRefreshing(false);
+            }
+          });
+          return;
+        }
         setResult(next);
         setIsRefreshing(false);
-        if (next.kind === "unauthenticated") {
-          router.replace(LOGIN_ROUTE);
-        }
       })
       .catch(() => {
         if (!controller.signal.aborted) {
@@ -52,7 +58,7 @@ export function useRewardsCatalog(): RewardsCatalogController {
       });
 
     return () => controller.abort();
-  }, [requestId, router]);
+  }, [enabled, refreshAuth, requestId]);
 
   const state: RewardsCatalogState =
     result === null

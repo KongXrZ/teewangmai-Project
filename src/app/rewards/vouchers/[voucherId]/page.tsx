@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { MobileShell } from "@/components/layout/mobile-shell";
+import { ProtectedContent } from "@/features/auth/components/guest-state";
 import { VoucherDetailContainer } from "@/features/rewards/components/voucher-detail-container";
 
 export const metadata: Metadata = {
@@ -15,7 +16,13 @@ export default async function VoucherDetail({
 
   return (
     <MobileShell variant="app">
-      <VoucherDetailContainer voucherId={voucherId} />
+      <ProtectedContent
+        title="รายละเอียดสิทธิ์"
+        description="เข้าสู่ระบบเพื่อดูรายละเอียดสิทธิ์และ QR Code สำหรับใช้สิทธิ์"
+        selected="rewards"
+      >
+        <VoucherDetailContainer voucherId={voucherId} />
+      </ProtectedContent>
     </MobileShell>
   );
 }

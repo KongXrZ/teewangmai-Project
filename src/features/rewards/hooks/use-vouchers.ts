@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth/components/auth-provider";
 import {
   clearAttemptKey,
@@ -21,9 +20,6 @@ import type {
   VoucherModel,
 } from "../vouchers";
 
-function loginRoute(path: string) {
-  return `/login?next=${encodeURIComponent(path)}`;
-}
 const USE_CODE_LIFETIME_MS = 30 * 60 * 1000;
 const USE_RETRY_MESSAGE = "ยังยืนยันผลการใช้สิทธิ์ไม่ได้ โปรดลองใหม่อีกครั้ง";
 
@@ -38,8 +34,8 @@ function millisecondsUntil(deadline: number) {
 }
 
 export function useVoucherCollection(): VoucherCollectionState {
-  const router = useRouter();
-  const { refresh: refreshAuth } = useAuth();
+  const { status: authStatus, refresh: refreshAuth } = useAuth();
+  const enabled = authStatus === "authenticated" || authStatus === "error";
   const [result, setResult] = useState<VouchersResult | null>(null);
   const [requestId, setRequestId] = useState(0);
 
@@ -49,6 +45,7 @@ export function useVoucherCollection(): VoucherCollectionState {
   }, []);
 
   useEffect(() => {
+    if (!enabled) return;
     const controller = new AbortController();
 
     fetchVouchers(fetch, controller.signal)
@@ -56,11 +53,15 @@ export function useVoucherCollection(): VoucherCollectionState {
         if (controller.signal.aborted) {
           return;
         }
-        setResult(next);
         if (next.kind === "unauthenticated") {
-          void refreshAuth();
-          router.replace(loginRoute("/rewards/vouchers"));
+          void refreshAuth().finally(() => {
+            if (!controller.signal.aborted) {
+              setResult({ kind: "error" });
+            }
+          });
+          return;
         }
+        setResult(next);
       })
       .catch(() => {
         if (!controller.signal.aborted) {
@@ -69,7 +70,7 @@ export function useVoucherCollection(): VoucherCollectionState {
       });
 
     return () => controller.abort();
-  }, [refreshAuth, requestId, router]);
+  }, [enabled, refreshAuth, requestId]);
 
   if (result === null || result.kind === "unauthenticated") {
     return { status: "loading" };
@@ -91,8 +92,8 @@ export interface VoucherDetailController {
 export function useVoucherDetail(
   voucherId: VoucherId | null,
 ): VoucherDetailController {
-  const router = useRouter();
-  const { refresh: refreshAuth } = useAuth();
+  const { status: authStatus, refresh: refreshAuth } = useAuth();
+  const enabled = authStatus === "authenticated" || authStatus === "error";
   const [result, setResult] = useState<VouchersResult | null>(null);
   const [requestId, setRequestId] = useState(0);
   const [activeUse, setActiveUse] = useState<ActiveVoucherUse | null>(null);
@@ -106,7 +107,7 @@ export function useVoucherDetail(
   }, []);
 
   useEffect(() => {
-    if (voucherId === null) {
+    if (voucherId === null || !enabled) {
       return;
     }
     const controller = new AbortController();
@@ -119,9 +120,10 @@ export function useVoucherDetail(
         return;
       }
       if (next.kind === "unauthenticated") {
-        setResult(next);
-        void refreshAuth();
-        router.replace(loginRoute(`/rewards/vouchers/${id}`));
+        await refreshAuth();
+        if (!signal.aborted) {
+          setResult({ kind: "error" });
+        }
         return;
       }
 
@@ -156,7 +158,7 @@ export function useVoucherDetail(
     });
 
     return () => controller.abort();
-  }, [refreshAuth, requestId, router, voucherId]);
+  }, [enabled, refreshAuth, requestId, voucherId]);
 
   useEffect(() => () => useControllerRef.current?.abort(), []);
 
@@ -212,8 +214,8 @@ export function useVoucherDetail(
               return;
             case "unauthenticated":
               clearAttemptKey(scope);
+              setUseError(USE_RETRY_MESSAGE);
               void refreshAuth();
-              router.replace(loginRoute(`/rewards/vouchers/${target.id}`));
               return;
             case "conflict":
               clearAttemptKey(scope);
@@ -240,7 +242,7 @@ export function useVoucherDetail(
           }
         });
     },
-    [refreshAuth, router],
+    [refreshAuth],
   );
 
   const useCode = activeUse?.id === voucherId ? activeUse.useCode : null;
