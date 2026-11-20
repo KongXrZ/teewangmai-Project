@@ -43,7 +43,7 @@ export function CheckInFlow({
   requestGps = requestGpsEvidence,
 }: CheckInFlowProps) {
   const router = useRouter();
-  const { status: authStatus } = useAuth();
+  const { refresh: refreshAuth } = useAuth();
   const [state, dispatch] = useReducer(
     checkInFlowReducer,
     initialCheckInFlowState,
@@ -54,12 +54,6 @@ export function CheckInFlow({
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
-
-  useEffect(() => {
-    if (authStatus === "unauthenticated") {
-      router.replace(LOGIN_ROUTE);
-    }
-  }, [authStatus, router]);
 
   useEffect(
     () => () => {
@@ -175,6 +169,13 @@ export function CheckInFlow({
   }, [cancelRequest]);
 
   const errorExit = getErrorExit(state.submission);
+
+  useEffect(() => {
+    if (errorExit === "login") {
+      void refreshAuth();
+    }
+  }, [errorExit, refreshAuth]);
+
   const errorAction = useMemo<CrowdReportErrorAction | null>(() => {
     switch (errorExit) {
       case "rescan":

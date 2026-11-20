@@ -83,8 +83,6 @@ export function ProfileContainer() {
       loggingOut={auth.isSigningOut}
       logoutError={logoutError}
       onRetry={() => void auth.refresh()}
-      onLogin={() => router.push("/login?next=%2Fprofile")}
-      onSignup={() => router.push("/signup")}
     />
   );
 }

@@ -12,6 +12,7 @@ import SettingsOutlined from "@mui/icons-material/SettingsOutlined";
 import WarningAmberRounded from "@mui/icons-material/WarningAmberRounded";
 import WorkspacePremiumOutlined from "@mui/icons-material/WorkspacePremiumOutlined";
 import { BottomNavigation } from "@/components/layout/bottom-navigation";
+import { GuestState } from "@/features/auth/components/guest-state";
 import { Spinner } from "@/features/quick-scan/components/spinner";
 import type { ProfileModel, ProfileState } from "./profile-view-models";
 import {
@@ -19,7 +20,6 @@ import {
   StateMessage,
   pageMainClass,
   primaryButtonClass,
-  secondaryButtonClass,
 } from "./profile-ui";
 
 export interface ProfilePageProps {
@@ -32,8 +32,6 @@ export interface ProfilePageProps {
   loggingOut?: boolean;
   logoutError?: string | null;
   onRetry: () => void;
-  onLogin: () => void;
-  onSignup: () => void;
 }
 
 const numberFormat = new Intl.NumberFormat("th-TH");
@@ -56,8 +54,6 @@ export function ProfilePage({ state, ...handlers }: ProfilePageProps) {
 function ProfileContent({
   state,
   onRetry,
-  onLogin,
-  onSignup,
   ...menu
 }: ProfilePageProps) {
   switch (state.status) {
@@ -79,25 +75,7 @@ function ProfileContent({
       );
     case "signed-out":
       return (
-        <StateMessage
-          tone="brand"
-          icon={
-            <PersonOutlineRounded aria-hidden="true" sx={{ fontSize: 44 }} />
-          }
-          title="ยังไม่ได้เข้าสู่ระบบ"
-          description="เข้าสู่ระบบเพื่อดูแต้ม ประวัติการรายงาน และแบดจ์ของคุณ"
-        >
-          <button type="button" onClick={onLogin} className={primaryButtonClass}>
-            เข้าสู่ระบบ
-          </button>
-          <button
-            type="button"
-            onClick={onSignup}
-            className={secondaryButtonClass}
-          >
-            สมัคร
-          </button>
-        </StateMessage>
+        <GuestState description="เข้าสู่ระบบเพื่อดูแต้ม ประวัติการรายงาน และแบดจ์ของคุณ" />
       );
     case "ready":
       return <ProfileOverview profile={state.profile} {...menu} />;

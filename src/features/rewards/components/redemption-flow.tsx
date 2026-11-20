@@ -43,14 +43,16 @@ export function RedemptionFlow({
         if (next.kind !== "unknown") {
           clearAttemptKey(scope);
         }
-        if (next.kind === "ok" || next.kind === "unauthenticated") {
-          void refreshAuth();
-        }
         if (next.kind === "unauthenticated") {
-          router.replace("/login?next=%2Frewards");
+          void refreshAuth().finally(() => {
+            if (!controller.signal.aborted) {
+              setResult({ status: "failure", retryable: true });
+            }
+          });
           return;
         }
         if (next.kind === "ok") {
+          void refreshAuth();
           setVoucherId(next.voucherId);
         }
         setResult(toRedemptionResult(next));
