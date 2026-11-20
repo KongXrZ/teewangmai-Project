@@ -15,9 +15,6 @@ import {
   primaryButtonClass,
   secondaryButtonClass,
 } from "@/features/profile/components/profile-ui";
-import { Spinner } from "@/features/quick-scan/components/spinner";
-
-const pageTopClass = "pt-[max(2rem,env(safe-area-inset-top,0px))]";
 
 export function GuestState({ description }: { description: string }) {
   const router = useRouter();
@@ -53,13 +50,13 @@ export function ProtectedContent({
   title,
   description,
   selected,
-  waitForAuth = false,
+  loading,
   children,
 }: {
   title: string;
   description: string;
   selected: NavigationItemId;
-  waitForAuth?: boolean;
+  loading?: ReactNode;
   children: ReactNode;
 }) {
   const { status, user } = useAuth();
@@ -69,25 +66,16 @@ export function ProtectedContent({
     setOwnerId(user.id);
   }
 
-  if (status === "unauthenticated" || (waitForAuth && status === "loading")) {
-    const pending = status === "loading";
+  if (status === "loading" && loading) {
+    return loading;
+  }
+
+  if (status === "unauthenticated") {
     return (
       <>
-        <main
-          aria-busy={pending || undefined}
-          className={`${pageMainClass} ${pageTopClass} ${pending ? "items-center justify-center" : ""}`}
-        >
+        <main className={`${pageMainClass} pt-[max(2rem,env(safe-area-inset-top,0px))]`}>
           <h1 className="sr-only">{title}</h1>
-          {pending ? (
-            <>
-              <span role="status" className="sr-only">
-                กำลังตรวจสอบการเข้าสู่ระบบ
-              </span>
-              <Spinner className="h-8 w-8 border-[3px] border-[#ea580c]/25 border-t-[#ea580c]" />
-            </>
-          ) : (
-            <GuestState description={description} />
-          )}
+          <GuestState description={description} />
         </main>
         <BottomNavigation selected={selected} />
       </>
