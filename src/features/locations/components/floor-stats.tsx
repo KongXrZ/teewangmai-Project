@@ -115,28 +115,30 @@ export function FloorStats({
   const items = toStatItems(stats);
 
   return (
-    <dl className="m-0 flex min-w-0 flex-1 items-center">
+    <dl className="m-0 flex min-w-0 flex-1 items-stretch">
       {items.map((item, index) => {
         const Icon = item.icon;
         return (
           <div
             key={item.key}
-            className={`flex min-h-[38px] min-w-0 flex-auto flex-col-reverse items-center justify-center px-1 text-center ${
+            className={`flex min-h-[38px] min-w-0 flex-auto flex-col-reverse items-center justify-between px-1 text-center ${
               index > 0 ? `border-l border-solid ${dividerClassName}` : ""
             }`}
           >
             <dt
-              className={`text-[11px] leading-normal wrap-anywhere ${labelClassName}`}
+              className={`max-w-full text-[11px] leading-snug text-balance break-words ${labelClassName}`}
             >
               {item.label}
             </dt>
-            <dd className="m-0 flex flex-wrap items-center justify-center gap-x-1 text-xs leading-normal font-bold wrap-anywhere text-black">
+            <dd className="m-0 flex max-w-full min-w-0 items-center justify-center gap-1 text-xs leading-snug font-bold text-black">
               <Icon
                 aria-hidden="true"
                 sx={{ fontSize: 16 }}
-                className={iconClassName}
+                className={`shrink-0 ${iconClassName}`}
               />
-              {item.value}
+              <span className="min-w-0 text-balance break-words">
+                {item.value}
+              </span>
             </dd>
           </div>
         );
