@@ -34,7 +34,7 @@ export type BadgesResult =
   | { kind: "unavailable"; message?: string }
   | { kind: "error"; message?: string };
 
-const unavailableStatuses = new Set([404, 501, 503]);
+const unavailableStatuses = new Set([404, 501]);
 
 export function isVisibleBadge(dto: BadgeDto): boolean {
   return dto.is_active || dto.earned_at !== null;

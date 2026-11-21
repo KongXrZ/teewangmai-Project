@@ -13,6 +13,7 @@ export interface RewardsCatalogController {
   state: RewardsCatalogState;
   refresh: () => void;
   isRefreshing: boolean;
+  applyPoints: (points: number) => void;
 }
 
 export function useRewardsCatalog(): RewardsCatalogController {
@@ -32,12 +33,21 @@ export function useRewardsCatalog(): RewardsCatalogController {
     setRequestId((id) => id + 1);
   }, []);
 
+  const applyPoints = useCallback((points: number) => {
+    setResult((current) =>
+      current?.kind === "ok" ? { ...current, points } : current,
+    );
+  }, []);
+
   useEffect(() => {
     if (!enabled) return;
     const controller = new AbortController();
 
     fetchRewardsCatalog(fetch, controller.signal)
       .then((next) => {
+        if (controller.signal.aborted) {
+          return;
+        }
         if (next.kind === "unauthenticated") {
           void refreshAuth().finally(() => {
             if (!controller.signal.aborted) {
@@ -65,5 +75,5 @@ export function useRewardsCatalog(): RewardsCatalogController {
       ? { status: "loading" }
       : toRewardsCatalogState(result, retry);
 
-  return { state, refresh, isRefreshing };
+  return { state, refresh, isRefreshing, applyPoints };
 }

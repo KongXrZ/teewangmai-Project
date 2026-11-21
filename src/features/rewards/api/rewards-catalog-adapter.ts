@@ -63,9 +63,6 @@ export function parseRewardsCatalogResponse(
   if (status === 401) {
     return { kind: "unauthenticated" };
   }
-  if (status === 503) {
-    return { kind: "unavailable" };
-  }
   if (status < 200 || status >= 300) {
     return { kind: "error", message: readErrorMessage(body) };
   }
