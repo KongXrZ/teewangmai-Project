@@ -8,7 +8,8 @@ or deploy a hosted project.
   and the Next.js development URL. Remaining Auth settings are development defaults.
 - `migrations/`: versioned SQL schema changes, indexes, constraints, and RLS
   policies. Use timestamped files such as `YYYYMMDDHHMMSS_create_locations.sql`.
-- `tests/`: SQL assertions for the floor model and profile permissions.
+- `tests/`: 13 SQL assertion files for the schema, reference seeds, RLS, crowd
+  summaries, check-ins, avatars, rewards, vouchers and badges.
 - `seed.sql`: approved 35 buildings and 224 floors, plus 1,120 temporary dummy weekday `floor_hours` pending real CSV, preserving IDs/QR identifiers.
 
 Supabase CLI is pinned in `devDependencies`. Run `npm ci` and start Docker, then
@@ -52,14 +53,15 @@ totals with blank counts defaulting to one; new rows receive UUID identifiers.
 Hours/rewards/badges await
 approved data. [Reference Data](../docs/reference-data.md) defines CSV inputs.
 
-RLS is enabled on all nine tables. Authenticated users can read their own profile
-and update only name/avatar; the other eight tables have no client policies yet.
-The private Auth trigger, browser/server clients, and Auth endpoints exist.
-Trusted check-in submission (GPS/QR and 30-minute user/floor cooldown) and crowd
-aggregation (30-minute lookback, 10-minute refresh) remain separate tasks.
-This migration adds their data relationships/indexes, not runtime enforcement.
-No check-in +10 point awarding is added in this round. No remote database changes
-have been made. See [Backend Handoff](../docs/backend-handoff.md) for pending APIs.
+RLS is enabled on all nine tables. Six have client SELECT policies: `users`
+(own profile; UPDATE limited to name/avatar), `locations`, `floors`,
+`floor_hours`, `badges` and `user_badges`. `storage.objects` has own-folder
+policies for the `avatars` bucket. `checkins`, `rewards` and `redemptions` have
+no client policies and are reached only through `SECURITY DEFINER` RPCs.
+Trusted check-in submission (BE-008) and crowd aggregation (BE-006, 30-minute
+lookback, 10-minute pg_cron refresh) are implemented in migrations. No check-in
+point awarding is added. No remote database changes have been made. See
+[Backend Handoff](../docs/backend-handoff.md) for the implemented APIs.
 
 See [database migrations](https://supabase.com/docs/guides/local-development/database-migrations)
 and [the project architecture](../docs/architecture.md).
