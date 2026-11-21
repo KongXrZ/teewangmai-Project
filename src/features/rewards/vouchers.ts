@@ -19,11 +19,13 @@ export interface VoucherModel {
 
 export type VoucherCollectionState =
   | { status: "loading" }
+  | { status: "unauthenticated" }
   | { status: "error"; message?: string; onRetry?: () => void }
   | { status: "ready"; vouchers: VoucherModel[] };
 
 export type VoucherDetailState =
   | { status: "loading" }
+  | { status: "unauthenticated" }
   | { status: "error"; message?: string; onRetry?: () => void }
   | { status: "empty"; message?: string }
   | {

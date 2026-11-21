@@ -2,6 +2,7 @@
 
 import CardGiftcardOutlined from "@mui/icons-material/CardGiftcardOutlined";
 import ErrorOutlineRounded from "@mui/icons-material/ErrorOutlineRounded";
+import { GuestState } from "@/features/auth/components/guest-state";
 import type {
   VoucherCollectionState,
   VoucherId,
@@ -56,6 +57,8 @@ function VoucherCollectionContent({
           </span>
         </div>
       );
+    case "unauthenticated":
+      return <GuestState description="เข้าสู่ระบบเพื่อดูสิทธิ์ที่แลกไว้และใช้สิทธิ์ที่ร้านค้า" />;
     case "error":
       return (
         <CatalogMessage

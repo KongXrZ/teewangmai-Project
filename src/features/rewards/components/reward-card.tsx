@@ -76,12 +76,10 @@ export function RewardCard({ reward, onSelect, disabled }: RewardCardProps) {
         >
           {reward.title}
         </h3>
-        {!locked && (
-          <p className="text-[13px] leading-5 text-[#6b7280]">
-            ใช้ {pointsFormatter.format(reward.pointsRequired)} แต้ม
-            {note && <span className="text-[#b45309]"> · {note}</span>}
-          </p>
-        )}
+        <p className="text-[13px] leading-5 text-[#6b7280]">
+          ใช้ {pointsFormatter.format(reward.pointsRequired)} แต้ม
+          {note && <span className="text-[#b45309]"> · {note}</span>}
+        </p>
       </div>
 
       <button

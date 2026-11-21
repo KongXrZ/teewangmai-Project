@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import CardGiftcardOutlined from "@mui/icons-material/CardGiftcardOutlined";
 import CloudOffOutlined from "@mui/icons-material/CloudOffOutlined";
 import ErrorOutlineRounded from "@mui/icons-material/ErrorOutlineRounded";
+import { GuestState } from "@/features/auth/components/guest-state";
 import type {
   RewardCardModel,
   RewardSelectHandler,
@@ -37,6 +38,10 @@ export function RewardsCatalog({
             กำลังโหลดรางวัล
           </span>
         </div>
+      );
+    case "unauthenticated":
+      return (
+        <GuestState description="เข้าสู่ระบบเพื่อดูแต้มสะสมและแลกรางวัลจากการรายงานของคุณ" />
       );
     case "unavailable":
       return (

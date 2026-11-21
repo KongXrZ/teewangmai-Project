@@ -3,6 +3,7 @@
 import CircularProgress from "@mui/material/CircularProgress";
 import ErrorOutlineRounded from "@mui/icons-material/ErrorOutlineRounded";
 import InfoOutlined from "@mui/icons-material/InfoOutlined";
+import { GuestState } from "@/features/auth/components/guest-state";
 import SearchOffRounded from "@mui/icons-material/SearchOffRounded";
 import type { ReactNode } from "react";
 import {
@@ -73,6 +74,10 @@ function VoucherDetailContent({
             กำลังโหลดรายละเอียดสิทธิ์
           </span>
         </div>
+      );
+    case "unauthenticated":
+      return (
+        <GuestState description="เข้าสู่ระบบเพื่อดูรายละเอียดสิทธิ์และ QR Code สำหรับใช้สิทธิ์" />
       );
     case "error":
       return (

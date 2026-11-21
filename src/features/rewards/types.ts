@@ -18,6 +18,7 @@ export interface RewardCardModel {
 
 export type RewardsCatalogState =
   | { status: "loading" }
+  | { status: "unauthenticated" }
   | { status: "unavailable"; message?: string }
   | { status: "error"; message?: string; onRetry?: () => void }
   | { status: "ready"; points: number; rewards: RewardCardModel[] };

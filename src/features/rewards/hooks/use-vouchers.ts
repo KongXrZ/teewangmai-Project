@@ -57,7 +57,7 @@ export function useVoucherCollection(): VoucherCollectionState {
         if (next.kind === "unauthenticated") {
           void refreshAuth().finally(() => {
             if (!controller.signal.aborted) {
-              setResult({ kind: "error" });
+              setResult({ kind: "unauthenticated" });
             }
           });
           return;
@@ -73,8 +73,11 @@ export function useVoucherCollection(): VoucherCollectionState {
     return () => controller.abort();
   }, [enabled, refreshAuth, requestId]);
 
-  if (result === null || result.kind === "unauthenticated") {
+  if (result === null) {
     return { status: "loading" };
+  }
+  if (result.kind === "unauthenticated") {
+    return { status: "unauthenticated" };
   }
   if (result.kind === "error") {
     return { status: "error", message: result.message, onRetry: retry };
@@ -123,7 +126,7 @@ export function useVoucherDetail(
       if (next.kind === "unauthenticated") {
         await refreshAuth();
         if (!signal.aborted) {
-          setResult({ kind: "error" });
+          setResult({ kind: "unauthenticated" });
         }
         return;
       }
@@ -147,7 +150,7 @@ export function useVoucherDetail(
         } else if (recovered.kind === "unauthenticated") {
           await refreshAuth();
           if (!signal.aborted) {
-            setResult({ kind: "error" });
+            setResult({ kind: "unauthenticated" });
           }
           return;
         } else if (shouldClearVoucherUseKey(recovered.kind)) {
@@ -272,8 +275,11 @@ function toDetailState(
   if (voucherId === null) {
     return { status: "empty" };
   }
-  if (result === null || result.kind === "unauthenticated") {
+  if (result === null) {
     return { status: "loading" };
+  }
+  if (result.kind === "unauthenticated") {
+    return { status: "unauthenticated" };
   }
   if (result.kind === "error") {
     return { status: "error", message: result.message, onRetry: retry };
