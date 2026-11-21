@@ -70,3 +70,12 @@ test('auth me and logout reject unexpected query strings', { skip: !base }, asyn
     assert.equal((await response.json()).code, 'validation');
   }
 });
+
+const inactiveFloor = process.env.LOCATION_API_TEST_INACTIVE_FLOOR;
+
+test('a floor of an inactive building is not found', { skip: !base || !inactiveFloor }, async () => {
+  const [locationId, floorId] = inactiveFloor.split('/');
+  const response = await fetch(new URL(`/api/locations/${locationId}/floors/${floorId}`, base));
+  assert.equal(response.status, 404);
+  assert.equal((await response.json()).code, 'not_found');
+});
