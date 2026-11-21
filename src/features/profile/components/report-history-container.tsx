@@ -119,7 +119,7 @@ export function ReportHistoryContainer() {
     <ReportHistoryPage
       state={state}
       onBack={() => router.push("/profile")}
-      onStartReport={() => router.push("/scan")}
+      onStartReport={() => router.push("/check-in")}
       onRetry={() => (status === "error" ? void refresh() : setAttempt((value) => value + 1))}
       onLoadMore={() => void loadMore()}
     />

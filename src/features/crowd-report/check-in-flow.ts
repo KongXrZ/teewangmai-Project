@@ -27,6 +27,7 @@ export interface CheckInFlowState {
 
 export type CheckInFlowAction =
   | { type: "confirm_level"; level: CrowdLevel }
+  | { type: "set_level"; level: CrowdLevel }
   | { type: "resolve_start" }
   | { type: "resolve_done"; result: QrResolveResult }
   | { type: "rescan" }
@@ -90,6 +91,11 @@ export function checkInFlowReducer(
         level: action.level,
         scan: { status: "idle" },
       };
+    case "set_level":
+      if (state.phase === "select" || state.submission.status === "pending") {
+        return state;
+      }
+      return { ...state, level: action.level };
     case "resolve_start":
       if (state.phase !== "scan" || state.scan.status === "verifying") {
         return state;

@@ -318,3 +318,18 @@ test("scan again is ignored unless a submit error is showing", () => {
   const pending = run(...submitting);
   assert.equal(checkInFlowReducer(pending, { type: "scan_again" }), pending);
 });
+
+test('level can change while scanning and after the QR resolves, but not mid-submit', () => {
+  const scanning = run({ type: 'confirm_level', level: 2 }, { type: 'set_level', level: 4 });
+  assert.equal(scanning.phase, 'scan');
+  assert.equal(scanning.level, 4);
+  assert.equal(run({ type: 'set_level', level: 4 }).level, null);
+  const ready = checkInFlowReducer(
+    checkInFlowReducer(scanning, { type: 'resolve_start' }),
+    { type: 'resolve_done', result: { kind: 'resolved', floor } },
+  );
+  assert.equal(ready.phase, 'ready');
+  assert.equal(ready.level, 4);
+  const pending = checkInFlowReducer(ready, { type: 'submit_start' });
+  assert.equal(checkInFlowReducer(pending, { type: 'set_level', level: 1 }).level, 4);
+});

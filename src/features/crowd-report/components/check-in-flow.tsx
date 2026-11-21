@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth/components/auth-provider";
-import { QuickScanPage } from "@/features/quick-scan/components/quick-scan-page";
+import { QuickScanPanel } from "@/features/quick-scan/components/quick-scan-panel";
 import type { QuickScanVerification } from "@/features/quick-scan/types";
 import {
   canStartSubmit,
@@ -21,7 +21,7 @@ import {
   type CrowdReportErrorAction,
 } from "./crowd-report-form";
 
-const LOGIN_ROUTE = "/login?next=%2Fscan";
+const LOGIN_ROUTE = "/login?next=%2Fcheck-in";
 
 export interface CheckInFlowProps {
   gateway?: CheckInGateway;
@@ -120,10 +120,9 @@ export function CheckInFlow({
     dispatch({ type: "rescan" });
   }, [cancelRequest]);
 
-  const handleBackToSelect = useCallback(() => {
-    cancelRequest();
-    dispatch({ type: "back_to_select" });
-  }, [cancelRequest]);
+  const handleLevelChange = useCallback((level: CrowdLevel) => {
+    dispatch({ type: "set_level", level });
+  }, []);
 
   const handleSubmit = useCallback(
     (level: CrowdLevel) => {
@@ -201,17 +200,6 @@ export function CheckInFlow({
     }
   }, [errorExit, handleDone, handleScanAgain, router]);
 
-  if (state.phase === "scan") {
-    return (
-      <QuickScanPage
-        verification={toVerification(state.scan)}
-        onDetect={handleDetect}
-        onRescan={handleRescan}
-        onBack={handleBackToSelect}
-      />
-    );
-  }
-
   return (
     <CrowdReportForm
       key={state.formKey}
@@ -223,6 +211,16 @@ export function CheckInFlow({
       onDone={handleDone}
       onViewHistory={() => router.push("/profile/reports")}
       errorAction={errorAction}
+      onLevelChange={handleLevelChange}
+      scanner={
+        state.phase === "scan" ? (
+          <QuickScanPanel
+            verification={toVerification(state.scan)}
+            onDetect={handleDetect}
+            onRescan={handleRescan}
+          />
+        ) : undefined
+      }
     />
   );
 }

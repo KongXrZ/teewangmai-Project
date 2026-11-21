@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import CircularProgress from "@mui/material/CircularProgress";
 import ErrorOutlineRounded from "@mui/icons-material/ErrorOutlineRounded";
 import RefreshRounded from "@mui/icons-material/RefreshRounded";
@@ -39,6 +46,8 @@ export interface CrowdReportFormProps {
   initialLevel?: CrowdLevel | null;
   verifying?: boolean;
   errorAction?: CrowdReportErrorAction | null;
+  scanner?: ReactNode;
+  onLevelChange?: (level: CrowdLevel) => void;
 }
 
 const primaryButton =
@@ -57,6 +66,8 @@ export function CrowdReportForm({
   initialLevel = null,
   verifying = false,
   errorAction = null,
+  scanner,
+  onLevelChange,
 }: CrowdReportFormProps) {
   const [level, setLevel] = useState<CrowdLevel | null>(initialLevel);
   const [levelConfirmed, setLevelConfirmed] = useState(false);
@@ -65,7 +76,9 @@ export function CrowdReportForm({
   const levelInputRef = useRef<HTMLInputElement>(null);
   const validationId = useId();
   const contextReady = context !== null;
-  const step = getCrowdReportStep(contextReady, levelConfirmed);
+  const step = scanner
+    ? "scan"
+    : getCrowdReportStep(contextReady, levelConfirmed);
   const view = getCrowdReportView(submission, contextReady);
   const invalid = showValidation && level === null;
   const exitAction =
@@ -78,6 +91,9 @@ export function CrowdReportForm({
   function handleLevelChange(next: CrowdLevel) {
     setLevel(next);
     setShowValidation(false);
+    if (step !== "select") {
+      onLevelChange?.(next);
+    }
   }
 
   function showLevelRequired() {
@@ -138,7 +154,11 @@ export function CrowdReportForm({
           aria-busy={(!contextReady && verifying) || undefined}
           className="mt-3 flex flex-col gap-3 px-1.5"
         >
-          <StepVisual step={step} context={context} />
+          {step === "scan" && scanner ? (
+            scanner
+          ) : (
+            <StepVisual step={step} context={context} />
+          )}
           {context ? (
             <dl className="flex min-h-[50px] flex-col items-center justify-center rounded-full bg-[#ea580c] px-5 py-2 text-center text-white">
               <dt className="sr-only">อาคาร</dt>
