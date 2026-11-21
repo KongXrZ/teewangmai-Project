@@ -334,7 +334,7 @@ export async function GET() {
       id="api-reference"
       type="application/json"
     >
-      ${JSON.stringify(spec)}
+      ${JSON.stringify(spec).replace(/</g, "\\u003c")}
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.73.0"></script>
   </body>

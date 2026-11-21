@@ -189,6 +189,7 @@ export const rewardPaths = {
           type: "object",
           properties: { reward_title: { type: "string" }, used_points: { type: "integer" }, used_at: dateTime, verified_at: nullableDateTime },
         }),
+        415: error("Content-Type must be application/json"),
         503: error("Rewards unavailable"),
       },
     },

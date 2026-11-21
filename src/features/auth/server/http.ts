@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { readJsonInput } from "../errors";
 import type { AuthActionResult } from "../types";
 
 export function authJson(body: unknown, status = 200) {
@@ -24,27 +25,12 @@ export function authStatus(result: AuthActionResult) {
 }
 
 export async function readAuthInput(request: Request) {
-  if (
-    request.headers.get("content-type")?.split(";")[0].trim().toLowerCase() !==
-    "application/json"
-  ) {
+  const input = await readJsonInput(request);
+  if (!input.success) {
     return {
       success: false as const,
-      response: authJson(
-        { success: false, error: "กรุณาส่งข้อมูลแบบ JSON" },
-        415,
-      ),
+      response: authJson(input.body, input.status),
     };
   }
-  try {
-    return { success: true as const, body: (await request.json()) as unknown };
-  } catch {
-    return {
-      success: false as const,
-      response: authJson(
-        { success: false, error: "ข้อมูล JSON ไม่ถูกต้อง" },
-        400,
-      ),
-    };
-  }
+  return { success: true as const, body: input.body };
 }
