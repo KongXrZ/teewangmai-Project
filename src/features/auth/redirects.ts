@@ -24,6 +24,14 @@ export function getSafeRedirectPath(next?: string | null): string {
   }
 }
 
+export function withRedirectParam(
+  path: string,
+  next?: string | null,
+): string {
+  const target = getSafeRedirectPath(next);
+  return target === "/" ? path : `${path}?next=${encodeURIComponent(target)}`;
+}
+
 const GUEST_ONLY_PATHS = new Set(["/login", "/signup"]);
 
 export function getAuthenticatedRedirect(

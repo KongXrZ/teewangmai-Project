@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import { MobileShell } from "@/components/layout/mobile-shell";
 import { AuthPageLayout } from "@/features/auth/components/auth-page-layout";
 import { LoginForm } from "@/features/auth/components/login-form";
-import { getSafeRedirectPath } from "@/features/auth/redirects";
+import {
+  getSafeRedirectPath,
+  withRedirectParam,
+} from "@/features/auth/redirects";
 
 export const metadata: Metadata = {
   title: "Log in — TeeWangMai?",
@@ -17,18 +20,17 @@ export default async function LoginPage({
   }>;
 }) {
   const query = await searchParams;
+  const next = typeof query.next === "string" ? query.next : undefined;
   return (
     <MobileShell>
       <AuthPageLayout
         title="Log in"
         switchPrompt="ยังไม่มีบัญชี?"
-        switchHref="/signup"
+        switchHref={withRedirectParam("/signup", next)}
         switchLabel="ไปหน้า Sign up"
       >
         <LoginForm
-          redirectTo={getSafeRedirectPath(
-            typeof query.next === "string" ? query.next : undefined,
-          )}
+          redirectTo={getSafeRedirectPath(next)}
           initialError={
             query.error === "verification_failed"
               ? "ลิงก์ยืนยันตัวตนหมดอายุหรือไม่ถูกต้อง กรุณาลองใหม่"

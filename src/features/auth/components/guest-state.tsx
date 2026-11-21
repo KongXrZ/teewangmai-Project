@@ -8,7 +8,7 @@ import {
   type NavigationItemId,
 } from "@/components/layout/bottom-navigation";
 import { useAuth } from "@/features/auth/components/auth-provider";
-import { getSafeRedirectPath } from "@/features/auth/redirects";
+import { withRedirectParam } from "@/features/auth/redirects";
 import {
   initialContentOwner,
   markRenderedWithoutUser,
@@ -24,7 +24,8 @@ import {
 export function GuestState({ description }: { description: string }) {
   const router = useRouter();
   const pathname = usePathname();
-  const loginHref = `/login?next=${encodeURIComponent(getSafeRedirectPath(pathname))}`;
+  const loginHref = withRedirectParam("/login", pathname);
+  const signupHref = withRedirectParam("/signup", pathname);
 
   return (
     <StateMessage
@@ -42,7 +43,7 @@ export function GuestState({ description }: { description: string }) {
       </button>
       <button
         type="button"
-        onClick={() => router.push("/signup")}
+        onClick={() => router.push(signupHref)}
         className={secondaryButtonClass}
       >
         สมัคร
