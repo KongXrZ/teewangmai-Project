@@ -151,8 +151,7 @@ only install a 3D library when it is needed.
 
 Home (SVG campus map with crowd summaries), Location List/Detail, Scan, Profile,
 Rewards/Vouchers and Achievements pages exist with Auth and are connected to
-their APIs. The Location List reads the building catalog; its crowd level and
-crowd filter come with FE-029 (PR #42, not merged at this snapshot). The 35
+their APIs. The Location List shows crowd levels and filters by them (FE-029). The 35
 approved buildings and 224 floors are imported, with S7 inactive; temporary
 weekday schedules are seeded and real hours and reward/badge records are pending.
 BE-005 provides the building/floor catalog with public active-only RLS reads and no

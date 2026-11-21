@@ -1,6 +1,6 @@
 # Backend Handoff
 
-Snapshot: November 21, 2026. All 15 migrations (latest from BE-013) are applied to Local.
+Snapshot: November 21, 2026. All 16 migrations (latest from BE-018) are applied to Local.
 The 35 approved buildings and 224 floors are imported along with 1,120
 temporary dummy weekday `floor_hours` rows (Mon–Fri `08:00:00`–`17:00:00`, active),
 with database types regenerated for the current schema. Real floor hours from CSV

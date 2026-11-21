@@ -100,8 +100,7 @@ docs/              Architecture, API contracts, database and setup guides
 See [the architecture guide](docs/architecture.md) for folder responsibilities and conventions. Empty folders are tracked with `.gitkeep`; they are preparation for future implementation.
 
 Pages present and connected to their APIs: Home with the SVG campus map and crowd
-summaries, Location List/Detail (the list shows crowd levels once FE-029 is
-merged), Scan (QR resolve and verified check-in), Profile (edit, avatar
+summaries, Location List/Detail with crowd levels and a crowd filter, Scan (QR resolve and verified check-in), Profile (edit, avatar
 upload/delete, report history), Rewards (catalog, redemption, vouchers and voucher
 QR) and Achievements, plus Login/Signup. Protected pages show
 a guest state when signed out. BE-005 to BE-015 provide the building, crowd,
@@ -283,7 +282,7 @@ check-ins (BE-008) validate the QR, GPS accuracy and distance, and enforce the
 
 ### Search and Filters
 
-Users can search buildings by code, name, category or alias and view them on the map or as a list. The map filters by crowd level; the list filter arrives with FE-029. Filtering by whether a location is currently open is not implemented yet.
+Users can search buildings by code, name, category or alias and view them on the map or as a list. Both the map and the list filter by crowd level. Filtering by whether a location is currently open is not implemented yet.
 
 ### Periodic Updates
 
