@@ -6,7 +6,7 @@
 
 A web application for monitoring and visualizing student density across locations at **King Mongkut's University of Technology Thonburi (KMUTT)**, including cafeterias, libraries, study spaces, and common areas.
 
-The system collects crowd-level reports through user check-ins and summarizes them by location on a custom campus mockup map. The map will be supplied as an image or a 3D model, with selectable zones representing campus locations. The planned check-in flow verifies presence with GPS and a QR code before users report a crowd level from 1 to 5.
+The system collects crowd-level reports through user check-ins and summarizes them by location on a custom campus mockup map. The map will be supplied as an image or a 3D model, with selectable zones representing campus locations. The check-in flow verifies presence with GPS and a QR code before users report a crowd level from 1 to 5.
 
 The product is a **mobile-first web application**. Smartphone browsers are the primary target; tablet and desktop layouts will adapt from the mobile experience.
 
@@ -20,10 +20,10 @@ The product is a **mobile-first web application**. Smartphone browsers are the p
 - Keep map assets lightweight. If a 3D map is chosen, plan a lightweight image or location-list fallback for devices that cannot render it smoothly.
 
 The app uses a mobile shell with a maximum width of 476 CSS pixels and viewport
-height that follows the device, including safe-area handling. Home, Auth,
-Location List/Detail, Rewards and Achievements UI exist. Orange `#FF5815`, dark
-`#081828` and MUI icons are already used by shared navigation. Follow the supplied
-Figma for each UI task; map interactions and verified check-ins remain future work.
+height that follows the device, including safe-area handling. Home with the
+campus map, Auth, Location List/Detail, Scan, Profile, Rewards/Vouchers and
+Achievements UI exist. Orange `#FF5815`, dark `#081828` and MUI icons are already
+used by shared navigation. Follow the supplied Figma for each UI task.
 
 ## Development Setup
 
@@ -78,7 +78,9 @@ Docker running, use `npm run db:start`; stop it with `npm run db:stop`.
 src/
 ├── app/           Next.js pages, layouts, and API routes
 ├── components/    Shared UI and mobile layout components
-├── features/      Campus map, locations, and crowd reports
+├── features/      Feature modules: auth, home, campus-map, locations,
+│                  crowd, crowd-report, quick-scan, checkins, profile,
+│                  rewards, achievements (reports/ is a reserved placeholder)
 ├── hooks/         Shared React hooks
 ├── lib/supabase/  Browser/server Supabase connection layer
 └── types/         Shared and generated database types
@@ -87,23 +89,24 @@ public/maps/
 └── models/        Optional 3D map assets
 supabase/
 ├── migrations/    Versioned PostgreSQL schema and access policies
-├── tests/         SQL schema and access assertions
+├── tests/         SQL schema and access assertions (13 files)
 └── seed.sql       Approved building and floor reference data
-docs/              Architecture and development notes
+scripts/
+├── generate-database-types.mjs  Local database type generation
+└── generate-floor-qr.mjs        Floor QR print assets (npm run qr:generate)
+docs/              Architecture, API contracts, database and setup guides
 ```
 
 See [the architecture guide](docs/architecture.md) for folder responsibilities and conventions. Empty folders are tracked with `.gitkeep`; they are preparation for future implementation.
 
-Home, Location List/Detail, Rewards catalog/redemption dialog and Achievements
-UI are present, alongside Auth UI/backend, Supabase clients and migrations.
-Home's map remains blank pending its SVG and a separate map task. Location/reward
-routes show unavailable states until data integration; the Achievements adapter
-targets a badge API that is not implemented yet. BE-006 provides scheduled crowd
-aggregation and public summary APIs; frontend wiring remains separate. Verified
-check-ins, reward transactions and badge awarding remain future work.
-Building/floor read APIs are implemented separately from FE wiring; see the
-[Location API contract](docs/location-api.md) for search, detail and opening hours.
-No mock application data is included.
+Pages present and connected to their APIs: Home with the SVG campus map and crowd
+summaries, Location List/Detail (the list shows crowd levels once FE-029 is
+merged), Scan (QR resolve and verified check-in), Profile (edit, avatar
+upload/delete, report history), Rewards (catalog, redemption, vouchers and voucher
+QR) and Achievements, plus Login/Signup. Protected pages show
+a guest state when signed out. BE-005 to BE-015 provide the building, crowd,
+check-in, history, avatar, reward, voucher and badge APIs; see
+[Backend Handoff](docs/backend-handoff.md). No mock application data is included.
 
 ## Database
 
@@ -119,15 +122,17 @@ Auth owns credentials and is the email source of truth. The model has no
 
 Buildings have required unique N/S codes, category arrays, search aliases and `locations.details`
 JSON. `floor_hours` has a unique `(floor_id, day_of_week)` pair; Monday is 1 and
-Sunday is 7. Rewards have fixed voucher deadlines; redemptions record successful
-exchanges separately from use. See [Database Design](docs/database.md),
+Sunday is 7. Rewards have a last redemption time (`expires_at`) and a per-user
+limit (`max_per_user`); each voucher expires `valid_days` (default 7) after its own
+redemption. Redemptions record successful exchanges separately from use. See [Database Design](docs/database.md),
 [Reference Data](docs/reference-data.md) and [Backend Handoff](docs/backend-handoff.md).
 
 `.env.example` lists the planned connection variables. When a Supabase project is available, copy it to `.env.local` and fill in the project URL and publishable key. The current landing page runs without these values. Keep database passwords and Supabase secret/service-role keys out of browser code and `NEXT_PUBLIC_` variables.
 
-Supabase clients, Auth endpoints, versioned migrations, and own-profile access
-policies exist. Schema v4 is applied locally; it does not deploy to
-Cloud or implement report submission/aggregation. See [Backend Development Setup](docs/backend-setup.md)
+Supabase clients, Auth endpoints, versioned migrations and RLS policies exist:
+six tables have client SELECT policies and `checkins`, `rewards` and
+`redemptions` are reached only through `SECURITY DEFINER` RPCs. Migrations are
+applied locally; nothing is deployed to Cloud. See [Backend Development Setup](docs/backend-setup.md)
 for local startup, migrations, SQL assertions, and generated types. Local reference
 files in `*LocalDocs-dont-commit/` are excluded from Git.
 
@@ -246,12 +251,12 @@ Users scan a floor QR, see its building/floor, select a crowd level from
 QR identifies the floor. The backend must accept the report only after **GPS AND
 QR verification both succeed**, using a server timestamp. Raw user coordinates
 and verification flags are not stored. The agreed cooldown is **30 minutes per
-user per floor**, independent across floors/buildings. GPS tolerance and atomic
-submission logic remain to be implemented.
+user per floor**, independent across floors/buildings. BE-008 implements this
+in `POST /api/checkins/resolve` and `POST /api/checkins`.
 
 The stored report contains `user_id`, resolved `floor_id`, `crowd_level`, and
-server-assigned `created_at`. This describes the data model, not an existing
-submission API contract.
+server-assigned `created_at`. See [Check-in Rules](docs/check-in-rules.md) for the
+GPS limits and error contract.
 
 ---
 
@@ -273,12 +278,12 @@ Sports Complex ⚪ No recent reports
 ### Accounts and Verified Check-ins
 
 Supabase Auth endpoints and own-profile policies are implemented. Verified floor
-check-ins still need GPS/QR validation and server-enforced cooldown before reports
-can be accepted.
+check-ins (BE-008) validate the QR, GPS accuracy and distance, and enforce the
+30-minute user/floor cooldown on the server before a report is accepted.
 
 ### Search and Filters
 
-Users will be able to search locations, view them as a list, and filter by building, category, and whether a location is currently open.
+Users can search buildings by code, name, category or alias and view them on the map or as a list. The map filters by crowd level; the list filter arrives with FE-029. Filtering by whether a location is currently open is not implemented yet.
 
 ### Periodic Updates
 
@@ -297,11 +302,11 @@ Selecting a location can display additional information such as:
 
 ### Profile, Participation, and Rewards
 
-Profile UI remains planned; it will show points, earned badges, check-in history
-and voucher history. Rewards catalog/dialog and earned/locked badge UI already
-exist, while their business APIs remain pending. Agreed exchange behavior is an
-immediate atomic deduction of points and stock with a completed redemption.
-All vouchers for a reward copy its fixed expiry; actual use is recorded separately.
+Profile shows points, report count, earned badges and report history, and
+supports name and avatar edits. Rewards, vouchers and badges are
+connected to their APIs. Exchange is an immediate atomic deduction of points and
+stock with a completed redemption, limited by `max_per_user`. Each voucher expires
+`valid_days` (default 7) after its own redemption; actual use is recorded separately.
 Check-in +10 point awarding is deferred, and no earning mechanism is introduced
 in this round. Streak/trust-score behavior from older wireframes remains outside
 the current schema. Partner-store database integration is outside this scope.
@@ -309,10 +314,10 @@ See [Database Design](docs/database.md) and [Backend Handoff](docs/backend-hando
 
 ### Historical Data
 
-Individual check-ins remain as historical logs after leaving the summary window.
-Personal check-in history is planned in BE-009. Persisting historical aggregate
-snapshots and displaying density charts are future extensions; no summary-history
-table, chart or snapshot scheduler is implemented by v4.
+Individual check-ins remain as historical logs after leaving the summary window,
+and users can read their own history (BE-009). BE-006 keeps only the current
+per-floor snapshot, refreshed by pg_cron every 10 minutes; a summary-history table
+and density charts are future extensions.
 
 Illustration of a possible future history display:
 
@@ -385,8 +390,9 @@ rather than:
 Any account information used for report validation should be kept separate from
 public map data. Store a check-in only after both verification steps pass; do not
 add verification-result columns or raw personal GPS coordinates. Reference
-coordinates belong to the building. Own-profile access is enforced today;
-feature-specific report access and retention policies still need implementation.
+coordinates belong to the building. Reports are read and written only through
+`SECURITY DEFINER` RPCs that return the caller's own data (`get_my_checkins`,
+`submit_checkin`); a retention policy still needs agreement.
 
 ---
 
@@ -445,21 +451,20 @@ The implementation order and release boundary for participation and reward featu
 
 ## Project Status
 
-**Status:** Home, Location List/Detail, Rewards/Dialog and Achievements UI exist.
-Auth UI/backend is integrated. The nine-table v4 schema with category arrays is
-verified locally, with 35 approved buildings, 224 floors and regenerated types. Product APIs,
-remaining UI and integration, check-in/summary logic and reward/badge operations
-are pending. Local verification does not imply a Cloud deployment.
+**Status:** The core journey works locally: Auth, the campus map and location
+pages with crowd summaries, verified QR check-in, profile with history and
+avatar, rewards and vouchers, and badges. The nine-table schema is verified
+locally with 35 approved buildings, 224 floors and regenerated types. Real floor
+hours and approved reward/badge records are still pending. Local verification
+does not imply a Cloud deployment.
 
 Current priorities:
 
-1. Complete remaining FE pages independently of API integration, without mock data
-2. Prepare/import remaining hour/reward/badge reference data
-3. Implement building/floor APIs, summaries and their access rules
-4. Generate approved floor QR assets and implement verified check-ins/history
-5. Implement profile upload, reward/voucher operations and badge APIs
-6. Connect UI to APIs as each contract becomes available; add the map SVG separately
-7. Verify the core journey, mobile permissions, transactions and error handling
+1. Import real floor hours and approved reward/badge reference data
+2. Fix open bugs and keep docs in step with the code
+3. Verify the core journey, mobile permissions, transactions and error handling
+   on real devices (FE-024/FE-025)
+4. Plan the Cloud deployment and production configuration
 
 These priorities describe work streams, not a requirement to wait for every
 earlier item. UI work and APIs with independent inputs can proceed in parallel.
