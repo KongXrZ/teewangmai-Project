@@ -120,6 +120,11 @@ export function CheckInFlow({
     dispatch({ type: "rescan" });
   }, [cancelRequest]);
 
+  const handleBackToSelect = useCallback(() => {
+    cancelRequest();
+    dispatch({ type: "back_to_select" });
+  }, [cancelRequest]);
+
   const handleSubmit = useCallback(
     (level: CrowdLevel) => {
       const current = stateRef.current;
@@ -202,6 +207,7 @@ export function CheckInFlow({
         verification={toVerification(state.scan)}
         onDetect={handleDetect}
         onRescan={handleRescan}
+        onBack={handleBackToSelect}
       />
     );
   }
