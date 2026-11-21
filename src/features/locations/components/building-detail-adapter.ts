@@ -41,6 +41,12 @@ export function buildBuildingDetailHref(
   return `/locations/${encodeURIComponent(buildingId)}${query ? `?${query}` : ""}`;
 }
 
+export function withFloorQuery(search: string, floorId: string): string {
+  const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+  params.set("floor", floorId);
+  return params.toString();
+}
+
 export function resolveInitialFloorId(
   floors: readonly Pick<FloorModel, "id">[],
   requestedFloorId?: string | null,

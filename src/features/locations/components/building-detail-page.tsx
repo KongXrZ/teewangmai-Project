@@ -192,6 +192,13 @@ function BuildingDetail({
       building.floors.find((floor) => floor.label.trim() === "1")?.id ??
       building.floors[0]?.id,
   );
+  const [syncedInitialFloorId, setSyncedInitialFloorId] = useState(initialFloorId);
+  if (initialFloorId !== syncedInitialFloorId) {
+    setSyncedInitialFloorId(initialFloorId);
+    if (initialFloorId !== undefined) {
+      setSelectedFloorId(initialFloorId);
+    }
+  }
   const selectedFloor =
     building.floors.find((floor) => floor.id === selectedFloorId) ??
     building.floors[0];
@@ -209,7 +216,8 @@ function BuildingDetail({
     Boolean(buildingHoursLabel) ||
     Boolean(building.description) ||
     (building.categories?.length ?? 0) > 0 ||
-    (building.aliases?.length ?? 0) > 0;
+    (building.aliases?.length ?? 0) > 0 ||
+    (building.metadataDetails?.length ?? 0) > 0;
 
   return (
     <>
@@ -267,6 +275,16 @@ function BuildingDetail({
                 </span>
               ))}
             </div>
+          )}
+          {(building.metadataDetails?.length ?? 0) > 0 && (
+            <dl className="m-0 grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-1 pt-0.5 text-[11px] leading-normal">
+              {building.metadataDetails?.map((item, index) => (
+                <div key={`${item.label}-${index}`} className="contents">
+                  <dt className="font-bold wrap-anywhere text-[#111827]">{item.label}</dt>
+                  <dd className="m-0 text-right wrap-anywhere">{item.value}</dd>
+                </div>
+              ))}
+            </dl>
           )}
         </section>
       )}
