@@ -6,12 +6,17 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signUpWithPasswordAction } from "@/features/auth/server/actions";
 import { AUTH_UNAVAILABLE } from "@/features/auth/errors";
+import { getSafeRedirectPath } from "@/features/auth/redirects";
 import { useAuth } from "./auth-provider";
 import { signupSchema, type SignupValues } from "@/features/auth/form-schemas";
 import { AuthSubmitButton } from "./auth-submit-button";
 import { AuthTextField } from "./auth-text-field";
 
-export function SignupForm() {
+export function SignupForm({
+  redirectTo,
+}: {
+  redirectTo?: string | null;
+}) {
   const router = useRouter();
   const { refresh } = useAuth();
   const [error, setError] = useState("");
@@ -61,7 +66,7 @@ export function SignupForm() {
               return;
             }
             await refresh();
-            router.replace("/");
+            router.replace(getSafeRedirectPath(redirectTo));
             router.refresh();
           } catch {
             setError(AUTH_UNAVAILABLE);
