@@ -2,11 +2,14 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { removeOtherAvatars } from "@/features/profile/server/avatar-storage";
+import { isLostSession } from "@/features/profile/server/checkin-history";
 import {
   AUTH_UNAVAILABLE,
   getAuthErrorCode,
   getAuthErrorMessage,
+  resolveProfileUpdateOutcome,
 } from "../errors";
+import { getSafeRedirectPath, resolveSiteOrigin } from "../redirects";
 import type { AuthActionResult, CurrentUser, SignupOutcome } from "../types";
 import {
   forgotPasswordSchema,
@@ -36,11 +39,11 @@ export async function signUpWithPasswordAction(
   }
 
   try {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-    if (!siteUrl) throw new Error("Missing site URL");
-    const callbackUrl = new URL("/auth/callback", siteUrl);
-    if (!["http:", "https:"].includes(callbackUrl.protocol))
-      throw new Error("Invalid site URL");
+    const origin = resolveSiteOrigin();
+    if (!origin) {
+      return { success: false, error: AUTH_UNAVAILABLE, code: "unavailable" };
+    }
+    const callbackUrl = new URL("/auth/callback", origin);
     const supabase = await createClient();
     const { email, password, name } = parsed.data;
     const { data, error } = await supabase.auth.signUp({
@@ -97,25 +100,37 @@ export async function signInWithPasswordAction(
 export async function getGoogleOAuthUrlAction(
   redirectTo?: string,
 ): Promise<AuthActionResult<{ url: string }>> {
-  const supabase = await createClient();
-  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  const callbackUrl = `${origin}/auth/callback${redirectTo ? `?next=${encodeURIComponent(redirectTo)}` : ""}`;
+  try {
+    const origin = resolveSiteOrigin();
+    if (!origin) {
+      return { success: false, code: "unavailable", error: AUTH_UNAVAILABLE };
+    }
 
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: callbackUrl,
-    },
-  });
+    const supabase = await createClient();
+    const callbackUrl = new URL("/auth/callback", origin);
+    if (redirectTo) {
+      callbackUrl.searchParams.set("next", getSafeRedirectPath(redirectTo));
+    }
 
-  if (error || !data.url) {
-    return {
-      success: false,
-      error: error?.message ?? "ไม่สามารถสร้าง Google OAuth URL ได้",
-    };
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: callbackUrl.toString(),
+      },
+    });
+
+    if (error || !data.url) {
+      return {
+        success: false,
+        code: error ? getAuthErrorCode(error) : "unavailable",
+        error: error ? getAuthErrorMessage(error) : AUTH_UNAVAILABLE,
+      };
+    }
+
+    return { success: true, data: { url: data.url } };
+  } catch {
+    return { success: false, code: "unavailable", error: AUTH_UNAVAILABLE };
   }
-
-  return { success: true, data: { url: data.url } };
 }
 
 export async function forgotPasswordAction(
@@ -125,28 +140,43 @@ export async function forgotPasswordAction(
   if (!parsed.success) {
     return {
       success: false,
+      code: "validation",
       error: parsed.error.issues[0]?.message ?? "ข้อมูลไม่ถูกต้อง",
     };
   }
 
-  const { email } = parsed.data;
-  const supabase = await createClient();
-  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  const redirectTo = `${origin}/auth/callback?next=/reset-password`;
+  try {
+    const origin = resolveSiteOrigin();
+    if (!origin) {
+      return { success: false, code: "unavailable", error: AUTH_UNAVAILABLE };
+    }
 
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo,
-  });
+    const { email } = parsed.data;
+    const supabase = await createClient();
+    const redirectTo = new URL(
+      "/auth/callback?next=/reset-password",
+      origin,
+    ).toString();
 
-  if (error) {
-    console.error("forgotPasswordAction error:", error.message);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo,
+    });
+
+    if (error) {
+      console.error(
+        "forgotPasswordAction error:",
+        error.code ?? error.name ?? "unknown",
+      );
+    }
+
+    return {
+      success: true,
+      message:
+        "หากอีเมลนี้ลงทะเบียนไว้ในระบบ ลิงก์สำหรับตั้งรหัสผ่านใหม่จะถูกส่งไปยังกล่องข้อความของคุณ",
+    };
+  } catch {
+    return { success: false, code: "unavailable", error: AUTH_UNAVAILABLE };
   }
-
-  return {
-    success: true,
-    message:
-      "หากอีเมลนี้ลงทะเบียนไว้ในระบบ ลิงก์สำหรับตั้งรหัสผ่านใหม่จะถูกส่งไปยังกล่องข้อความของคุณ",
-  };
 }
 
 export async function resetPasswordAction(
@@ -156,36 +186,51 @@ export async function resetPasswordAction(
   if (!parsed.success) {
     return {
       success: false,
+      code: "validation",
       error: parsed.error.issues[0]?.message ?? "ข้อมูลไม่ถูกต้อง",
     };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
-  if (!user) {
+    if (authError && !isLostSession(authError)) {
+      return { success: false, code: "unavailable", error: AUTH_UNAVAILABLE };
+    }
+
+    if (!user) {
+      return {
+        success: false,
+        code: "unauthorized",
+        error:
+          "ลิงก์รีเซ็ตรหัสผ่านหมดอายุหรือไม่ถูกต้อง กรุณาทำรายการใหม่อีกครั้ง",
+      };
+    }
+
+    const { error } = await supabase.auth.updateUser({
+      password: parsed.data.password,
+    });
+
+    if (error) {
+      return {
+        success: false,
+        code: getAuthErrorCode(error),
+        error: getAuthErrorMessage(error),
+      };
+    }
+
     return {
-      success: false,
-      error:
-        "ลิงก์รีเซ็ตรหัสผ่านหมดอายุหรือไม่ถูกต้อง กรุณาทำรายการใหม่อีกครั้ง",
+      success: true,
+      message:
+        "เปลี่ยนรหัสผ่านเรียบร้อยแล้ว สามารถเข้าสู่ระบบด้วยรหัสผ่านใหม่ได้ทันที",
     };
+  } catch {
+    return { success: false, code: "unavailable", error: AUTH_UNAVAILABLE };
   }
-
-  const { error } = await supabase.auth.updateUser({
-    password: parsed.data.password,
-  });
-
-  if (error) {
-    return { success: false, error: error.message };
-  }
-
-  return {
-    success: true,
-    message:
-      "เปลี่ยนรหัสผ่านเรียบร้อยแล้ว สามารถเข้าสู่ระบบด้วยรหัสผ่านใหม่ได้ทันที",
-  };
 }
 
 export async function resendVerificationEmailAction(
@@ -195,29 +240,41 @@ export async function resendVerificationEmailAction(
   if (!parsed.success) {
     return {
       success: false,
+      code: "validation",
       error: parsed.error.issues[0]?.message ?? "ข้อมูลไม่ถูกต้อง",
     };
   }
 
-  const supabase = await createClient();
-  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  try {
+    const origin = resolveSiteOrigin();
+    if (!origin) {
+      return { success: false, code: "unavailable", error: AUTH_UNAVAILABLE };
+    }
 
-  const { error } = await supabase.auth.resend({
-    type: "signup",
-    email: parsed.data.email,
-    options: {
-      emailRedirectTo: `${origin}/auth/callback`,
-    },
-  });
+    const supabase = await createClient();
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: parsed.data.email,
+      options: {
+        emailRedirectTo: new URL("/auth/callback", origin).toString(),
+      },
+    });
 
-  if (error) {
-    return { success: false, error: error.message };
+    if (error) {
+      return {
+        success: false,
+        code: getAuthErrorCode(error),
+        error: getAuthErrorMessage(error),
+      };
+    }
+
+    return {
+      success: true,
+      message: "ส่งลิงก์ยืนยันตัวตนไปยังอีเมลของคุณเรียบร้อยแล้ว",
+    };
+  } catch {
+    return { success: false, code: "unavailable", error: AUTH_UNAVAILABLE };
   }
-
-  return {
-    success: true,
-    message: "ส่งลิงก์ยืนยันตัวตนไปยังอีเมลของคุณเรียบร้อยแล้ว",
-  };
 }
 
 export async function signOutAction(): Promise<AuthActionResult> {
@@ -248,16 +305,7 @@ export async function getCurrentUserAction(): Promise<
       error,
     } = await supabase.auth.getUser();
     if (error) {
-      if (
-        error.name === "AuthSessionMissingError" ||
-        [401, 403].includes(error.status ?? 0) ||
-        [
-          "session_not_found",
-          "refresh_token_not_found",
-          "refresh_token_already_used",
-          "bad_jwt",
-        ].includes(error.code ?? "")
-      ) {
+      if (isLostSession(error)) {
         return { success: true, data: { user: null, profile: null } };
       }
       return { success: false, error: AUTH_UNAVAILABLE, code: "unavailable" };
@@ -286,34 +334,49 @@ export async function updateProfileAction(
   if (!parsed.success) {
     return {
       success: false,
+      code: "validation",
       error: parsed.error.issues[0]?.message ?? "ข้อมูลไม่ถูกต้อง",
     };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
-  if (!user) {
-    return { success: false, error: "กรุณาเข้าสู่ระบบก่อนทำรายการ" };
+    if (authError && !isLostSession(authError)) {
+      return { success: false, code: "unavailable", error: AUTH_UNAVAILABLE };
+    }
+
+    if (!user) {
+      return {
+        success: false,
+        code: "unauthorized",
+        error: "กรุณาเข้าสู่ระบบก่อนทำรายการ",
+      };
+    }
+
+    const { data: updated, error } = await supabase
+      .from("users")
+      .update(parsed.data)
+      .eq("auth_id", user.id)
+      .select("id");
+
+    const outcome = resolveProfileUpdateOutcome(updated, error);
+    if (!outcome.success) {
+      return outcome;
+    }
+
+    if (parsed.data.avatar_url !== undefined) {
+      await removeOtherAvatars(supabase, user.id, parsed.data.avatar_url).catch(
+        () => undefined,
+      );
+    }
+
+    return outcome;
+  } catch {
+    return { success: false, code: "unavailable", error: AUTH_UNAVAILABLE };
   }
-
-  const { data: updated, error } = await supabase
-    .from("users")
-    .update(parsed.data)
-    .eq("auth_id", user.id)
-    .select("id");
-
-  if (error) {
-    return { success: false, error: error.message };
-  }
-
-  if (parsed.data.avatar_url !== undefined && updated.length > 0) {
-    await removeOtherAvatars(supabase, user.id, parsed.data.avatar_url).catch(
-      () => undefined,
-    );
-  }
-
-  return { success: true, message: "อัปเดตโปรไฟล์เรียบร้อยแล้ว" };
 }

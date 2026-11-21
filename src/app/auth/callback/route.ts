@@ -1,26 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
-import { getSafeRedirectPath } from "@/features/auth/redirects";
+import { getSafeRedirectPath, resolveSiteOrigin } from "@/features/auth/redirects";
 import { AUTH_UNAVAILABLE } from "@/features/auth/errors";
 
 const LOGIN_ERROR = "verification_failed";
 
 function getRedirectBase(requestUrl: string): URL | null {
-  const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-
-  if (!configuredSiteUrl) {
-    return process.env.NODE_ENV === "development"
-      ? new URL(new URL(requestUrl).origin)
-      : null;
-  }
-
-  try {
-    const base = new URL(configuredSiteUrl);
-    if (base.protocol !== "https:" && base.protocol !== "http:") return null;
-    return new URL(base.origin);
-  } catch {
-    return null;
-  }
+  const origin = resolveSiteOrigin({
+    devFallbackOrigin: new URL(requestUrl).origin,
+  });
+  return origin ? new URL(origin) : null;
 }
 
 export async function GET(request: Request) {

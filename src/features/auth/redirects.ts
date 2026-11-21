@@ -39,3 +39,37 @@ export function getAuthenticatedRedirect(
   }
   return getSafeRedirectPath(next);
 }
+
+export function resolveSiteOrigin({
+  configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL,
+  nodeEnv = process.env.NODE_ENV,
+  devFallbackOrigin = "http://localhost:3000",
+}: {
+  configuredSiteUrl?: string;
+  nodeEnv?: string;
+  devFallbackOrigin?: string;
+} = {}): string | null {
+  const trimmed = configuredSiteUrl?.trim();
+  if (!trimmed) {
+    if (nodeEnv !== "development") {
+      return null;
+    }
+    try {
+      const fallback = new URL(devFallbackOrigin);
+      return fallback.protocol === "http:" || fallback.protocol === "https:"
+        ? fallback.origin
+        : null;
+    } catch {
+      return null;
+    }
+  }
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return null;
+    }
+    return parsed.origin;
+  } catch {
+    return null;
+  }
+}
