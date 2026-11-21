@@ -14,6 +14,8 @@ import {
   computeBaseScale,
   computeBuildingRenderState,
   computeBuildingRenderStates,
+  computeInitialMapTransform,
+  isSameMapTransform,
   MAP_MAX_ZOOM,
   MAP_MIN_ZOOM,
   zoomAroundPoint,
@@ -237,4 +239,24 @@ test("getBuildingsBoundingCenter and centerMapOnPoint place target buildings at 
   const screenY = centeredN16.panY + CAMPUS_BUILDING_SHAPES.N16.labelY * scale;
   assert.ok(Math.abs(screenX - viewportW / 2) < 1e-6);
   assert.ok(Math.abs(screenY - viewportH * 0.42) < 1e-6);
+});
+
+test("initial map view covers the viewport and is what reset returns to", () => {
+  const mapW = CAMPUS_MAP_VIEWBOX.width;
+  const mapH = CAMPUS_MAP_VIEWBOX.height;
+  for (const [w, h] of [[390, 480], [320, 420], [476, 700], [800, 400]]) {
+    const initial = computeInitialMapTransform(w, h, mapW, mapH);
+    assert.ok(initial.zoom >= 1.15 && initial.zoom <= 1.65);
+    assert.deepEqual(clampMapTransform(initial, w, h, mapW, mapH), initial);
+    assert.deepEqual(computeInitialMapTransform(w, h, mapW, mapH), initial);
+    assert.equal(isSameMapTransform(initial, { zoom: 1, panX: 0, panY: 0 }), false);
+  }
+  assert.deepEqual(computeInitialMapTransform(0, 0, mapW, mapH), { zoom: 1, panX: 0, panY: 0 });
+});
+
+test("isSameMapTransform tolerates sub-pixel drift only", () => {
+  const base = { zoom: 1.4, panX: -120, panY: -80 };
+  assert.equal(isSameMapTransform(base, { zoom: 1.4, panX: -120.3, panY: -79.8 }), true);
+  assert.equal(isSameMapTransform(base, { zoom: 1.4, panX: -125, panY: -80 }), false);
+  assert.equal(isSameMapTransform(base, { zoom: 1.6, panX: -120, panY: -80 }), false);
 });
