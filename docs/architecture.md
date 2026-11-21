@@ -12,15 +12,18 @@ src/
 │   ├── ui/                     Shared buttons, inputs, dialogs, etc.
 │   └── layout/                 Shared mobile navigation and page shells
 ├── features/
-│   ├── auth/                   Auth schemas, forms, and server operations
-│   ├── home/                   Home UI and blank map placeholder
-│   ├── campus-map/
-│   │   └── components/         Custom image/3D map and interactive zones
-│   ├── locations/
-│   │   └── components/         Location cards and location details
-│   ├── rewards/                Catalog UI, redemption dialog and view types
-│   ├── achievements/           Badge UI, adapter, hook and view models
-│   └── reports/                Reserved for the future verified check-in flow
+│   ├── auth/                   Auth schemas, forms, guest state and server operations
+│   ├── home/                   Home page and map container
+│   ├── campus-map/             SVG campus map, building shapes and map state
+│   ├── locations/              Location list, building detail and their APIs
+│   ├── crowd/                  Crowd summary API (server side)
+│   ├── quick-scan/             Camera QR scanner
+│   ├── crowd-report/           Check-in flow and crowd report form
+│   ├── checkins/               Check-in API (server side)
+│   ├── profile/                Profile, edit, avatar and report history
+│   ├── rewards/                Catalog, redemption, vouchers and their APIs
+│   ├── achievements/           Badge UI, adapter, hook and badge API
+│   └── reports/                Empty placeholder (.gitkeep)
 ├── hooks/                      Hooks reused across multiple features
 ├── lib/
 │   └── supabase/               Browser/server clients and session helpers
@@ -35,9 +38,9 @@ supabase/
 ├── tests/                     SQL schema and access assertions
 └── seed.sql                   Approved 35 buildings and 224 floors, preserving IDs/QRs
 scripts/
-└── generate-database-types.mjs Safe local database type generation
-docs/
-└── architecture.md            Structure and implementation conventions
+├── generate-database-types.mjs Safe local database type generation
+└── generate-floor-qr.mjs      Floor QR print assets (npm run qr:generate)
+docs/                          Architecture, API contracts, database and setup guides
 .env.example                   Documented environment variables, without values
 ```
 
@@ -62,26 +65,28 @@ not create routes, API endpoints, or working product features.
 | Component          | Import                                  | Usage                                                                                                                                                                           |
 | ------------------ | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `MobileShell`      | `@/components/layout/mobile-shell`      | Full-height page shell with a 476px maximum width; `variant="app"` applies the app background and lets each screen supply its own padding.                                      |
-| `BottomNavigation` | `@/components/layout/bottom-navigation` | Five-item navigation UI. Use `selected` and `onChange` to control selection, or `defaultSelected` for local state. Home, locations and rewards route internally; scan/profile currently have no destination. |
+| `BottomNavigation` | `@/components/layout/bottom-navigation` | Five-item navigation UI. Use `selected` and `onChange` to control selection, or `defaultSelected` for local state. All five items (home, places, scan, rewards, profile) route internally. |
 | `SearchInput`      | `@/components/ui/search-input`          | Labeled search input accepting native input props, including `value`, `defaultValue`, and `onChange`. Supply `label`; an accessible input ID is generated when `id` is omitted. |
 | `CrowdLevelFilter` | `@/components/ui/crowd-level-filter`    | Density filter with `selected`, `defaultSelected`, and `onChange`. It adapts to its own available width, so it can also be used outside the map.                                |
 
 These controls own presentation and optional local state. Their callers handle
 data fetching and filtering; `BottomNavigation` also routes its configured items.
-`HomePage` and its blank
-`MapPlaceholder` remain in `features/home/components` and compose these shared
-controls. Filter values (`all`, `low`, `medium`, `high`) describe UI choices;
-mapping reports on the 1–5 scale to these groups belongs to a later integration task.
+`HomePage` in `features/home/components` composes these shared controls with the
+`CampusMap` SVG map from `features/campus-map`. Filter values (`all`, `low`,
+`medium`, `high`) map the 1–5 crowd score to groups as described in
+[Crowd API](crowd-api.md).
 
 The wireframes also include sign-up/login, a user profile with check-in history,
 points and badges, and reward redemption. Trust/streak behavior remains TBD and
 has no columns in the current `users` model. Auth is implemented in `features/auth`.
-Rewards UI lives in `features/rewards`; badge displays, the adapter and view models
-live in `features/achievements`. Profile UI remains future work; add its feature
-folder when implementation begins rather than creating empty feature folders.
+Rewards and vouchers live in `features/rewards`; badges live in
+`features/achievements`; profile, avatar and report history live in
+`features/profile`. Add a feature folder when its implementation begins rather
+than creating empty feature folders.
 
-The reports feature owns the check-in flow: insert a row only after GPS AND QR
-verification both succeed, with a crowd-level submission from 1 to 5. No separate
+`features/crowd-report` owns the check-in flow and `features/checkins` its API:
+a row is inserted only after GPS AND QR verification both succeed, with a
+crowd-level submission from 1 to 5. No separate
 verification-result columns are needed. Map rendering consumes location summaries
 without depending on the image or 3D format used to display them.
 
@@ -110,11 +115,17 @@ Keep badge definitions separate from ownership, whose primary key is
 `(user_id, badge_id)`. See [the database baseline](database.md) for constraints
 and decisions still awaiting agreement.
 
-RLS is enabled on all nine tables. Only own-profile read/update policies are
-currently open to clients; column grants restrict updates to name/avatar.
+RLS is enabled on all nine tables. Six tables have client SELECT policies:
+`users` (own profile, plus an own-profile UPDATE limited to name/avatar by column
+grants), `locations`, `floors` and `floor_hours` (active catalog, anon and
+authenticated), and `badges` and `user_badges` (active or own earned badges,
+authenticated). Storage bucket `avatars` has own-folder SELECT/INSERT/DELETE
+policies on `storage.objects`. The other three tables (`checkins`, `rewards`,
+`redemptions`) have no client policies; they are reached only through
+`SECURITY DEFINER` RPCs that check the caller.
 Auth uses browser-readable cookie sessions and request-scoped server clients.
-Before enabling reports, implement trusted GPS/QR checks and the independent
-30-minute user/floor cooldown. Floor summaries use the latest 30 minutes of
+Check-ins pass trusted GPS/QR checks and the independent 30-minute user/floor
+cooldown in BE-008's `submit_checkin`. Floor summaries use the latest 30 minutes of
 reports and refresh every 10 minutes using the BE-006 private snapshot and
 pg_cron. See [Check-in Rules](check-in-rules.md) and [Crowd API](crowd-api.md).
 
@@ -138,19 +149,17 @@ only install a 3D library when it is needed.
 
 ## Current scope
 
-Home, Location List/Detail, Rewards catalog/redemption dialog and Achievements
-UI exist, alongside Auth UI/backend, Supabase clients and own-profile RLS.
-Home's map remains blank pending its SVG. Location/reward routes currently pass
-unavailable states; the Achievements adapter targets a badge API not yet implemented.
-These pages do not demonstrate completed data integration or successful exchanges.
-The nine-table v4 schema and category-array migration are applied locally. The 35
-approved buildings and 224 floors are imported, with S7 inactive. Hours/reward/badge data
-remains pending. Temporary weekday schedules are seeded. Building/floor catalog
-APIs are implemented in BE-005, with public active-only RLS reads and no public
-QR-column access; see [Location API](location-api.md). BE-006 implements
-scheduled crowd snapshots and public `/api/crowd/...` APIs; frontend wiring is
-separate. See [Crowd API](crowd-api.md). Other product APIs, verified check-ins,
-reward transactions and badge awarding remain separate work.
+Home (SVG campus map with crowd summaries), Location List/Detail, Scan, Profile,
+Rewards/Vouchers and Achievements pages exist with Auth and are connected to
+their APIs. The Location List reads the building catalog; its crowd level and
+crowd filter come with FE-029 (PR #42, not merged at this snapshot). The 35
+approved buildings and 224 floors are imported, with S7 inactive; temporary
+weekday schedules are seeded and real hours and reward/badge records are pending.
+BE-005 provides the building/floor catalog with public active-only RLS reads and no
+public QR-column access ([Location API](location-api.md)); BE-006 the scheduled
+crowd snapshots and `/api/crowd/...` ([Crowd API](crowd-api.md)); BE-008/BE-009
+verified check-ins and own history; BE-010/BE-015 avatars; BE-011/BE-012 reward
+redemption and vouchers ([Rewards API](rewards-api.md)); BE-013 badge awarding.
 Check-in +10 awarding is deferred. No hosted deployment is made by these changes.
 See [Backend Handoff](backend-handoff.md) and [Backend Setup](backend-setup.md). Local
 source presentations and diagrams are excluded from Git; their confirmed
