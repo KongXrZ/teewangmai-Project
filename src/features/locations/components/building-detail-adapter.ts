@@ -17,6 +17,45 @@ import type {
   FloorModel,
 } from "./location-view-models";
 
+export function buildBuildingDetailHref(
+  buildingId: string,
+  options?: {
+    readonly floorId?: string;
+    readonly baseQuery?: string | URLSearchParams;
+  },
+): string {
+  const rawQuery = options?.baseQuery;
+  const params =
+    typeof rawQuery === "string"
+      ? new URLSearchParams(
+          rawQuery.startsWith("?") ? rawQuery.slice(1) : rawQuery,
+        )
+      : new URLSearchParams(rawQuery?.toString() ?? "");
+  const trimmedFloorId = options?.floorId?.trim();
+  if (trimmedFloorId) {
+    params.set("floor", trimmedFloorId);
+  } else {
+    params.delete("floor");
+  }
+  const query = params.toString();
+  return `/locations/${encodeURIComponent(buildingId)}${query ? `?${query}` : ""}`;
+}
+
+export function resolveInitialFloorId(
+  floors: readonly Pick<FloorModel, "id">[],
+  requestedFloorId?: string | null,
+  defaultFloorId?: FloorId,
+): FloorId | undefined {
+  const normalized = requestedFloorId?.trim();
+  if (normalized) {
+    const matched = floors.find((floor) => floor.id === normalized);
+    if (matched) {
+      return matched.id;
+    }
+  }
+  return defaultFloorId;
+}
+
 export interface ApiLocationDetailFloor extends ApiLocationFloor {
   readonly capacity: number | null;
   readonly hours?: readonly ApiWeeklyHourDto[];

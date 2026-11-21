@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   loadBuildingDetail,
   loadFloorDetail,
   mergeSingleFloorDetail,
+  resolveInitialFloorId,
 } from "./building-detail-adapter";
 import { BuildingDetailPage } from "./building-detail-page";
 import type { BuildingDetailState, FloorId } from "./location-view-models";
@@ -16,6 +17,8 @@ export function BuildingDetailContainer({
   buildingId: string;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedFloorId = searchParams.get("floor");
   const [state, setState] = useState<BuildingDetailState>({ status: "loading" });
   const [initialFloorId, setInitialFloorId] = useState<FloorId | undefined>();
   const [reloadNonce, setReloadNonce] = useState(0);
@@ -30,7 +33,13 @@ export function BuildingDetailContainer({
           return;
         }
         if (outcome.kind === "ok") {
-          setInitialFloorId(outcome.defaultFloorId);
+          setInitialFloorId(
+            resolveInitialFloorId(
+              outcome.building.floors,
+              requestedFloorId,
+              outcome.defaultFloorId,
+            ),
+          );
           setState({ status: "ready", building: outcome.building });
         } else if (outcome.kind === "not_found") {
           setInitialFloorId(undefined);
@@ -51,7 +60,7 @@ export function BuildingDetailContainer({
       controller.abort();
       floorControllerRef.current?.abort();
     };
-  }, [buildingId, reloadNonce]);
+  }, [buildingId, reloadNonce, requestedFloorId]);
 
   function handleRetry() {
     setState({ status: "loading" });

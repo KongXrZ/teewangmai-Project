@@ -9,6 +9,7 @@ import type {
   ExpandedBuildingModel,
   LocationListState,
 } from "./location-view-models";
+import { buildBuildingDetailHref } from "./building-detail-adapter";
 import type { BuildingPage, LocationDataSource } from "./location-data-source";
 import { locationApiSource } from "./location-api-source";
 import { LocationListPage } from "./location-list-page";
@@ -247,9 +248,12 @@ export function LocationListContainer({
       onCrowdFilterChange={handleCrowdFilterChange}
       onSelectBuilding={handleSelectBuilding}
       expandedBuilding={expandedBuilding}
-      onViewBuildingDetail={(id) =>
+      onViewBuildingDetail={(id, floorId) =>
         router.push(
-          `/locations/${encodeURIComponent(id)}${window.location.search}`,
+          buildBuildingDetailHref(id, {
+            floorId,
+            baseQuery: window.location.search,
+          }),
         )
       }
       onLoadMore={
