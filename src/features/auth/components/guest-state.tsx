@@ -10,6 +10,11 @@ import {
 import { useAuth } from "@/features/auth/components/auth-provider";
 import { getSafeRedirectPath } from "@/features/auth/redirects";
 import {
+  initialContentOwner,
+  markRenderedWithoutUser,
+  nextContentOwner,
+} from "./content-owner";
+import {
   StateMessage,
   pageMainClass,
   primaryButtonClass,
@@ -60,10 +65,12 @@ export function ProtectedContent({
   children: ReactNode;
 }) {
   const { status, user } = useAuth();
-  const [ownerId, setOwnerId] = useState<string | null>(null);
+  const [owner, setOwner] = useState(initialContentOwner);
 
-  if (status === "authenticated" && user && user.id !== ownerId) {
-    setOwnerId(user.id);
+  if (status === "authenticated" && user && user.id !== owner.id) {
+    setOwner(nextContentOwner(owner, user.id));
+  } else if (status === "error" && markRenderedWithoutUser(owner) !== owner) {
+    setOwner(markRenderedWithoutUser(owner));
   }
 
   if (status === "loading" && loading) {
@@ -82,5 +89,5 @@ export function ProtectedContent({
     );
   }
 
-  return <Fragment key={ownerId ?? "pending"}>{children}</Fragment>;
+  return <Fragment key={owner.generation}>{children}</Fragment>;
 }

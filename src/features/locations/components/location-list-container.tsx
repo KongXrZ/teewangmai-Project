@@ -120,7 +120,12 @@ export function LocationListContainer({
   }
 
   function handleLoadMore() {
-    if (filterUnavailable || !currentPage || nextCursor === null || moreForPage) {
+    if (
+      filterUnavailable ||
+      !currentPage ||
+      nextCursor === null ||
+      (moreForPage && !moreForPage.failed)
+    ) {
       return;
     }
     const fromPage = currentPage;
@@ -268,6 +273,10 @@ export function LocationListContainer({
         nextCursor !== null && !moreForPage?.failed ? handleLoadMore : undefined
       }
       loadingMore={loadingMore}
+      loadMoreFailed={moreForPage?.failed ?? false}
+      onRetryLoadMore={
+        nextCursor !== null && moreForPage?.failed ? handleLoadMore : undefined
+      }
     />
   );
 }
