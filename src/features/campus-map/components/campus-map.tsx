@@ -31,6 +31,7 @@ import {
   centerMapOnPoint,
   clampMapTransform,
   computeBaseScale,
+  computeBuildingHitTarget,
   computeInitialMapTransform,
   computeBuildingRenderStates,
   MAP_MAX_ZOOM,
@@ -347,6 +348,26 @@ export function CampusMap({
   );
 
   const totalScale = baseScale * clampedTransform.zoom;
+
+  const hitTargets = useMemo(() => {
+    const targets: {
+      code: BuildingCode;
+      id: string;
+      rect: NonNullable<ReturnType<typeof computeBuildingHitTarget>>;
+    }[] = [];
+    for (const code of BUILDING_CODES) {
+      const state = renderStates.get(code);
+      if (!state || !state.isInteractive) continue;
+      const rect = computeBuildingHitTarget(
+        CAMPUS_BUILDING_SHAPES[code].bbox,
+        totalScale,
+      );
+      if (rect) {
+        targets.push({ code, id: state.id, rect });
+      }
+    }
+    return targets;
+  }, [renderStates, totalScale]);
 
   const initialTransform = useMemo(
     () =>

@@ -12,14 +12,12 @@ import {
   centerMapOnPoint,
   clampMapTransform,
   computeBaseScale,
-  computeBuildingHitTarget,
   computeBuildingRenderState,
   computeBuildingRenderStates,
   computeInitialMapTransform,
   isSameMapTransform,
   MAP_MAX_ZOOM,
   MAP_MIN_ZOOM,
-  MIN_TOUCH_TARGET_PX,
   zoomAroundPoint,
 } from "../src/features/campus-map/map-state.ts";
 
