@@ -142,3 +142,9 @@ test('fetch handles network failure and non-JSON error pages', async () => {
   );
   assert.equal(ready.kind, 'ok');
 });
+
+test('401 keeps an unauthenticated state instead of a generic load error', () => {
+  const result = parseRewardsCatalogResponse(401, null);
+  assert.deepEqual(result, { kind: 'unauthenticated' });
+  assert.deepEqual(toRewardsCatalogState(result, () => {}), { status: 'unauthenticated' });
+});

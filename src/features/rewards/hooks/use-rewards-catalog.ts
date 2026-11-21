@@ -51,7 +51,7 @@ export function useRewardsCatalog(): RewardsCatalogController {
         if (next.kind === "unauthenticated") {
           void refreshAuth().finally(() => {
             if (!controller.signal.aborted) {
-              setResult({ kind: "error" });
+              setResult({ kind: "unauthenticated" });
               setIsRefreshing(false);
             }
           });

@@ -117,10 +117,7 @@ export function toRewardsCatalogState(
     case "unavailable":
       return { status: "unavailable" };
     case "unauthenticated":
-      return {
-        status: "error",
-        message: "กรุณาเข้าสู่ระบบเพื่อดูแต้มและรางวัล",
-      };
+      return { status: "unauthenticated" };
     case "error":
       return { status: "error", message: result.message, onRetry };
   }
