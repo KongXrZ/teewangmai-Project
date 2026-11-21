@@ -122,7 +122,9 @@ rejected.
 Completed exchange and voucher use differ. The owner uses a voucher through
 `public.use_voucher` (BE-012), which sets `used_at`, a random `use_code` and the
 request's `use_key` once, atomically, before expiry; the code is returned only
-by that call or a retry with the same `use_key`, and shown as a one-time QR.
+by that call or a retry with the same `use_key` within 30 minutes, while the
+voucher is unverified and not yet expired (an expired retry returns `expired`
+without the code), and shown as a one-time QR.
 `public.verify_voucher_code` lets a shop confirm a code once: it sets
 `verified_at` the first time and reports later scans as already verified.
 `use_code` and `use_key` exist only together on a used voucher; `verified_at`
@@ -150,7 +152,8 @@ badges under a per-user advisory lock and inserts `user_badges` with
 `private.award_all_user_badges()` backfills after imports or reactivation and is
 idempotent. Earned badges use composite primary key `(user_id, badge_id)`.
 Authenticated users read active badges plus their own earned ones through RLS and
-`public.get_my_badges()`; clients have no badge write grants.
+`public.get_my_badges()`, which returns no rows when the caller has no profile;
+clients have no badge write grants.
 
 ## Identity and access
 

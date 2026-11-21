@@ -176,6 +176,19 @@ begin
 end;
 $$;
 
+select set_config('request.jwt.claims',
+  json_build_object('sub', gen_random_uuid(), 'role', 'authenticated')::text, true);
+set local role authenticated;
+do $$
+begin
+  if exists (select 1 from public.get_my_badges()) then
+    raise exception 'A session without a profile must get no badges';
+  end if;
+end;
+$$;
+
+select set_config('request.jwt.claims',
+  json_build_object('sub', current_setting('badge_test.auth_b'), 'role', 'authenticated')::text, true);
 reset role;
 delete from public.badges;
 set local role authenticated;
