@@ -30,6 +30,7 @@ export type CheckInFlowAction =
   | { type: "resolve_start" }
   | { type: "resolve_done"; result: QrResolveResult }
   | { type: "rescan" }
+  | { type: "back_to_select" }
   | { type: "scan_again" }
   | { type: "submit_start" }
   | { type: "gps_failed"; reason: GpsFailure }
@@ -121,6 +122,16 @@ export function checkInFlowReducer(
         return state;
       }
       return { ...state, scan: { status: "idle" } };
+    case "back_to_select":
+      if (state.phase !== "scan") return state;
+      return {
+        ...state,
+        phase: "select",
+        scan: { status: "idle" },
+        floor: null,
+        submission: { status: "idle" },
+        formKey: state.formKey + 1,
+      };
     case "scan_again":
       if (state.phase !== "ready" || state.submission.status !== "error") {
         return state;
