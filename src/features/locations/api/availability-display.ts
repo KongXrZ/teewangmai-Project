@@ -87,6 +87,9 @@ export function toOpeningHours(
     return null;
   }
   const { status, today_intervals: intervals } = availability;
+  if (status === "unknown") {
+    return null;
+  }
   if (intervals.length === 1) {
     return {
       open: intervals[0].open_time,

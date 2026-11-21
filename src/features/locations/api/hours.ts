@@ -81,7 +81,7 @@ export function floorAvailability(hours: FloorHours[], now: Date): Availability 
 
   const isOpen = intervals.some(([start, end]) => current >= start && current < end);
   return {
-    status: isOpen ? "open" : today ? "closed" : "unknown",
+    status: isOpen ? "open" : today || intervals.length > 0 ? "closed" : "unknown",
     ...coverage(intervals),
   };
 }
