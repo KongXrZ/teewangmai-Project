@@ -24,6 +24,22 @@ export function getSafeRedirectPath(next?: string | null): string {
   }
 }
 
+const GUEST_ONLY_PATHS = new Set(["/login", "/signup"]);
+
+export function getAuthenticatedRedirect(
+  pathname: string,
+  next?: string | null,
+): string | null {
+  const normalized =
+    pathname.length > 1 && pathname.endsWith("/")
+      ? pathname.slice(0, -1)
+      : pathname;
+  if (!GUEST_ONLY_PATHS.has(normalized)) {
+    return null;
+  }
+  return getSafeRedirectPath(next);
+}
+
 export function resolveSiteOrigin({
   configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL,
   nodeEnv = process.env.NODE_ENV,
