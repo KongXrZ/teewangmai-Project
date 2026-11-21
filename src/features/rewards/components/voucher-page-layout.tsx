@@ -3,16 +3,23 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import ArrowBackRounded from "@mui/icons-material/ArrowBackRounded";
 import { BottomNavigation } from "@/components/layout/bottom-navigation";
+import {
+  PageHeader,
+  pageMainClass,
+} from "@/features/profile/components/profile-ui";
+import type { VoucherEntrySource } from "../vouchers";
 
 export function VoucherPageLayout({
   title,
   onBack,
   focusTitleOnMount,
+  entrySource = "rewards",
   children,
 }: {
   title: string;
   onBack?: () => void;
   focusTitleOnMount?: boolean;
+  entrySource?: VoucherEntrySource;
   children: ReactNode;
 }) {
   const titleRef = useRef<HTMLHeadingElement>(null);
@@ -22,6 +29,23 @@ export function VoucherPageLayout({
       titleRef.current?.focus();
     }
   }, [focusTitleOnMount]);
+
+  if (entrySource === "profile") {
+    return (
+      <>
+        <main className={pageMainClass}>
+          <PageHeader
+            title={title}
+            onBack={onBack}
+            titleRef={titleRef}
+            focusTitleOnMount={focusTitleOnMount}
+          />
+          <div className="mt-5 flex flex-1 flex-col gap-5">{children}</div>
+        </main>
+        <BottomNavigation selected="profile" />
+      </>
+    );
+  }
 
   return (
     <>

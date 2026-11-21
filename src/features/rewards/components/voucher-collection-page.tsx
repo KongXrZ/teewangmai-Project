@@ -5,6 +5,7 @@ import ErrorOutlineRounded from "@mui/icons-material/ErrorOutlineRounded";
 import { GuestState } from "@/features/auth/components/guest-state";
 import type {
   VoucherCollectionState,
+  VoucherEntrySource,
   VoucherId,
   VoucherSelectHandler,
 } from "../vouchers";
@@ -18,6 +19,7 @@ export interface VoucherCollectionPageProps {
   onBack?: () => void;
   onBrowseRewards?: () => void;
   focusVoucherId?: VoucherId;
+  entrySource?: VoucherEntrySource;
 }
 
 export function VoucherCollectionPage({
@@ -26,9 +28,14 @@ export function VoucherCollectionPage({
   onBack,
   onBrowseRewards,
   focusVoucherId,
+  entrySource = "rewards",
 }: VoucherCollectionPageProps) {
   return (
-    <VoucherPageLayout title="สิทธิ์ของฉัน" onBack={onBack}>
+    <VoucherPageLayout
+      title="สิทธิ์ของฉัน"
+      onBack={onBack}
+      entrySource={entrySource}
+    >
       <VoucherCollectionContent
         state={state}
         onSelectVoucher={onSelectVoucher}
@@ -44,7 +51,7 @@ function VoucherCollectionContent({
   onSelectVoucher,
   onBrowseRewards,
   focusVoucherId,
-}: Omit<VoucherCollectionPageProps, "onBack">) {
+}: Omit<VoucherCollectionPageProps, "onBack" | "entrySource">) {
   switch (state.status) {
     case "loading":
       return (
