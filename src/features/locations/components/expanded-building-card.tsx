@@ -182,7 +182,7 @@ function FloorDropdown({
         aria-expanded={anchor !== null}
         aria-controls={anchor ? menuId : undefined}
         onClick={(event) => setAnchor(event.currentTarget)}
-        className={`relative mt-0.5 flex h-7 shrink-0 cursor-pointer items-center gap-0.5 rounded-[7px] border-0 pr-1 pl-2 text-xs whitespace-nowrap text-black after:absolute after:inset-x-0 after:-inset-y-2 focus-visible:outline-2 focus-visible:outline-[#ff5815] ${bgClassName}`}
+        className={`mt-0.5 flex h-11 shrink-0 cursor-pointer items-center gap-0.5 rounded-[7px] border-0 pr-1 pl-2 text-xs whitespace-nowrap text-black focus-visible:outline-2 focus-visible:outline-[#ff5815] ${bgClassName}`}
       >
         ชั้น {selected?.label}
         <KeyboardArrowDown aria-hidden="true" sx={{ fontSize: 16 }} />
