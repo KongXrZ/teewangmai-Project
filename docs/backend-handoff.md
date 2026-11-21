@@ -1,12 +1,11 @@
 # Backend Handoff
 
-Snapshot: November 15, 2026. Schema v4 plus category-array migration is applied
-to Local. The 35 approved buildings and 224 floors are imported along with 1,120
+Snapshot: November 21, 2026. All 15 migrations (latest from BE-013) are applied to Local.
+The 35 approved buildings and 224 floors are imported along with 1,120
 temporary dummy weekday `floor_hours` rows (Mon–Fri `08:00:00`–`17:00:00`, active),
 with database types regenerated for the current schema. Real floor hours from CSV
-and reward/badge records remain pending. UI implementation and API integration are separate work;
-an existing page does not imply its data API exists. No mock application data is
-provided by this migration.
+and approved reward/badge records are not in `supabase/seed.sql`. No mock
+application data is provided by the migrations.
 
 ## Implemented interfaces
 
@@ -25,7 +24,17 @@ provided by this migration.
 | `GET /api/crowd/locations` | Building cards using the greatest-count floor |
 | `GET /api/crowd/locations/{locationId}` | Crowd summaries of active floors; default floor 1 |
 | `GET /api/crowd/locations/{locationId}/floors/{floorId}` | Selected floor crowd summary |
-| `GET /api/badges` | Own badge collection; awarding happens only in the database after accepted check-ins |
+| `POST /api/checkins/resolve` | Resolve a floor QR to its active building/floor for the signed-in user (BE-008) |
+| `POST /api/checkins` | Verified check-in: QR, GPS accuracy/distance, score 1–5, 30-minute user/floor cooldown (BE-008) |
+| `GET /api/profile/checkins` | Own check-in history, newest first with cursor pagination (BE-009) |
+| `POST /api/profile/avatar` | Upload own profile photo to the `avatars` bucket (BE-010) |
+| `DELETE /api/profile/avatar` | Delete own profile photo and clear `avatar_url`; idempotent (BE-015) |
+| `GET /api/rewards` | Reward catalog with own points and per-reward availability (BE-011) |
+| `POST /api/rewards/{rewardId}/redeem` | Atomic idempotent redemption using an `Idempotency-Key` header (BE-011) |
+| `GET /api/vouchers` | Own vouchers with available/used/expired status (BE-011) |
+| `POST /api/vouchers/{voucherId}/use` | Owner uses a voucher and receives a one-time code for the shop QR (BE-012) |
+| `POST /api/vouchers/verify` | Shop verifies a voucher code once; no account needed (BE-012) |
+| `GET /api/badges` | Own badge collection; awarding happens only in the database after accepted check-ins (BE-013) |
 
 Auth Server Actions also cover password recovery/reset, resend verification,
 current user, logout and own-profile name/avatar updates. Existing Auth UI/session
@@ -33,9 +42,11 @@ integration is documented in [Frontend Integration](frontend-integration.md).
 Google UI integration is deferred. Keep browser-readable cookie sessions and
 server identity verification; do not implement a second password store.
 
-BE-005's catalog API is implemented locally. See [Location API](location-api.md)
-for DTOs, query rules, Bangkok opening-hours behavior and real-data integration
-tests. FE wiring remains separate; crowd summaries still belong to BE-006.
+Contracts: [Location API](location-api.md) (BE-005), [Crowd API](crowd-api.md)
+(BE-006), [Check-in Rules](check-in-rules.md) (BE-008/BE-009), [Rewards API](rewards-api.md)
+(BE-011/BE-012) and [Frontend Integration](frontend-integration.md) (profile,
+avatar and badges). `/api/swagger` lists every API interface above except the
+`/auth/callback` page route and `/api/swagger` itself.
 
 ## Backend task order
 
@@ -54,6 +65,7 @@ request/response contracts and update Swagger during implementation.
 | BE-011 | Rewards catalog, immediate atomic idempotent exchange, per-user limits and own voucher history; voucher expiry counted from redemption (`valid_days`) |
 | BE-012 | Owner uses a voucher (marked used immediately, one-time QR) and the shop verifies the QR is genuine |
 | BE-013 | Badge catalog, requirement evaluation and own earned badges |
+| BE-015 | Owner deletes the profile photo (database `avatar_url` and own storage folder) |
 | BE-014 | Approved reward/badge CSV import, preserving catalog identities, balances, stock and existing activity |
 
 Task numbers follow the current plan. BE-004 is In progress because building/floor
