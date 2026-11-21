@@ -25,7 +25,7 @@ export function VoucherPageLayout({
 
   return (
     <>
-      <main className="flex min-w-0 flex-1 flex-col gap-5 bg-[#fafafa] pt-[max(1.5rem,env(safe-area-inset-top,0px))] pr-[max(1.5rem,env(safe-area-inset-right,0px))] pb-[calc(7.625rem+env(safe-area-inset-bottom,0px))] pl-[max(1.5rem,env(safe-area-inset-left,0px))]">
+      <main className="flex min-w-0 flex-1 flex-col gap-5 pt-[max(1.5rem,env(safe-area-inset-top,0px))] pr-[max(1.5rem,env(safe-area-inset-right,0px))] pb-[calc(7.625rem+env(safe-area-inset-bottom,0px))] pl-[max(1.5rem,env(safe-area-inset-left,0px))]">
         <header className="grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-center">
           {onBack ? (
             <button

@@ -174,7 +174,7 @@ export function CatalogMessage({
   return (
     <div
       role={role}
-      className="flex flex-col items-center gap-1.5 rounded-2xl bg-[#f0f1f3] px-6 py-10 text-center"
+      className="flex flex-col items-center gap-1.5 rounded-2xl border border-[#e5e7eb] bg-white px-6 py-10 text-center"
     >
       <span className="mb-1 text-[#9ca3af]">{icon}</span>
       <p className="text-base leading-6 font-semibold text-[#141414]">
