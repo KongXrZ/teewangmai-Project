@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { floorSummary, buildingSummary, buildingCards } from "../src/features/crowd/models.ts";
+import { crowdPaths } from "../src/features/crowd/openapi.ts";
 
 const now = new Date("2026-11-16T03:10:00Z");
 const row = (changes = {}) => ({
@@ -47,4 +48,15 @@ test("building card takes the greatest count; detail defaults to floor 1", () =>
   assert.equal(buildingSummary([row({ floor_name: "2", floor_id: 2 }), row()], now).busiest_floor.floor_id, 1);
   assert.equal(buildingSummary([rows[0], rows[2]], now).default_floor_id, 2);
   assert.equal(buildingCards([...rows, row({ location_id: 2 })], now).length, 2);
+});
+
+test("crowd OpenAPI error responses describe the JSON error body", () => {
+  for (const [path, item] of Object.entries(crowdPaths)) {
+    const statuses = path.includes("{") ? ["400", "404", "503"] : ["400", "503"];
+    for (const status of statuses) {
+      const schema = item.get.responses[status]?.content?.["application/json"]?.schema;
+      assert.ok(schema, `${path} ${status} needs a JSON schema`);
+      assert.deepEqual(schema.required, ["success", "code", "error"]);
+    }
+  }
 });

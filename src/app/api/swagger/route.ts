@@ -5,6 +5,20 @@ import { badgePaths } from '@/features/achievements/server/openapi';
 import { rewardPaths } from '@/features/rewards/server/openapi';
 import { checkinPaths } from '@/features/checkins/server/openapi';
 
+const avatarError = {
+  'application/json': {
+    schema: {
+      type: 'object',
+      required: ['success', 'code', 'error'],
+      properties: {
+        success: { type: 'boolean', example: false },
+        code: { type: 'string', enum: ['validation', 'unauthorized', 'unavailable'] },
+        error: { type: 'string' },
+      },
+    },
+  },
+};
+
 export async function GET() {
   let sessionCookie = 'sb-project-ref-auth-token';
   try {
@@ -112,11 +126,11 @@ export async function GET() {
                 },
               },
             },
-            400: { description: 'Missing file, not JPG/PNG, or larger than 2 MB (code: validation)' },
-            401: { description: 'No session (code: unauthorized)' },
-            413: { description: 'Request body larger than 2 MB (code: validation)' },
-            415: { description: 'Not multipart/form-data (code: validation)' },
-            503: { description: 'Storage unavailable (code: unavailable)' },
+            400: { description: 'Missing file, not JPG/PNG, larger than 2 MB, or unexpected query parameter (code: validation)', content: avatarError },
+            401: { description: 'No session, expired session or no profile (code: unauthorized)', content: avatarError },
+            413: { description: 'Request body larger than 2 MB (code: validation)', content: avatarError },
+            415: { description: 'Not multipart/form-data (code: validation)', content: avatarError },
+            503: { description: 'Auth, database or storage unavailable (code: unavailable)', content: avatarError },
           },
         },
         delete: {
@@ -137,9 +151,9 @@ export async function GET() {
                 },
               },
             },
-            400: { description: 'Unsupported query parameter (code: validation)' },
-            401: { description: 'No session, expired session or no profile (code: unauthorized)' },
-            503: { description: 'Auth, database or storage unavailable (code: unavailable)' },
+            400: { description: 'Unsupported query parameter (code: validation)', content: avatarError },
+            401: { description: 'No session, expired session or no profile (code: unauthorized)', content: avatarError },
+            503: { description: 'Auth, database or storage unavailable (code: unavailable)', content: avatarError },
           },
         },
       },

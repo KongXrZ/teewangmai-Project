@@ -23,6 +23,19 @@ const card = {
 };
 const locationParam = { name: "locationId", in: "path", required: true, schema: integerId };
 
+const errorResponse = (description: string) => ({
+  description,
+  content: { "application/json": { schema: {
+    type: "object",
+    required: ["success", "code", "error"],
+    properties: {
+      success: { type: "boolean", example: false },
+      code: { type: "string", enum: ["validation", "not_found", "unavailable"] },
+      error: { type: "string" },
+    },
+  } } },
+});
+
 function operation(summary: string, schema: object, parameters: object[] = []) {
   return { get: {
     tags: ["Crowd"], summary, parameters,
@@ -34,9 +47,11 @@ function operation(summary: string, schema: object, parameters: object[] = []) {
           stale_after_minutes: { type: "integer", example: 20 }, timezone: { type: "string", example: "Asia/Bangkok" },
         } } },
       } } } },
-      400: { description: "Invalid ID/query" },
-      ...(parameters.length ? { 404: { description: "No active floor summaries for this resource" } } : {}),
-      503: { description: "Database/configuration unavailable" },
+      400: errorResponse(parameters.length
+        ? "Invalid ID or unexpected query parameter (code: validation)"
+        : "Unexpected query parameter (code: validation)"),
+      ...(parameters.length ? { 404: errorResponse("No active floor summaries for this resource (code: not_found)") } : {}),
+      503: errorResponse("Database or configuration unavailable (code: unavailable)"),
     },
   } };
 }
