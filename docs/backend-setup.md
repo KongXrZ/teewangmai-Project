@@ -5,8 +5,8 @@ Use this guide before starting a BE task. The repository pins Supabase CLI
 The application SDK and SSR library are already installed.
 
 The migrations now define nine application tables, including per-floor hours.
-Supabase clients, Auth endpoints, and own-profile policies already exist.
-Feature APIs and report business logic remain separate work. Use
+Supabase clients, Auth endpoints, RLS policies and the BE-005..BE-015 feature
+APIs exist; see [Backend Handoff](backend-handoff.md). Use
 [Database Design](database.md) for the applied model and remaining decisions.
 
 ## Prerequisites and first start
@@ -146,7 +146,7 @@ documented in [Frontend Integration](frontend-integration.md).
 
 Available product APIs are listed in [Backend Handoff](backend-handoff.md).
 Building/floor reads are implemented in BE-005; see [Location API](location-api.md)
-for contracts and verification. Summaries remain BE-006. The catalog uses seeded
+for contracts and verification. Crowd summaries are BE-006 ([Crowd API](crowd-api.md)). The catalog uses seeded
 reference data while real schedules are being collected.
 
 ## Schema and migration workflow
@@ -234,7 +234,19 @@ docker cp supabase/tests/checkin_history.sql supabase_db_teewangmai:/tmp/checkin
 docker exec supabase_db_teewangmai psql -U postgres -d postgres --no-psqlrc -v ON_ERROR_STOP=1 -f /tmp/checkin_history.sql
 docker cp supabase/tests/verified_checkin.sql supabase_db_teewangmai:/tmp/verified_checkin.sql
 docker exec supabase_db_teewangmai psql -U postgres -d postgres --no-psqlrc -v ON_ERROR_STOP=1 -f /tmp/verified_checkin.sql
+docker cp supabase/tests/building_catalog.sql supabase_db_teewangmai:/tmp/building_catalog.sql
+docker exec supabase_db_teewangmai psql -U postgres -d postgres --no-psqlrc -v ON_ERROR_STOP=1 -f /tmp/building_catalog.sql
+docker cp supabase/tests/crowd_summaries.sql supabase_db_teewangmai:/tmp/crowd_summaries.sql
+docker exec supabase_db_teewangmai psql -U postgres -d postgres --no-psqlrc -v ON_ERROR_STOP=1 -f /tmp/crowd_summaries.sql
+docker cp supabase/tests/avatar_storage.sql supabase_db_teewangmai:/tmp/avatar_storage.sql
+docker exec supabase_db_teewangmai psql -U postgres -d postgres --no-psqlrc -v ON_ERROR_STOP=1 -f /tmp/avatar_storage.sql
+docker cp supabase/tests/badges.sql supabase_db_teewangmai:/tmp/badges.sql
+docker exec supabase_db_teewangmai psql -U postgres -d postgres --no-psqlrc -v ON_ERROR_STOP=1 -f /tmp/badges.sql
 ```
+
+These 13 files are every SQL test in `supabase/tests/`. On macOS/Linux shells
+the commands are the same. In Git Bash on Windows, set `MSYS_NO_PATHCONV=1` so
+`/tmp/...` is not rewritten to a Windows path.
 
 `floor_schema.sql` checks relations, indexes, RLS, profile column grants, and the
 private Auth trigger. They use an existing profile for own-profile access checks
@@ -263,6 +275,21 @@ reports, empty history, the bounded limit and that anon cannot call it.
 rolled-back transaction and checks input validation, unknown/inactive QR, GPS
 accuracy and distance limits, the per-user/per-floor 30-minute cooldown and its
 exact boundary, and that rejected submissions write nothing.
+`building_catalog.sql` uses the approved reference records and checks that anon
+and authenticated readers see only active buildings, floors and schedules, never
+`qr_code_id`, cannot write, and that search treats punctuation literally.
+`crowd_summaries.sql` creates synthetic reports inside a rolled-back transaction
+and checks counts, averages and capacity percentages, missing capacity, that the
+snapshot changes only on the scheduled refresh, expiry, inactive buildings/floors,
+the pg_cron job cadence and private snapshot access.
+`avatar_storage.sql` checks the `avatars` bucket settings, that users can write
+and list only inside their own folder, and that the delete policy is owner-scoped.
+`badges.sql` creates throwaway accounts inside a rolled-back transaction and
+checks requirement validation, awarding exactly at the threshold with the crossing
+time, no awards for inactive badges or repeats, reactivation backfill, the own
+collection read and that anon cannot read badges. It fails if another active
+`checkin_count` badge has `requirement_value` of 4 or less (for example local
+sample badges); deactivate such badges before running it.
 `floor_hours_seed.sql` checks the 1,120 weekday `floor_hours` rows
 (Monday–Friday `08:00:00`–`17:00:00`, active, with Saturday–Sunday omitted). Fresh replay and
 existing-data import verification also check repeated imports preserve IDs,

@@ -1,7 +1,7 @@
 # เปิด Local DB และทดสอบ API ของ TeeWangMai
 
 คู่มือสำหรับทีม ใช้ PowerShell บน Windows และรันคำสั่งจากโฟลเดอร์หลักของโปรเจกต์
-ชุดข้อมูลอ้างอิง ณ 15 พฤศจิกายน 2026 อยู่ในงาน BE-004
+อัปเดต ณ 21 พฤศจิกายน 2026: migration ครบ 15 ไฟล์ (ล่าสุดของ BE-013) ชุดข้อมูลอาคารและชั้นมาจากงาน BE-004
 
 สำหรับ macOS ใช้ Terminal และเปลี่ยน `npm.cmd` ในคู่มือนี้เป็น `npm`
 คำสั่ง `docker` ใช้เหมือนกัน ส่วนคำสั่งสร้าง `.env.local` สำหรับ macOS อยู่ในขั้นตอนที่ 4
@@ -10,8 +10,7 @@
 
 - ติดตั้ง Node.js `24.14.0` ตาม `.nvmrc` พร้อม npm
 - เปิด Docker Desktop และใช้ Linux containers
-- ใช้โค้ดที่รวมงาน BE-004 แล้ว ระหว่างรอ merge สามารถใช้ branch `BE-004`
-  เพื่อทดสอบชุดข้อมูลนี้ เมื่อ merge แล้วให้เริ่มงานใหม่จาก `development` ล่าสุด
+- ใช้โค้ดจาก `development` ล่าสุด
 
 ตรวจ Node.js และการเชื่อมต่อ Docker
 
@@ -153,9 +152,10 @@ Shared Local config ปัจจุบันปิด email confirmation หา�
 ด้วย browser เดียวกับที่สมัคร แล้วทดสอบ Login ต่อ
 
 การอ่านโปรไฟล์หลัง Login และ query ตรวจข้อมูลใช้ยืนยันการเชื่อมต่อ DB ร่วมกับผล
-ของ health endpoint ได้ API อาคาร/ชั้น BE-005 มีแล้ว ดู contract และวิธีทดสอบที่
-[Location API](location-api.md) ส่วน crowd summary ยังเป็นงาน BE-006
-ติดตาม API ที่มีอยู่จาก [Backend Handoff](backend-handoff.md)
+ของ health endpoint ได้ API อาคาร/ชั้น (BE-005), crowd summary (BE-006), เช็คอิน
+(BE-008/BE-009), รูปโปรไฟล์ (BE-010/BE-015), รางวัลและคูปอง (BE-011/BE-012) และ
+badge (BE-013) มีครบแล้ว ดูรายการทั้งหมดที่ [Backend Handoff](backend-handoff.md)
+และลองเรียกได้จาก [Swagger](http://localhost:3000/api/swagger)
 
 ## 7. ตรวจงานและปิดบริการ
 
