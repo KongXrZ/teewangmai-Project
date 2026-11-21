@@ -1,5 +1,5 @@
 -- Run with psql -v ON_ERROR_STOP=1. Uses catalog assertions and existing profiles;
--- no synthetic application records are inserted. Any profile update rolls back.
+-- the only inserted records are two throwaway sign-ups. Everything rolls back.
 begin;
 
 do $$
@@ -153,6 +153,31 @@ begin
     raise exception 'A different identity must not see the existing profile';
   end if;
   reset role;
+end;
+$$;
+
+do $$
+declare
+  profile record;
+begin
+  insert into auth.users (id, email, raw_user_meta_data) values
+    ('00000000-0000-4000-8000-00000000a7a1', 'blank-meta@example.test',
+      '{"name":"   ","avatar_url":"","picture":"javascript:alert(1)"}'),
+    ('00000000-0000-4000-8000-00000000a7a2', 'picture-meta@example.test',
+      '{"full_name":"Picture User","avatar_url":"not-a-url","picture":"https://example.test/p.png"}');
+
+  select name, avatar_url into profile from public.users
+  where auth_id = '00000000-0000-4000-8000-00000000a7a1';
+  if not found or profile.name <> 'blank-meta' or profile.avatar_url is not null then
+    raise exception 'Sign-up with blank metadata must still create a profile: %', row_to_json(profile);
+  end if;
+
+  select name, avatar_url into profile from public.users
+  where auth_id = '00000000-0000-4000-8000-00000000a7a2';
+  if not found or profile.name <> 'Picture User'
+    or profile.avatar_url <> 'https://example.test/p.png' then
+    raise exception 'Sign-up must keep the first valid avatar URL: %', row_to_json(profile);
+  end if;
 end;
 $$;
 
