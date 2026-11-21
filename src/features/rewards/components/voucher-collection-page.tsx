@@ -15,6 +15,11 @@ import { VoucherMessageButton, VoucherPageLayout } from "./voucher-page-layout";
 export interface VoucherCollectionPageProps {
   state: VoucherCollectionState;
   onSelectVoucher?: VoucherSelectHandler;
+  expandedVoucherId?: VoucherId | null;
+  onToggleVoucher?: VoucherSelectHandler;
+  onUseVoucher?: VoucherSelectHandler;
+  onShowUseQr?: VoucherSelectHandler;
+  activeUseVoucherIds?: ReadonlySet<VoucherId>;
   onBack?: () => void;
   onBrowseRewards?: () => void;
   focusVoucherId?: VoucherId;
@@ -23,6 +28,11 @@ export interface VoucherCollectionPageProps {
 export function VoucherCollectionPage({
   state,
   onSelectVoucher,
+  expandedVoucherId,
+  onToggleVoucher,
+  onUseVoucher,
+  onShowUseQr,
+  activeUseVoucherIds,
   onBack,
   onBrowseRewards,
   focusVoucherId,
@@ -32,6 +42,11 @@ export function VoucherCollectionPage({
       <VoucherCollectionContent
         state={state}
         onSelectVoucher={onSelectVoucher}
+        expandedVoucherId={expandedVoucherId}
+        onToggleVoucher={onToggleVoucher}
+        onUseVoucher={onUseVoucher}
+        onShowUseQr={onShowUseQr}
+        activeUseVoucherIds={activeUseVoucherIds}
         onBrowseRewards={onBrowseRewards}
         focusVoucherId={focusVoucherId}
       />
@@ -42,6 +57,11 @@ export function VoucherCollectionPage({
 function VoucherCollectionContent({
   state,
   onSelectVoucher,
+  expandedVoucherId,
+  onToggleVoucher,
+  onUseVoucher,
+  onShowUseQr,
+  activeUseVoucherIds,
   onBrowseRewards,
   focusVoucherId,
 }: Omit<VoucherCollectionPageProps, "onBack">) {
@@ -103,6 +123,11 @@ function VoucherCollectionContent({
               <VoucherCard
                 voucher={voucher}
                 onSelect={onSelectVoucher}
+                expanded={expandedVoucherId === voucher.id}
+                onToggle={onToggleVoucher}
+                onUseVoucher={onUseVoucher}
+                onShowUseQr={onShowUseQr}
+                hasActiveUseQr={activeUseVoucherIds?.has(voucher.id) ?? false}
                 autoFocus={voucher.id === focusVoucherId}
               />
             </li>
