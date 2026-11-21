@@ -2,9 +2,9 @@ import { catalogError, catalogJson, catalogMeta } from "@/features/locations/api
 import { getLocation } from "@/features/locations/api/repository";
 import { locationIdSchema } from "@/features/locations/api/schemas";
 
-export async function GET(_request: Request, context: { params: Promise<{ locationId: string }> }) {
+export async function GET(request: Request, context: { params: Promise<{ locationId: string }> }) {
   const id = locationIdSchema.safeParse((await context.params).locationId);
-  if (!id.success) return catalogError("validation");
+  if (!id.success || new URL(request.url).search) return catalogError("validation");
   try {
     const now = new Date();
     const data = await getLocation(id.data, now);

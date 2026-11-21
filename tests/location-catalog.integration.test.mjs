@@ -57,7 +57,16 @@ test('building catalog HTTP contract against real Local data', { skip: !base }, 
   // S7 is inactive in the approved seed.
   assert.equal(all.data.some((b) => b.building === 'S7'), false);
   for (const path of ['/api/locations/0', '/api/locations/abc', '/api/locations?limit=51',
-    '/api/locations?page=0', '/api/locations?q=a&q=b']) {
+    '/api/locations?page=0', '/api/locations?q=a&q=b', `/api/locations/${floor.location_id}?foo=bar`,
+    `/api/locations/${floor.location_id}/floors/${floor.id}?foo=bar`]) {
     assert.equal((await get(path, 400)).code, 'validation');
+  }
+});
+
+test('auth me and logout reject unexpected query strings', { skip: !base }, async () => {
+  for (const [path, method] of [['/api/auth/me?foo=bar', 'GET'], ['/api/auth/logout?foo=bar', 'POST']]) {
+    const response = await fetch(new URL(path, base), { method });
+    assert.equal(response.status, 400);
+    assert.equal((await response.json()).code, 'validation');
   }
 });
