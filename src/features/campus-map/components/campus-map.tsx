@@ -871,8 +871,10 @@ export function CampusMap({
 
       <div
         className={`pointer-events-none absolute inset-x-3 z-20 flex flex-col gap-2.5 ${
-          isFullscreen && fullscreenLayout === "fixed"
-            ? "bottom-[max(1rem,env(safe-area-inset-bottom,0px))]"
+          isFullscreen
+            ? fullscreenLayout === "fixed"
+              ? "bottom-[max(1rem,env(safe-area-inset-bottom,0px))]"
+              : "bottom-11"
             : "bottom-3"
         }`}
       >
