@@ -7,7 +7,7 @@ export function PointsSummary({ points }: { points: number | null }) {
     <section
       aria-label="แต้มของคุณ"
       aria-busy={points === null || undefined}
-      className="flex items-center gap-4 rounded-2xl bg-[#f0f1f3] px-5 py-6"
+      className="flex items-center gap-4 rounded-2xl border border-[#e5e7eb] bg-white px-5 py-6"
     >
       <StarRounded
         aria-hidden="true"
