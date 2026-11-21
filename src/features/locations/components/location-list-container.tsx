@@ -7,21 +7,16 @@ import type {
   BuildingCardModel,
   BuildingId,
   ExpandedBuildingModel,
-  LocationListState,
 } from "./location-view-models";
 import { buildBuildingDetailHref } from "./building-detail-adapter";
 import type { BuildingPage, LocationDataSource } from "./location-data-source";
 import { locationApiSource } from "./location-api-source";
 import { LocationListPage } from "./location-list-page";
+import { toLocationListState, type ListResult } from "./location-list-state";
 
 const searchDelayMs = 300;
 
 const crowdFilterValues: CrowdLevelFilterValue[] = ["low", "medium", "high"];
-
-interface ListResult {
-  key: string;
-  page: BuildingPage | null;
-}
 
 interface MoreRequest {
   page: BuildingPage;
@@ -55,6 +50,7 @@ export function LocationListContainer({
   const [debouncedSearch, setDebouncedSearch] = useState(initialSearch.trim());
   const [crowdFilter, setCrowdFilter] = useState(initialCrowdFilter);
   const [listResult, setListResult] = useState<ListResult>();
+  const [retryCount, setRetryCount] = useState(0);
   const [moreRequest, setMoreRequest] = useState<MoreRequest>();
   const [expandedBuilding, setExpandedBuilding] =
     useState<ExpandedBuildingModel>();
@@ -85,6 +81,18 @@ export function LocationListContainer({
     setCrowdFilter(value);
     setDebouncedSearch(search.trim());
     collapseBuilding();
+  }
+
+  function handleClearFilters() {
+    setSearch("");
+    setDebouncedSearch("");
+    setCrowdFilter("all");
+    collapseBuilding();
+  }
+
+  function handleRetry() {
+    setListResult(undefined);
+    setRetryCount((count) => count + 1);
   }
 
   function handleSelectBuilding(buildingId: BuildingId) {
@@ -229,36 +237,24 @@ export function LocationListContainer({
         },
       );
     return () => controller.abort();
-  }, [dataSource, listKey, debouncedSearch, crowdLevel, filterUnavailable]);
-
-  function toListState(): LocationListState {
-    if (filterUnavailable) {
-      return { status: "unavailable" };
-    }
-    if (!listResult) {
-      return { status: "loading" };
-    }
-    const { page } = listResult;
-    if (page && (listResult.key === listKey || page.buildings.length > 0)) {
-      return {
-        status: "ready",
-        buildings: page.buildings,
-        totalCount: page.totalCount,
-      };
-    }
-    if (!page && listResult.key === listKey) {
-      return { status: "error" };
-    }
-    return { status: "loading" };
-  }
+  }, [
+    dataSource,
+    listKey,
+    debouncedSearch,
+    crowdLevel,
+    filterUnavailable,
+    retryCount,
+  ]);
 
   return (
     <LocationListPage
-      state={toListState()}
+      state={toLocationListState({ filterUnavailable, listResult, listKey })}
       initialQuery={initialSearch}
       initialCrowdFilter={initialCrowdFilter}
       onSearchChange={handleSearchChange}
       onCrowdFilterChange={handleCrowdFilterChange}
+      onClearFilters={handleClearFilters}
+      onRetry={handleRetry}
       onSelectBuilding={handleSelectBuilding}
       expandedBuilding={expandedBuilding}
       onViewBuildingDetail={(id, floorId) =>
