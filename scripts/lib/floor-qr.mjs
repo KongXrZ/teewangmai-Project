@@ -15,7 +15,8 @@ const rowSchema = z.object({
   floor_id: z.number().int().positive(),
   floor_name: z.string().trim().min(1),
   floor_active: z.boolean(),
-  qr_code_id: z.string().refine((value) => parseFloorQrPayload(value) === value),
+  qr_code_id: z.string().transform((value) => value.toLowerCase())
+    .refine((value) => parseFloorQrPayload(value) === value),
 });
 
 export function validateFloorRows(input) {
@@ -26,7 +27,7 @@ export function validateFloorRows(input) {
   const buildingCodes = new Map();
   const floorNames = new Set();
   for (const row of rows) {
-    const key = row.qr_code_id.toLowerCase();
+    const key = row.qr_code_id;
     const floorKey = JSON.stringify([row.location_id, row.floor_name]);
     if (floorIds.has(row.floor_id) || identifiers.has(key) || floorNames.has(floorKey)) {
       throw new Error("Duplicate floor identity, floor name or QR identifier in source");

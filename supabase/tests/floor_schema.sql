@@ -181,4 +181,33 @@ begin
 end;
 $$;
 
+do $$
+declare
+  long_name text := repeat('ก', 60);
+  saved text;
+  some_location integer;
+begin
+  insert into auth.users (id, email, raw_user_meta_data) values
+    ('00000000-0000-4000-8000-00000000a7a3', 'long-name@example.test',
+      json_build_object('full_name', long_name)::jsonb);
+  select name into saved from public.users where auth_id = '00000000-0000-4000-8000-00000000a7a3';
+  if saved is null or pg_catalog.char_length(saved) <> 50 then
+    raise exception 'Sign-up names must be capped at 50 characters: %', saved;
+  end if;
+
+  select id into some_location from public.locations limit 1;
+  if some_location is not null then
+    begin
+      insert into public.floors (location_id, floor_name, qr_code_id)
+        values (some_location, 'case-test', 'AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA');
+      raise exception 'Uppercase QR identifiers must be rejected';
+    exception when check_violation then null;
+    end;
+  end if;
+  if exists (select 1 from public.floors where qr_code_id <> pg_catalog.lower(qr_code_id)) then
+    raise exception 'Every floor QR identifier must be lowercase';
+  end if;
+end;
+$$;
+
 rollback;

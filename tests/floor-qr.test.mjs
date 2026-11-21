@@ -20,6 +20,13 @@ test("floor payload uses the existing UUID and rejects URLs or invented location
   }
 });
 
+test("uppercase QR identifiers are normalized to lowercase so they match check-in lookups", () => {
+  const [row] = validateFloorRows([{ ...first, qr_code_id: first.qr_code_id.toUpperCase() }]);
+  assert.equal(row.qr_code_id, first.qr_code_id.toLowerCase());
+  assert.throws(() => validateFloorRows([first, { ...first, floor_id: 101, floor_name: "2",
+    qr_code_id: first.qr_code_id.toUpperCase() }]), /Duplicate/);
+});
+
 test("snapshot validation refuses ambiguous mappings before any files are generated", () => {
   assert.throws(() => validateFloorRows([first, first]), /Duplicate/);
   assert.throws(() => validateFloorRows([{ ...first, qr_code_id: "missing" }]));
