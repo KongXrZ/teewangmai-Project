@@ -88,9 +88,18 @@ test('empty catalog is a real empty ready state', () => {
   });
 });
 
-test('503 maps to unavailable, not empty', () => {
+test('503 is a retryable error that keeps the server message', () => {
   const body = { success: false, code: 'unavailable', error: 'ระบบรางวัลไม่พร้อมใช้งาน' };
-  assert.deepEqual(parseRewardsCatalogResponse(503, body), { kind: 'unavailable' });
+  const parsed = parseRewardsCatalogResponse(503, body);
+  assert.deepEqual(parsed, { kind: 'error', message: 'ระบบรางวัลไม่พร้อมใช้งาน' });
+  let retried = false;
+  const state = toRewardsCatalogState(parsed, () => {
+    retried = true;
+  });
+  assert.equal(state.status, 'error');
+  assert.equal(state.message, 'ระบบรางวัลไม่พร้อมใช้งาน');
+  state.onRetry();
+  assert.equal(retried, true);
 });
 
 test('401 maps to unauthenticated', () => {

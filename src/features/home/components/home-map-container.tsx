@@ -15,10 +15,12 @@ import {
   type CampusMapDataSource,
 } from "@/features/campus-map/map-api-source";
 import type { CrowdFilterValue } from "@/features/campus-map/map-state";
+import { buildBuildingDetailHref } from "@/features/locations/components/building-detail-adapter";
 import type {
   BuildingCardModel,
   BuildingId,
   ExpandedBuildingModel,
+  FloorId,
 } from "@/features/locations/components/location-view-models";
 import { HomePage } from "./home-page";
 
@@ -348,7 +350,7 @@ export function HomeMapContainer({
     setExpandedBuilding(null);
   }
 
-  function handleViewDetail(buildingId: BuildingId) {
+  function handleViewDetail(buildingId: BuildingId, floorId?: FloorId) {
     const query = buildHomeQueryString({
       search: debouncedQuery,
       crowdFilter,
@@ -356,7 +358,10 @@ export function HomeMapContainer({
       includeFromHome: true,
     });
     router.push(
-      `/locations/${encodeURIComponent(buildingId)}${query ? `?${query}` : ""}`,
+      buildBuildingDetailHref(buildingId, {
+        floorId,
+        baseQuery: query,
+      }),
     );
   }
 

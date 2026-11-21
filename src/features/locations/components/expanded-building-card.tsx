@@ -139,7 +139,7 @@ export function ExpandedBuildingCard({
         />
         <button
           type="button"
-          onClick={() => onViewDetail?.(building.id)}
+          onClick={() => onViewDetail?.(building.id, selectedFloor?.id)}
           className="flex h-11 shrink-0 cursor-pointer items-center gap-0.5 rounded-lg border-0 bg-transparent px-1 text-xs font-bold whitespace-nowrap text-black focus-visible:outline-2 focus-visible:outline-[#ff5815]"
         >
           <ArticleOutlined aria-hidden="true" sx={{ fontSize: 16 }} />

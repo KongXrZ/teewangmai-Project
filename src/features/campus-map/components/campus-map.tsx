@@ -287,7 +287,8 @@ export function CampusMap({
     if (!center) return;
 
     lastAppliedFocusKeyRef.current = focusKey;
-    const isSingleTarget = Boolean(selectedBuilding) || targetCodes.length === 1;
+    const isSingleTarget =
+      Boolean(selectedBuilding) || targetCodes.length === 1;
     const targetAnchorY = selectedBuilding ? 0.42 : 0.5;
     const frame = requestAnimationFrame(() => {
       setIsFocusAnimating(true);
@@ -590,6 +591,25 @@ export function CampusMap({
             role="img"
             aria-label="เลเยอร์อาคารที่โต้ตอบได้บนแผนที่ มจธ."
           >
+            <g aria-hidden="true">
+              {hitTargets.map(({ code, id, rect }) => (
+                <rect
+                  key={`${code}-hit`}
+                  data-hit-target={code}
+                  x={rect.x}
+                  y={rect.y}
+                  width={rect.width}
+                  height={rect.height}
+                  fill="transparent"
+                  className="cursor-pointer"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    handleBuildingActivate(id);
+                  }}
+                />
+              ))}
+            </g>
+
             <g>
               {BUILDING_CODES.map((code) => {
                 const shape = CAMPUS_BUILDING_SHAPES[code];

@@ -12,12 +12,14 @@ import {
   centerMapOnPoint,
   clampMapTransform,
   computeBaseScale,
+  computeBuildingHitTarget,
   computeBuildingRenderState,
   computeBuildingRenderStates,
   computeInitialMapTransform,
   isSameMapTransform,
   MAP_MAX_ZOOM,
   MAP_MIN_ZOOM,
+  MIN_TOUCH_TARGET_PX,
   zoomAroundPoint,
 } from "../src/features/campus-map/map-state.ts";
 
@@ -226,7 +228,10 @@ test("getBuildingsBoundingCenter and centerMapOnPoint place target buildings at 
 
   const centeredN16 = centerMapOnPoint(
     { zoom: 1.4, panX: 0, panY: 0 },
-    { x: CAMPUS_BUILDING_SHAPES.N16.labelX, y: CAMPUS_BUILDING_SHAPES.N16.labelY },
+    {
+      x: CAMPUS_BUILDING_SHAPES.N16.labelX,
+      y: CAMPUS_BUILDING_SHAPES.N16.labelY,
+    },
     viewportW,
     viewportH,
     mapW,

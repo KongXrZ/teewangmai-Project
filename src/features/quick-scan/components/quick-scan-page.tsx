@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import ArrowBackIosNewRounded from "@mui/icons-material/ArrowBackIosNewRounded";
 import { BottomNavigation } from "@/components/layout/bottom-navigation";
 import type { CameraStatus } from "../scanner-state";
 import type { QrDetectHandler, QuickScanVerification } from "../types";
@@ -11,12 +12,14 @@ export interface QuickScanPageProps {
   verification?: QuickScanVerification;
   onDetect?: QrDetectHandler;
   onRescan?: () => void;
+  onBack?: () => void;
 }
 
 export function QuickScanPage({
   verification = { status: "idle" },
   onDetect,
   onRescan,
+  onBack,
 }: QuickScanPageProps) {
   const [round, setRound] = useState(0);
   const [scannerStatus, setScannerStatus] = useState<CameraStatus>("idle");
@@ -33,7 +36,20 @@ export function QuickScanPage({
   return (
     <>
       <main className="flex min-w-0 flex-1 flex-col px-4 pt-[max(0.75rem,env(safe-area-inset-top,0px))] pb-[calc(7.625rem+env(safe-area-inset-bottom,0px))] text-black min-[400px]:px-[22px]">
-        <header className="flex gap-1.5 pl-1.5">
+        <header className="flex items-start gap-1.5 pl-1.5">
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              aria-label="ย้อนกลับไปเลือกระดับความหนาแน่น"
+              className="mt-1.5 flex min-h-11 min-w-11 shrink-0 cursor-pointer touch-manipulation items-center justify-center rounded-full border-0 bg-white text-black shadow-sm transition-colors hover:bg-[#fff1ea] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815] active:bg-[#ffe2d4]"
+            >
+              <ArrowBackIosNewRounded
+                aria-hidden="true"
+                sx={{ fontSize: 20 }}
+              />
+            </button>
+          )}
           <span
             aria-hidden="true"
             className="mt-1.5 h-[55px] w-2 shrink-0 rounded-full bg-[#ff5815]"

@@ -19,6 +19,7 @@ export function RedemptionFlow({
   points,
   onClose,
   onRedemptionConfirmed,
+  onRedeemed,
 }: RedemptionFlowProps) {
   const router = useRouter();
   const { refresh: refreshAuth } = useAuth();
@@ -54,6 +55,7 @@ export function RedemptionFlow({
         if (next.kind === "ok") {
           void refreshAuth();
           setVoucherId(next.voucherId);
+          onRedeemed?.(next.points);
         }
         setResult(toRedemptionResult(next));
       })

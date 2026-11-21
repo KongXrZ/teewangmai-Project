@@ -369,3 +369,37 @@ export function centerMapOnPoint(
     mapHeight,
   );
 }
+
+export const MIN_TOUCH_TARGET_PX = 44;
+
+export interface MapRect {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+export function computeBuildingHitTarget(
+  bbox: MapRect,
+  scale: number,
+  minScreenSize: number = MIN_TOUCH_TARGET_PX,
+): MapRect | null {
+  if (!Number.isFinite(scale) || scale <= 0) {
+    return null;
+  }
+
+  const minMapSize = minScreenSize / scale;
+  if (bbox.width >= minMapSize && bbox.height >= minMapSize) {
+    return null;
+  }
+
+  const width = Math.max(bbox.width, minMapSize);
+  const height = Math.max(bbox.height, minMapSize);
+
+  return {
+    x: bbox.x + bbox.width / 2 - width / 2,
+    y: bbox.y + bbox.height / 2 - height / 2,
+    width,
+    height,
+  };
+}

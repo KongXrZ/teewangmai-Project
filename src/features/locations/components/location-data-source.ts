@@ -1,7 +1,9 @@
 import type {
+  BuildingAvailabilityModel,
   BuildingCardModel,
   BuildingId,
   CrowdLevel,
+  FloorId,
   FloorModel,
 } from "./location-view-models";
 
@@ -17,6 +19,12 @@ export interface BuildingPage {
   totalCount: number | null;
 }
 
+export interface BuildingFloorsResult {
+  floors: FloorModel[];
+  defaultFloorId: FloorId | null;
+  buildingAvailability?: BuildingAvailabilityModel;
+}
+
 export interface LocationDataSource {
   supportsCrowdFilter: boolean;
   listBuildings(
@@ -24,4 +32,8 @@ export interface LocationDataSource {
     signal: AbortSignal,
   ): Promise<BuildingPage>;
   listFloors(buildingId: BuildingId, signal: AbortSignal): Promise<FloorModel[]>;
+  loadBuildingFloors?(
+    buildingId: BuildingId,
+    signal: AbortSignal,
+  ): Promise<BuildingFloorsResult>;
 }

@@ -9,6 +9,7 @@ import type {
   ExpandedBuildingModel,
   LocationListState,
 } from "./location-view-models";
+import { buildBuildingDetailHref } from "./building-detail-adapter";
 import type { BuildingPage, LocationDataSource } from "./location-data-source";
 import { locationApiSource } from "./location-api-source";
 import { LocationListPage } from "./location-list-page";
@@ -92,13 +93,21 @@ export function LocationListContainer({
     floorsControllerRef.current = controller;
     setExpandedBuilding({ buildingId, floors: { status: "loading" } });
     Promise.resolve()
-      .then(() => dataSource.listFloors(buildingId, controller.signal))
+      .then(() =>
+        dataSource.loadBuildingFloors
+          ? dataSource.loadBuildingFloors(buildingId, controller.signal)
+          : dataSource
+              .listFloors(buildingId, controller.signal)
+              .then((floors) => ({ floors, defaultFloorId: null })),
+      )
       .then(
-        (floors) => {
+        ({ floors, defaultFloorId, buildingAvailability }) => {
           if (!controller.signal.aborted) {
             setExpandedBuilding({
               buildingId,
               floors: { status: "ready", floors },
+              defaultFloorId,
+              buildingAvailability,
             });
           }
         },
@@ -247,9 +256,12 @@ export function LocationListContainer({
       onCrowdFilterChange={handleCrowdFilterChange}
       onSelectBuilding={handleSelectBuilding}
       expandedBuilding={expandedBuilding}
-      onViewBuildingDetail={(id) =>
+      onViewBuildingDetail={(id, floorId) =>
         router.push(
-          `/locations/${encodeURIComponent(id)}${window.location.search}`,
+          buildBuildingDetailHref(id, {
+            floorId,
+            baseQuery: window.location.search,
+          }),
         )
       }
       onLoadMore={

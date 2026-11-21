@@ -197,6 +197,8 @@ BE-002 ไม่เพิ่มหน้ากู้รหัสผ่าน/แ
 | แลก 1 ใบ | `POST /api/rewards/{rewardId}/redeem` + header `Idempotency-Key: <uuid>` | `{replayed, points, voucher}` |
 | คลังคูปอง | `GET /api/vouchers` | คูปองของตัวเอง `status` = `available` / `used` / `expired` |
 
+> หน้า UI ของคลังคูปองอยู่ที่ `/rewards/vouchers` และหน้ารายละเอียดคูปองอยู่ที่ `/rewards/vouchers/[voucherId]` (หากเข้าจาก `/profile` ให้ส่ง `?from=profile` เพื่อย้อนกลับไป `/profile` ได้ตรงทาง)
+
 - `availability`: `redeemable`, `insufficient_points` (แสดงล็อก), `out_of_stock`, `limit_reached` (แลกครบสิทธิ์), `upcoming` รางวัลหมดเขตไม่ถูกส่งมา
 - สร้าง UUID ใหม่ทุกครั้งที่ผู้ใช้กดยืนยันแลก ถ้าเน็ตหลุดแล้วกดลองใหม่ ให้ส่ง UUID เดิม จะได้คูปองใบเดิมโดยไม่หักแต้มซ้ำ
 - คูปองหมดอายุหลังแลก `valid_days` วัน (ค่าเริ่มต้น 7) แต่ละใบหมดไม่พร้อมกัน
