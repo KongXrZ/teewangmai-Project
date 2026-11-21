@@ -245,8 +245,6 @@ export function HomeMapContainer({
           if (pendingSearchConfirmRef.current === debouncedQuery) {
             pendingSearchConfirmRef.current = null;
             confirmSearchMatches(debouncedQuery, resolved.filteredResults);
-          } else if (resolved.exactMatchBuilding) {
-            selectAndLoadBuilding(resolved.exactMatchBuilding.id);
           }
         },
         () => {
@@ -268,7 +266,6 @@ export function HomeMapContainer({
     crowdFilter,
     searchReloadNonce,
     confirmSearchMatches,
-    selectAndLoadBuilding,
   ]);
 
   const searchResolution = useMemo(() => {

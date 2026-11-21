@@ -12,12 +12,12 @@ import {
   centerMapOnPoint,
   clampMapTransform,
   computeBaseScale,
-  computeBuildingHitTarget,
   computeBuildingRenderState,
   computeBuildingRenderStates,
+  computeInitialMapTransform,
+  isSameMapTransform,
   MAP_MAX_ZOOM,
   MAP_MIN_ZOOM,
-  MIN_TOUCH_TARGET_PX,
   zoomAroundPoint,
 } from "../src/features/campus-map/map-state.ts";
 
@@ -244,36 +244,22 @@ test("getBuildingsBoundingCenter and centerMapOnPoint place target buildings at 
   assert.ok(Math.abs(screenY - viewportH * 0.42) < 1e-6);
 });
 
-test("small building hit targets expand to at least 44px on screen around the shape center", () => {
-  const scale = 0.12;
-  const minMapSize = MIN_TOUCH_TARGET_PX / scale;
-  for (const code of ["N8", "S1", "S10"]) {
-    const { bbox } = CAMPUS_BUILDING_SHAPES[code];
-    const rect = computeBuildingHitTarget(bbox, scale);
-    assert.ok(rect, code);
-    assert.ok(rect.width * scale >= MIN_TOUCH_TARGET_PX - 1e-9, code);
-    assert.ok(rect.height * scale >= MIN_TOUCH_TARGET_PX - 1e-9, code);
-    assert.ok(
-      Math.abs(rect.x + rect.width / 2 - (bbox.x + bbox.width / 2)) < 1e-9,
-    );
-    assert.ok(
-      Math.abs(rect.y + rect.height / 2 - (bbox.y + bbox.height / 2)) < 1e-9,
-    );
-    assert.ok(rect.width >= bbox.width && rect.height >= minMapSize - 1e-9);
+test("initial map view covers the viewport and is what reset returns to", () => {
+  const mapW = CAMPUS_MAP_VIEWBOX.width;
+  const mapH = CAMPUS_MAP_VIEWBOX.height;
+  for (const [w, h] of [[390, 480], [320, 420], [476, 700], [800, 400]]) {
+    const initial = computeInitialMapTransform(w, h, mapW, mapH);
+    assert.ok(initial.zoom >= 1.15 && initial.zoom <= 1.65);
+    assert.deepEqual(clampMapTransform(initial, w, h, mapW, mapH), initial);
+    assert.deepEqual(computeInitialMapTransform(w, h, mapW, mapH), initial);
+    assert.equal(isSameMapTransform(initial, { zoom: 1, panX: 0, panY: 0 }), false);
   }
+  assert.deepEqual(computeInitialMapTransform(0, 0, mapW, mapH), { zoom: 1, panX: 0, panY: 0 });
 });
 
-test("hit targets are skipped once the shape already covers 44px and keep the larger side", () => {
-  assert.equal(
-    computeBuildingHitTarget({ x: 0, y: 0, width: 100, height: 100 }, 1),
-    null,
-  );
-  assert.deepEqual(
-    computeBuildingHitTarget({ x: 10, y: 20, width: 80, height: 20 }, 1),
-    { x: 10, y: 8, width: 80, height: 44 },
-  );
-  assert.equal(
-    computeBuildingHitTarget({ x: 0, y: 0, width: 1, height: 1 }, 0),
-    null,
-  );
+test("isSameMapTransform tolerates sub-pixel drift only", () => {
+  const base = { zoom: 1.4, panX: -120, panY: -80 };
+  assert.equal(isSameMapTransform(base, { zoom: 1.4, panX: -120.3, panY: -79.8 }), true);
+  assert.equal(isSameMapTransform(base, { zoom: 1.4, panX: -125, panY: -80 }), false);
+  assert.equal(isSameMapTransform(base, { zoom: 1.6, panX: -120, panY: -80 }), false);
 });

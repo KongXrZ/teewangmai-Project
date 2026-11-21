@@ -257,6 +257,52 @@ export function clampMapTransform(
   };
 }
 
+export function computeInitialMapTransform(
+  viewportWidth: number,
+  viewportHeight: number,
+  mapWidth: number,
+  mapHeight: number,
+): MapTransform {
+  if (
+    viewportWidth <= 0 ||
+    viewportHeight <= 0 ||
+    mapWidth <= 0 ||
+    mapHeight <= 0
+  ) {
+    return { zoom: 1, panX: 0, panY: 0 };
+  }
+  const contain = computeBaseScale(
+    viewportWidth,
+    viewportHeight,
+    mapWidth,
+    mapHeight,
+  );
+  const cover = Math.max(viewportWidth / mapWidth, viewportHeight / mapHeight);
+  const initialZoom = Math.min(1.65, Math.max(1.15, cover / contain));
+  return zoomAroundPoint(
+    { zoom: 1, panX: 0, panY: 0 },
+    initialZoom,
+    viewportWidth / 2,
+    viewportHeight / 2,
+    viewportWidth,
+    viewportHeight,
+    mapWidth,
+    mapHeight,
+  );
+}
+
+export function isSameMapTransform(
+  a: MapTransform,
+  b: MapTransform,
+  tolerance = 0.5,
+): boolean {
+  return (
+    Math.abs(a.zoom - b.zoom) < 0.01 &&
+    Math.abs(a.panX - b.panX) <= tolerance &&
+    Math.abs(a.panY - b.panY) <= tolerance
+  );
+}
+
 export function zoomAroundPoint(
   current: MapTransform,
   nextZoom: number,

@@ -32,12 +32,14 @@ import {
   clampMapTransform,
   computeBaseScale,
   computeBuildingHitTarget,
+  computeInitialMapTransform,
   computeBuildingRenderStates,
   MAP_MAX_ZOOM,
   MAP_MIN_ZOOM,
   type CampusBuildingMarker,
   type CrowdFilterValue,
   type MapTransform,
+  isSameMapTransform,
   zoomAroundPoint,
 } from "../map-state";
 
@@ -105,6 +107,8 @@ export function CampusMap({
   const [imageFailed, setImageFailed] = useState(false);
   const [isFocusAnimating, setIsFocusAnimating] = useState(false);
   const hasInitializedViewRef = useRef(false);
+  const lastViewportSizeRef = useRef({ width: 0, height: 0 });
+  const zoomOutButtonRef = useRef<HTMLButtonElement | null>(null);
   const lastAppliedFocusKeyRef = useRef<string | null>(null);
 
   const viewportRef = useRef<HTMLDivElement | null>(null);
@@ -143,36 +147,45 @@ export function CampusMap({
           : { width: rect.width, height: rect.height },
       );
 
-      if (!hasInitializedViewRef.current && rect.width > 0 && rect.height > 0) {
+      const previous = lastViewportSizeRef.current;
+      if (rect.width <= 0 || rect.height <= 0) return;
+      lastViewportSizeRef.current = { width: rect.width, height: rect.height };
+      const nextInitial = computeInitialMapTransform(
+        rect.width,
+        rect.height,
+        CAMPUS_MAP_VIEWBOX.width,
+        CAMPUS_MAP_VIEWBOX.height,
+      );
+
+      if (!hasInitializedViewRef.current) {
         hasInitializedViewRef.current = true;
-        const contain = computeBaseScale(
-          rect.width,
-          rect.height,
-          CAMPUS_MAP_VIEWBOX.width,
-          CAMPUS_MAP_VIEWBOX.height,
-        );
-        const cover = Math.max(
-          rect.width / CAMPUS_MAP_VIEWBOX.width,
-          rect.height / CAMPUS_MAP_VIEWBOX.height,
-        );
-        const initialZoom = Math.min(1.65, Math.max(1.15, cover / contain));
-        const centerAnchor = {
-          x: rect.width / 2,
-          y: rect.height / 2,
-        };
-        setTransform(
-          zoomAroundPoint(
-            { zoom: 1, panX: 0, panY: 0 },
-            initialZoom,
-            centerAnchor.x,
-            centerAnchor.y,
-            rect.width,
-            rect.height,
+        setTransform(nextInitial);
+        return;
+      }
+
+      if (previous.width === rect.width && previous.height === rect.height) {
+        return;
+      }
+      const previousInitial = computeInitialMapTransform(
+        previous.width,
+        previous.height,
+        CAMPUS_MAP_VIEWBOX.width,
+        CAMPUS_MAP_VIEWBOX.height,
+      );
+      setTransform((current) =>
+        isSameMapTransform(
+          clampMapTransform(
+            current,
+            previous.width,
+            previous.height,
             CAMPUS_MAP_VIEWBOX.width,
             CAMPUS_MAP_VIEWBOX.height,
           ),
-        );
-      }
+          previousInitial,
+        )
+          ? nextInitial
+          : current,
+      );
     };
 
     updateSize();
@@ -336,21 +349,37 @@ export function CampusMap({
 
   const totalScale = baseScale * clampedTransform.zoom;
 
-  const hitTargets = useMemo(
+  const hitTargets = useMemo(() => {
+    const targets: {
+      code: BuildingCode;
+      id: string;
+      rect: NonNullable<ReturnType<typeof computeBuildingHitTarget>>;
+    }[] = [];
+    for (const code of BUILDING_CODES) {
+      const state = renderStates.get(code);
+      if (!state || !state.isInteractive) continue;
+      const rect = computeBuildingHitTarget(
+        CAMPUS_BUILDING_SHAPES[code].bbox,
+        totalScale,
+      );
+      if (rect) {
+        targets.push({ code, id: state.id, rect });
+      }
+    }
+    return targets;
+  }, [renderStates, totalScale]);
+
+  const initialTransform = useMemo(
     () =>
-      BUILDING_CODES.flatMap((code) => {
-        const state = renderStates.get(code);
-        if (!state || !state.isInteractive) {
-          return [];
-        }
-        const { bbox } = CAMPUS_BUILDING_SHAPES[code];
-        const rect = computeBuildingHitTarget(bbox, totalScale);
-        return rect
-          ? [{ code, id: state.id, rect, area: bbox.width * bbox.height }]
-          : [];
-      }).sort((a, b) => b.area - a.area),
-    [renderStates, totalScale],
+      computeInitialMapTransform(
+        viewportSize.width,
+        viewportSize.height,
+        CAMPUS_MAP_VIEWBOX.width,
+        CAMPUS_MAP_VIEWBOX.height,
+      ),
+    [viewportSize.width, viewportSize.height],
   );
+  const isAtInitialView = isSameMapTransform(clampedTransform, initialTransform);
 
   function handleFilterChange(next: CrowdFilterValue) {
     if (controlledFilter === undefined) {
@@ -384,8 +413,12 @@ export function CampusMap({
     );
   }
 
-  function resetView() {
-    setTransform(DEFAULT_TRANSFORM);
+  function resetView(event: React.MouseEvent<HTMLButtonElement>) {
+    const hadFocus = document.activeElement === event.currentTarget;
+    setTransform(initialTransform);
+    if (hadFocus) {
+      zoomOutButtonRef.current?.focus();
+    }
   }
 
   function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
@@ -849,7 +882,7 @@ export function CampusMap({
             aria-label="ควบคุมการซูมแผนที่"
             className="pointer-events-auto flex items-center overflow-hidden rounded-2xl bg-white/95 text-[#081828] shadow-[0_2px_10px_rgba(0,0,0,0.14)] backdrop-blur-xs"
           >
-            {clampedTransform.zoom > 1.05 ? (
+            {!isAtInitialView ? (
               <button
                 type="button"
                 onClick={resetView}
@@ -860,6 +893,7 @@ export function CampusMap({
               </button>
             ) : null}
             <button
+              ref={zoomOutButtonRef}
               type="button"
               onClick={() => stepZoom(-ZOOM_STEP)}
               disabled={clampedTransform.zoom <= MAP_MIN_ZOOM}
