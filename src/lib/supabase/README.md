@@ -26,8 +26,9 @@ Regenerate/review after schema changes; do not hand-edit generated types.
 
 Keep queries specific to a feature in that feature's `server/` directory. Keep
 administrative credentials server-only and enforce database access using RLS.
-Only own-profile client policies currently exist. Building, check-in, reward and
-badge APIs/access rules remain separate work; see
+Six tables have client SELECT policies (own profile, the active building catalog
+and badges); check-ins, rewards and redemptions are reached only through
+`SECURITY DEFINER` RPCs. See [Database Design](../../../docs/database.md) and
 [Backend Handoff](../../../docs/backend-handoff.md).
 
 See [the architecture guide](../../../docs/architecture.md) for boundaries
