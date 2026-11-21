@@ -123,3 +123,31 @@ export function formatVoucherDateTime(value: string): string {
     ? VOUCHER_DATE_FALLBACK
     : `${dateFormatter.format(date)} ${timeFormatter.format(date)} น.`;
 }
+
+export type VoucherEntrySource = "profile" | "rewards";
+
+export function parseVoucherEntrySource(
+  from?: string | null,
+): VoucherEntrySource {
+  return from?.trim() === "profile" ? "profile" : "rewards";
+}
+
+export function buildVoucherCollectionHref(from?: string | null): string {
+  return parseVoucherEntrySource(from) === "profile"
+    ? "/rewards/vouchers?from=profile"
+    : "/rewards/vouchers";
+}
+
+export function buildVoucherDetailHref(
+  voucherId: VoucherId,
+  from?: string | null,
+): string {
+  const base = `/rewards/vouchers/${encodeURIComponent(String(voucherId))}`;
+  return parseVoucherEntrySource(from) === "profile"
+    ? `${base}?from=profile`
+    : base;
+}
+
+export function resolveVoucherCollectionBackHref(from?: string | null): string {
+  return parseVoucherEntrySource(from) === "profile" ? "/profile" : "/rewards";
+}

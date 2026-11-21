@@ -1,9 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useVoucherDetail } from "../hooks/use-vouchers";
-import type { VoucherDetailState, VoucherId, VoucherModel } from "../vouchers";
+import {
+  buildVoucherCollectionHref,
+  type VoucherDetailState,
+  type VoucherId,
+  type VoucherModel,
+} from "../vouchers";
 import { VoucherDetailPage } from "./voucher-detail-page";
 import { VoucherQrCode } from "./voucher-qr-code";
 import { VoucherUseConfirmDialog } from "./voucher-use-confirm-dialog";
@@ -18,6 +23,7 @@ function parseVoucherId(value: string): VoucherId | null {
 
 export function VoucherDetailContainer({ voucherId }: { voucherId: string }) {
   const router = useRouter();
+  const from = useSearchParams().get("from");
   const { state, useCode, usePending, useError, submitUse } = useVoucherDetail(
     parseVoucherId(voucherId),
   );
@@ -32,7 +38,7 @@ export function VoucherDetailContainer({ voucherId }: { voucherId: string }) {
     <>
       <VoucherDetailPage
         state={viewState}
-        onBack={() => router.push("/rewards/vouchers")}
+        onBack={() => router.push(buildVoucherCollectionHref(from))}
         onUseVoucher={setConfirming}
         usePending={usePending}
         useError={useError}

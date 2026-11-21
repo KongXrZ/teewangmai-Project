@@ -42,7 +42,7 @@ export type LocationListState =
       totalCount?: number | null;
     };
 
-export type BuildingSelectHandler = (id: BuildingId) => void;
+export type BuildingSelectHandler = (id: BuildingId, floorId?: FloorId) => void;
 
 export type FloorId = string;
 

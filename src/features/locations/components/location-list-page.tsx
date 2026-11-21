@@ -30,6 +30,8 @@ export interface LocationListPageProps {
   onViewBuildingDetail?: BuildingSelectHandler;
   onLoadMore?: () => void;
   loadingMore?: boolean;
+  loadMoreFailed?: boolean;
+  onRetryLoadMore?: () => void;
 }
 
 export function LocationListPage({
@@ -41,6 +43,8 @@ export function LocationListPage({
   onSelectBuilding,
   onLoadMore,
   loadingMore = false,
+  loadMoreFailed = false,
+  onRetryLoadMore,
   ...expandedProps
 }: LocationListPageProps) {
   const [query, setQuery] = useState(initialQuery);
@@ -116,6 +120,8 @@ export function LocationListPage({
             {...expandedProps}
             onLoadMore={onLoadMore}
             loadingMore={loadingMore}
+            loadMoreFailed={loadMoreFailed}
+            onRetryLoadMore={onRetryLoadMore}
           />
         </section>
       </main>
@@ -132,6 +138,8 @@ type BuildingListProps = Pick<
   | "onViewBuildingDetail"
   | "onLoadMore"
   | "loadingMore"
+  | "loadMoreFailed"
+  | "onRetryLoadMore"
 > & { isFiltering: boolean };
 
 function ListContent({
@@ -170,6 +178,8 @@ function BuildingList({
   onViewBuildingDetail,
   onLoadMore,
   loadingMore,
+  loadMoreFailed,
+  onRetryLoadMore,
 }: BuildingListProps & { buildings: BuildingCardModel[] }) {
   if (buildings.length === 0) {
     return isFiltering ? (
@@ -219,6 +229,20 @@ function BuildingList({
           onLoadMore={onLoadMore}
           loading={loadingMore}
         />
+      )}
+      {loadMoreFailed && onRetryLoadMore && (
+        <div className="flex flex-col items-center gap-2 px-6 pt-2 pb-6 text-center">
+          <p role="alert" className="text-[13px] leading-normal text-[#dc2626]">
+            โหลดรายการเพิ่มไม่สำเร็จ กรุณาลองอีกครั้ง
+          </p>
+          <button
+            type="button"
+            onClick={onRetryLoadMore}
+            className="min-h-11 cursor-pointer touch-manipulation rounded-full border-2 border-[#ff5815] bg-white px-6 text-sm font-semibold text-[#ff5815] transition-colors hover:bg-[#fff1ea] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#081828] active:bg-[#ffe2d4]"
+          >
+            ลองอีกครั้ง
+          </button>
+        </div>
       )}
     </>
   );

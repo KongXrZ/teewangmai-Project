@@ -23,6 +23,10 @@ begin
     values (v_a, v_reward, 50, now() - interval '2 hours', now() + interval '7 days',
       now() - interval '31 minutes', repeat('a', 32), gen_random_uuid()) returning id into v_id;
   perform set_config('test.stale', v_id::text, true);
+  insert into public.redemptions (user_id, reward_id, used_points, redeemed_at, expires_at, used_at, use_code, use_key)
+    values (v_a, v_reward, 50, now() - interval '2 hours', now() - interval '1 minute',
+      now() - interval '5 minutes', repeat('b', 32), '00000000-0000-4000-8000-0000000077c3') returning id into v_id;
+  perform set_config('test.lapsed', v_id::text, true);
 end;
 $$;
 
@@ -80,6 +84,11 @@ begin
   if (select outcome from public.use_voucher(current_setting('test.expired')::integer, gen_random_uuid())) <> 'expired' then
     raise exception 'an expired voucher must not be usable';
   end if;
+  select * into v_result from public.use_voucher(current_setting('test.lapsed')::integer,
+    '00000000-0000-4000-8000-0000000077c3');
+  if v_result.outcome <> 'expired' or v_result.use_code is not null then
+    raise exception 'a same-key retry after the voucher expired must not reveal the code: %', row_to_json(v_result);
+  end if;
   if (select status from public.get_my_vouchers() where id = v_fresh) <> 'used' then
     raise exception 'a used voucher must be listed as used';
   end if;
@@ -106,6 +115,9 @@ begin
   if (select outcome from public.verify_voucher_code(repeat('a', 32))) <> 'expired' then
     raise exception 'a code shown more than 30 minutes ago must not verify';
   end if;
+  if (select outcome from public.verify_voucher_code(repeat('b', 32))) <> 'expired' then
+    raise exception 'a code of an expired voucher must not verify';
+  end if;
   if (select outcome from public.verify_voucher_code(repeat('0', 32))) <> 'not_found'
     or (select outcome from public.verify_voucher_code('not-a-code')) <> 'not_found'
     or (select outcome from public.verify_voucher_code(null)) <> 'not_found' then
@@ -123,7 +135,7 @@ begin
       where u.auth_id = '00000000-0000-0000-0000-0000000077a1') <> 1
     or (select count(*) filter (where d.use_code is not null) from public.redemptions d
       join public.users u on u.id = d.user_id
-      where u.auth_id = '00000000-0000-0000-0000-0000000077a1') <> 2 then
+      where u.auth_id = '00000000-0000-0000-0000-0000000077a1') <> 3 then
     raise exception 'exactly one fresh voucher must be used and verified';
   end if;
 end;

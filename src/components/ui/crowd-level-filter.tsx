@@ -88,7 +88,7 @@ export function CrowdLevelFilter({
               data-category={category.id}
               data-selected={isSelected ? "true" : undefined}
               onClick={() => handleSelect(category.id)}
-              className={`flex min-h-9 min-w-0 cursor-pointer items-center justify-center gap-0.5 rounded-full border-0 px-1 text-[12.5px] leading-none font-bold whitespace-nowrap shadow-[0_1px_3px_rgb(0_0_0/12%)] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff6200] ${
+              className={`flex min-h-11 min-w-0 cursor-pointer items-center justify-center gap-0.5 rounded-full border-0 px-1 text-[12.5px] leading-none font-bold whitespace-nowrap shadow-[0_1px_3px_rgb(0_0_0/12%)] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff6200] ${
                 isSelected
                   ? `${category.selectedBgClass} text-white`
                   : "bg-white text-black"

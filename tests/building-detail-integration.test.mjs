@@ -8,10 +8,12 @@ import {
   toOpeningHours,
 } from "../src/features/locations/api/availability-display.ts";
 import {
+  buildBuildingDetailHref,
   loadBuildingDetail,
   loadFloorDetail,
   mergeSingleFloorDetail,
   parseBuildingIdParam,
+  resolveInitialFloorId,
   toBuildingDetailModel,
 } from "../src/features/locations/components/building-detail-adapter.ts";
 
@@ -311,4 +313,41 @@ test("loadBuildingDetail and loadFloorDetail map 404, 503 and partial crowd fail
     assert.equal(floorOutcome.crowdFailed, true);
     assert.equal(floorOutcome.floor.id, 190);
   }
+});
+
+test("buildBuildingDetailHref preserves home and locations queries and attaches floor when provided", () => {
+  assert.equal(
+    buildBuildingDetailHref("31", {
+      floorId: "192",
+      baseQuery: "q=lib&level=low&building=31&from=home",
+    }),
+    "/locations/31?q=lib&level=low&building=31&from=home&floor=192",
+  );
+
+  assert.equal(
+    buildBuildingDetailHref("31", {
+      floorId: "195",
+      baseQuery: "?q=sc&level=medium",
+    }),
+    "/locations/31?q=sc&level=medium&floor=195",
+  );
+
+  assert.equal(
+    buildBuildingDetailHref("31", {
+      baseQuery: "?q=sc&floor=190",
+    }),
+    "/locations/31?q=sc",
+  );
+
+  assert.equal(buildBuildingDetailHref("31"), "/locations/31");
+});
+
+test("resolveInitialFloorId returns matching requested floor or falls back to defaultFloorId", () => {
+  const floors = [{ id: "190" }, { id: "191" }, { id: "192" }];
+
+  assert.equal(resolveInitialFloorId(floors, "192", "190"), "192");
+  assert.equal(resolveInitialFloorId(floors, " 191 ", "190"), "191");
+  assert.equal(resolveInitialFloorId(floors, "999", "190"), "190");
+  assert.equal(resolveInitialFloorId(floors, null, "190"), "190");
+  assert.equal(resolveInitialFloorId(floors, undefined, undefined), undefined);
 });

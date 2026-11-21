@@ -91,7 +91,7 @@ test('schema mismatch and invalid earned_at are errors, not empty', () => {
 });
 
 test('API not opened yet maps to unavailable, not empty', () => {
-  for (const status of [404, 501, 503]) {
+  for (const status of [404, 501]) {
     assert.deepEqual(parseBadgesResponse(status, null), { kind: 'unavailable' });
   }
 });
@@ -146,21 +146,21 @@ test('blank icon_url is normalized to null without failing schema', () => {
   assert.equal(result.badges[0].iconUrl, null);
 });
 
-test('503 unavailable preserves server message and exposes retry', () => {
+test('503 is a retryable error that keeps the server message', () => {
   const parsed = parseBadgesResponse(503, {
     success: false,
     code: 'unavailable',
     error: 'ไม่สามารถโหลดความสำเร็จได้ โปรดลองใหม่อีกครั้ง',
   });
   assert.deepEqual(parsed, {
-    kind: 'unavailable',
+    kind: 'error',
     message: 'ไม่สามารถโหลดความสำเร็จได้ โปรดลองใหม่อีกครั้ง',
   });
   let retried = false;
   const state = toAchievementsState(parsed, () => {
     retried = true;
   });
-  assert.equal(state.status, 'unavailable');
+  assert.equal(state.status, 'error');
   assert.equal(state.message, 'ไม่สามารถโหลดความสำเร็จได้ โปรดลองใหม่อีกครั้ง');
   state.onRetry();
   assert.equal(retried, true);

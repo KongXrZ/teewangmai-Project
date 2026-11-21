@@ -85,6 +85,50 @@ test("a duplicate detection while verifying is ignored", () => {
   assert.equal(checkInFlowReducer(state, { type: "rescan" }), state);
 });
 
+test("going back from the scanner returns to level selection with the level kept", () => {
+  const scan = run(...scanning);
+  const back = checkInFlowReducer(scan, { type: "back_to_select" });
+  assert.equal(back.phase, "select");
+  assert.equal(back.level, 3);
+  assert.equal(back.scan.status, "idle");
+  assert.equal(back.floor, null);
+  assert.equal(back.formKey, scan.formKey + 1);
+  const changed = checkInFlowReducer(back, { type: "confirm_level", level: 1 });
+  assert.equal(changed.phase, "scan");
+  assert.equal(changed.level, 1);
+});
+
+test("going back works while verifying or after a rejected QR", () => {
+  const verifying = checkInFlowReducer(run(...resolving), {
+    type: "back_to_select",
+  });
+  assert.equal(verifying.phase, "select");
+  assert.equal(verifying.scan.status, "idle");
+  const rejected = run(...resolving, {
+    type: "resolve_done",
+    result: { kind: "rejected", reason: "invalid_qr" },
+  });
+  const back = checkInFlowReducer(rejected, { type: "back_to_select" });
+  assert.equal(back.phase, "select");
+  assert.equal(back.scan.status, "idle");
+});
+
+test("a late resolve after going back is ignored", () => {
+  const late = { type: "resolve_done", result: { kind: "resolved", floor } };
+  const back = run(...resolving, { type: "back_to_select" });
+  assert.equal(checkInFlowReducer(back, late), back);
+});
+
+test("going back outside the scanner does nothing", () => {
+  const select = run();
+  assert.equal(checkInFlowReducer(select, { type: "back_to_select" }), select);
+  const readyState = run(...ready);
+  assert.equal(
+    checkInFlowReducer(readyState, { type: "back_to_select" }),
+    readyState,
+  );
+});
+
 test("a late resolve after rescan or reset is ignored", () => {
   const late = { type: "resolve_done", result: { kind: "resolved", floor } };
   const rescanned = run(...scanning, { type: "rescan" });

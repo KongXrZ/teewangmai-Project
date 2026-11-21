@@ -9,6 +9,7 @@ import type {
   ExpandedBuildingModel,
   LocationListState,
 } from "./location-view-models";
+import { buildBuildingDetailHref } from "./building-detail-adapter";
 import type { BuildingPage, LocationDataSource } from "./location-data-source";
 import { locationApiSource } from "./location-api-source";
 import { LocationListPage } from "./location-list-page";
@@ -119,7 +120,12 @@ export function LocationListContainer({
   }
 
   function handleLoadMore() {
-    if (filterUnavailable || !currentPage || nextCursor === null || moreForPage) {
+    if (
+      filterUnavailable ||
+      !currentPage ||
+      nextCursor === null ||
+      (moreForPage && !moreForPage.failed)
+    ) {
       return;
     }
     const fromPage = currentPage;
@@ -255,15 +261,22 @@ export function LocationListContainer({
       onCrowdFilterChange={handleCrowdFilterChange}
       onSelectBuilding={handleSelectBuilding}
       expandedBuilding={expandedBuilding}
-      onViewBuildingDetail={(id) =>
+      onViewBuildingDetail={(id, floorId) =>
         router.push(
-          `/locations/${encodeURIComponent(id)}${window.location.search}`,
+          buildBuildingDetailHref(id, {
+            floorId,
+            baseQuery: window.location.search,
+          }),
         )
       }
       onLoadMore={
         nextCursor !== null && !moreForPage?.failed ? handleLoadMore : undefined
       }
       loadingMore={loadingMore}
+      loadMoreFailed={moreForPage?.failed ?? false}
+      onRetryLoadMore={
+        nextCursor !== null && moreForPage?.failed ? handleLoadMore : undefined
+      }
     />
   );
 }

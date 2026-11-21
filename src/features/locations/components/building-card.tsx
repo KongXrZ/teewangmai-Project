@@ -10,6 +10,7 @@ import HelpOutlineRounded from "@mui/icons-material/HelpOutlineRounded";
 import PeopleAlt from "@mui/icons-material/PeopleAlt";
 import Person from "@mui/icons-material/Person";
 import { formatTimeOnly } from "../api/availability-display";
+import { isOptimizableImageUrl } from "../remote-image-hosts";
 import { formatUpdatedTime } from "./format-updated-time";
 import type {
   BuildingCardModel,
@@ -171,7 +172,7 @@ export function BuildingImage({
           alt=""
           fill
           sizes={sizes}
-          unoptimized
+          unoptimized={!isOptimizableImageUrl(imageUrl)}
           preload={preload}
           onError={() => setFailedUrl(imageUrl)}
           ref={(image) => {

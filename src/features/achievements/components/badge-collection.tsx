@@ -83,7 +83,7 @@ export function BadgeCollection({
                 onClick={state.onRetry}
                 className="mt-2 h-10 cursor-pointer rounded-lg border-0 bg-[#e0622a] px-5 text-sm font-semibold text-white hover:bg-[#c9531f] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e0622a]"
               >
-                ลองใหม่
+                ลองใหม่อีกครั้ง
               </button>
             )
           }

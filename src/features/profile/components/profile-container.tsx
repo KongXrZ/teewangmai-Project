@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { fetchBadges } from "@/features/achievements/api/badges-adapter";
 import { countEarnedBadges } from "@/features/achievements/view-model";
 import { useAuth } from "@/features/auth/components/auth-provider";
+import { buildVoucherCollectionHref } from "@/features/rewards/vouchers";
 import { fetchCheckinHistory } from "./checkin-history-client";
 import { ProfilePage } from "./profile-page";
 import type { ProfileState } from "./profile-view-models";
@@ -77,7 +78,7 @@ export function ProfileContainer() {
       state={state}
       onEdit={() => router.push("/profile/edit")}
       onReportHistory={() => router.push("/profile/reports")}
-      onRedeemHistory={() => router.push("/vouchers")}
+      onRedeemHistory={() => router.push(buildVoucherCollectionHref("profile"))}
       onBadges={() => router.push("/achievements")}
       onLogout={handleLogout}
       loggingOut={auth.isSigningOut}

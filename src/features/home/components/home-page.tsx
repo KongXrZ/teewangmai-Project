@@ -232,19 +232,20 @@ export function HomePage({
               : "flex min-h-0 min-w-0 flex-1 flex-col gap-2.5 px-4 pt-[max(2rem,env(safe-area-inset-top,0px))] pb-[calc(7.625rem+env(safe-area-inset-bottom,0px))] text-[#081828] min-[390px]:px-6 sm:px-9"
           }
         >
-          {!isFullscreen ? (
+          {isFullscreen ? (
+            <h1 className="sr-only">TeeWangMai?</h1>
+          ) : (
             <header className="shrink-0 text-center">
-              <Link
-                href="/"
-                className="block text-[2.25rem] leading-[1.2] font-bold tracking-[-0.035em] min-[390px]:text-[2.5rem]"
-              >
-                TeeWangMai?
-              </Link>
+              <h1 className="text-[2.25rem] leading-[1.2] font-bold tracking-[-0.035em] min-[390px]:text-[2.5rem]">
+                <Link href="/" className="block">
+                  TeeWangMai?
+                </Link>
+              </h1>
               <p className="mt-0.5 text-sm leading-snug min-[390px]:text-base">
                 ตรวจสอบความหนาแน่นของคนในอาคารที่คุณจะไป
               </p>
             </header>
-          ) : null}
+          )}
 
           {!isFullscreen ? searchFieldWithDropdown : null}
 

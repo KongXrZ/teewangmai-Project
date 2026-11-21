@@ -59,3 +59,9 @@ export const redeemAttemptScope = (rewardId: number) => `redeem:${rewardId}`;
 
 export const voucherUseAttemptScope = (voucherId: number) =>
   `voucher-use:${voucherId}`;
+
+export function shouldClearVoucherUseKey(
+  kind: "ok" | "unauthenticated" | "conflict" | "rejected" | "unknown",
+): boolean {
+  return kind === "conflict" || kind === "rejected";
+}

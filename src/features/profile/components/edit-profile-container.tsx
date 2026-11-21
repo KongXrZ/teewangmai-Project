@@ -118,7 +118,8 @@ export function EditProfileContainer() {
       );
       if (!result.success) {
         if (result.error === sessionLost) void refresh();
-        fail(result.error === sessionLost ? sessionLost : null);
+        const userFacing = /\p{Script=Thai}/u.test(result.error ?? "");
+        fail(userFacing ? (result.error ?? null) : null);
         return;
       }
       uploaded.current = null;

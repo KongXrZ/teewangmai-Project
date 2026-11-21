@@ -9,6 +9,7 @@ import type {
   RewardSelectHandler,
   RewardsCatalogState,
 } from "../types";
+import { groupRewardsForCatalog } from "../catalog-sections";
 import { PointsSummary } from "./points-summary";
 import { RewardCard, RewardCardSkeleton } from "./reward-card";
 
@@ -92,12 +93,7 @@ function ReadyCatalog({
   onSelectReward?: RewardSelectHandler;
   selectionDisabled?: boolean;
 }) {
-  const current = rewards.filter(
-    (reward) => reward.availability !== "upcoming",
-  );
-  const upcoming = rewards.filter(
-    (reward) => reward.availability === "upcoming",
-  );
+  const { redeemable, locked, upcoming } = groupRewardsForCatalog(rewards);
 
   return (
     <div className="flex flex-col gap-11">
@@ -113,15 +109,22 @@ function ReadyCatalog({
         />
       ) : (
         <>
-          {current.length > 0 && (
+          {redeemable.length > 0 && (
             <RewardSection title="รางวัลที่แลกได้ตอนนี้">
-              {current.map((reward) => (
+              {redeemable.map((reward) => (
                 <RewardCard
                   key={reward.id}
                   reward={reward}
                   onSelect={onSelectReward}
                   disabled={selectionDisabled}
                 />
+              ))}
+            </RewardSection>
+          )}
+          {locked.length > 0 && (
+            <RewardSection title="ยังไม่สามารถแลกได้">
+              {locked.map((reward) => (
+                <RewardCard key={reward.id} reward={reward} />
               ))}
             </RewardSection>
           )}

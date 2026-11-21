@@ -11,6 +11,7 @@ export interface RedemptionFlowProps {
   points: number | null;
   onClose: () => void;
   onRedemptionConfirmed: () => void;
+  onRedeemed?: (points: number) => void;
 }
 
 export interface RewardsCatalogContainerProps {
@@ -20,7 +21,7 @@ export interface RewardsCatalogContainerProps {
 export function RewardsCatalogContainer({
   renderRedemption,
 }: RewardsCatalogContainerProps) {
-  const { state, refresh, isRefreshing } = useRewardsCatalog();
+  const { state, refresh, isRefreshing, applyPoints } = useRewardsCatalog();
   const [selected, setSelected] = useState<RewardCardModel | null>(null);
 
   return (
@@ -40,6 +41,10 @@ export function RewardsCatalogContainer({
           onClose: () => setSelected(null),
           onRedemptionConfirmed: () => {
             setSelected(null);
+            refresh();
+          },
+          onRedeemed: (points) => {
+            applyPoints(points);
             refresh();
           },
         })}
