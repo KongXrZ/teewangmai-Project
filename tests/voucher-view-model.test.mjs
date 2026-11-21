@@ -167,7 +167,7 @@ test("voucher route helpers preserve ?from=profile return navigation", () => {
   assert.equal(resolveVoucherCollectionBackHref(undefined), "/rewards");
 });
 
-test("voucher entry source selects profile navigation and layout only for ?from=profile", () => {
+test("voucher entry source selects profile navigation only for ?from=profile", () => {
   assert.equal(parseVoucherEntrySource("profile"), "profile");
   assert.equal(parseVoucherEntrySource("rewards"), "rewards");
   assert.equal(parseVoucherEntrySource("other"), "rewards");
