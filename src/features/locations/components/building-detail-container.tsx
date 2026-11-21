@@ -7,6 +7,7 @@ import {
   loadFloorDetail,
   mergeSingleFloorDetail,
   resolveInitialFloorId,
+  withFloorQuery,
 } from "./building-detail-adapter";
 import { BuildingDetailPage } from "./building-detail-page";
 import type { BuildingDetailState, FloorId } from "./location-view-models";
@@ -20,7 +21,7 @@ export function BuildingDetailContainer({
   const searchParams = useSearchParams();
   const requestedFloorId = searchParams.get("floor");
   const [state, setState] = useState<BuildingDetailState>({ status: "loading" });
-  const [initialFloorId, setInitialFloorId] = useState<FloorId | undefined>();
+  const [defaultFloorId, setDefaultFloorId] = useState<FloorId | undefined>();
   const [reloadNonce, setReloadNonce] = useState(0);
   const floorControllerRef = useRef<AbortController | null>(null);
 
@@ -33,25 +34,19 @@ export function BuildingDetailContainer({
           return;
         }
         if (outcome.kind === "ok") {
-          setInitialFloorId(
-            resolveInitialFloorId(
-              outcome.building.floors,
-              requestedFloorId,
-              outcome.defaultFloorId,
-            ),
-          );
+          setDefaultFloorId(outcome.defaultFloorId);
           setState({ status: "ready", building: outcome.building });
         } else if (outcome.kind === "not_found") {
-          setInitialFloorId(undefined);
+          setDefaultFloorId(undefined);
           setState({ status: "not_found" });
         } else {
-          setInitialFloorId(undefined);
+          setDefaultFloorId(undefined);
           setState({ status: "error" });
         }
       })
       .catch(() => {
         if (!controller.signal.aborted) {
-          setInitialFloorId(undefined);
+          setDefaultFloorId(undefined);
           setState({ status: "error" });
         }
       });
@@ -60,14 +55,24 @@ export function BuildingDetailContainer({
       controller.abort();
       floorControllerRef.current?.abort();
     };
-  }, [buildingId, reloadNonce, requestedFloorId]);
+  }, [buildingId, reloadNonce]);
 
   function handleRetry() {
     setState({ status: "loading" });
     setReloadNonce((n) => n + 1);
   }
 
+  const initialFloorId =
+    state.status === "ready"
+      ? resolveInitialFloorId(state.building.floors, requestedFloorId, defaultFloorId)
+      : undefined;
+
   function handleSelectFloor(floorId: FloorId) {
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}?${withFloorQuery(window.location.search, floorId)}`,
+    );
     floorControllerRef.current?.abort();
     const controller = new AbortController();
     floorControllerRef.current = controller;

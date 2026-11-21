@@ -9,6 +9,7 @@ import {
 } from "../src/features/locations/api/availability-display.ts";
 import {
   buildBuildingDetailHref,
+  withFloorQuery,
   loadBuildingDetail,
   loadFloorDetail,
   mergeSingleFloorDetail,
@@ -350,4 +351,10 @@ test("resolveInitialFloorId returns matching requested floor or falls back to de
   assert.equal(resolveInitialFloorId(floors, "999", "190"), "190");
   assert.equal(resolveInitialFloorId(floors, null, "190"), "190");
   assert.equal(resolveInitialFloorId(floors, undefined, undefined), undefined);
+});
+
+test("withFloorQuery sets the selected floor and keeps the other detail query values", () => {
+  assert.equal(withFloorQuery("?from=home&building=1&floor=1", "2"), "from=home&building=1&floor=2");
+  assert.equal(withFloorQuery("", "3"), "floor=3");
+  assert.equal(withFloorQuery("?q=S1&level=medium", "4"), "q=S1&level=medium&floor=4");
 });

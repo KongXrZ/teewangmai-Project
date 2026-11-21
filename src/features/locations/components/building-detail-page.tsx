@@ -192,6 +192,13 @@ function BuildingDetail({
       building.floors.find((floor) => floor.label.trim() === "1")?.id ??
       building.floors[0]?.id,
   );
+  const [syncedInitialFloorId, setSyncedInitialFloorId] = useState(initialFloorId);
+  if (initialFloorId !== syncedInitialFloorId) {
+    setSyncedInitialFloorId(initialFloorId);
+    if (initialFloorId !== undefined) {
+      setSelectedFloorId(initialFloorId);
+    }
+  }
   const selectedFloor =
     building.floors.find((floor) => floor.id === selectedFloorId) ??
     building.floors[0];
