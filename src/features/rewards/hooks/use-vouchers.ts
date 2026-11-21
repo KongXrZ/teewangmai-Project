@@ -6,6 +6,7 @@ import {
   clearAttemptKey,
   getAttemptKey,
   readAttemptKey,
+  shouldClearVoucherUseKey,
   voucherUseAttemptScope,
 } from "../api/attempt-keys";
 import {
@@ -143,7 +144,13 @@ export function useVoucherDetail(
             usedAt: recovered.usedAt,
             useCode: recovered.useCode,
           });
-        } else if (recovered.kind !== "unknown") {
+        } else if (recovered.kind === "unauthenticated") {
+          await refreshAuth();
+          if (!signal.aborted) {
+            setResult({ kind: "error" });
+          }
+          return;
+        } else if (shouldClearVoucherUseKey(recovered.kind)) {
           clearAttemptKey(scope);
           setActiveUse(null);
         }
@@ -213,7 +220,6 @@ export function useVoucherDetail(
               });
               return;
             case "unauthenticated":
-              clearAttemptKey(scope);
               setUseError(USE_RETRY_MESSAGE);
               void refreshAuth();
               return;
