@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { MobileShell } from "@/components/layout/mobile-shell";
 import { ProtectedContent } from "@/features/auth/components/guest-state";
 import { VoucherDetailContainer } from "@/features/rewards/components/voucher-detail-container";
@@ -21,7 +22,9 @@ export default async function VoucherDetail({
         description="เข้าสู่ระบบเพื่อดูรายละเอียดสิทธิ์และ QR Code สำหรับใช้สิทธิ์"
         selected="rewards"
       >
-        <VoucherDetailContainer voucherId={voucherId} />
+        <Suspense fallback={null}>
+          <VoucherDetailContainer voucherId={voucherId} />
+        </Suspense>
       </ProtectedContent>
     </MobileShell>
   );

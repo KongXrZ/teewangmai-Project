@@ -2,11 +2,15 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  buildVoucherCollectionHref,
+  buildVoucherDetailHref,
   formatVoucherDate,
   formatVoucherDateTime,
   getVoucherDetailView,
   getVoucherDisplayStatus,
   getVoucherStatusLabel,
+  parseVoucherEntrySource,
+  resolveVoucherCollectionBackHref,
 } from "../src/features/rewards/vouchers.ts";
 
 const available = { status: "available", usedAt: null };
@@ -137,4 +141,28 @@ test("dates use the Bangkok day and Buddhist year", () => {
 test("invalid dates fall back without throwing", () => {
   assert.equal(formatVoucherDate("not-a-date"), "ไม่ระบุ");
   assert.equal(formatVoucherDateTime("not-a-date"), "ไม่ระบุ");
+});
+
+test("voucher route helpers preserve ?from=profile return navigation", () => {
+  assert.equal(parseVoucherEntrySource("profile"), "profile");
+  assert.equal(parseVoucherEntrySource(" profile "), "profile");
+  assert.equal(parseVoucherEntrySource("rewards"), "rewards");
+  assert.equal(parseVoucherEntrySource(null), "rewards");
+
+  assert.equal(
+    buildVoucherCollectionHref("profile"),
+    "/rewards/vouchers?from=profile",
+  );
+  assert.equal(buildVoucherCollectionHref("rewards"), "/rewards/vouchers");
+  assert.equal(buildVoucherCollectionHref(undefined), "/rewards/vouchers");
+
+  assert.equal(
+    buildVoucherDetailHref(42, "profile"),
+    "/rewards/vouchers/42?from=profile",
+  );
+  assert.equal(buildVoucherDetailHref(42, null), "/rewards/vouchers/42");
+
+  assert.equal(resolveVoucherCollectionBackHref("profile"), "/profile");
+  assert.equal(resolveVoucherCollectionBackHref("rewards"), "/rewards");
+  assert.equal(resolveVoucherCollectionBackHref(undefined), "/rewards");
 });
