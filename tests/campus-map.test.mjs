@@ -12,10 +12,12 @@ import {
   centerMapOnPoint,
   clampMapTransform,
   computeBaseScale,
+  computeBuildingHitTarget,
   computeBuildingRenderState,
   computeBuildingRenderStates,
   MAP_MAX_ZOOM,
   MAP_MIN_ZOOM,
+  MIN_TOUCH_TARGET_PX,
   zoomAroundPoint,
 } from "../src/features/campus-map/map-state.ts";
 
@@ -224,7 +226,10 @@ test("getBuildingsBoundingCenter and centerMapOnPoint place target buildings at 
 
   const centeredN16 = centerMapOnPoint(
     { zoom: 1.4, panX: 0, panY: 0 },
-    { x: CAMPUS_BUILDING_SHAPES.N16.labelX, y: CAMPUS_BUILDING_SHAPES.N16.labelY },
+    {
+      x: CAMPUS_BUILDING_SHAPES.N16.labelX,
+      y: CAMPUS_BUILDING_SHAPES.N16.labelY,
+    },
     viewportW,
     viewportH,
     mapW,
@@ -237,4 +242,38 @@ test("getBuildingsBoundingCenter and centerMapOnPoint place target buildings at 
   const screenY = centeredN16.panY + CAMPUS_BUILDING_SHAPES.N16.labelY * scale;
   assert.ok(Math.abs(screenX - viewportW / 2) < 1e-6);
   assert.ok(Math.abs(screenY - viewportH * 0.42) < 1e-6);
+});
+
+test("small building hit targets expand to at least 44px on screen around the shape center", () => {
+  const scale = 0.12;
+  const minMapSize = MIN_TOUCH_TARGET_PX / scale;
+  for (const code of ["N8", "S1", "S10"]) {
+    const { bbox } = CAMPUS_BUILDING_SHAPES[code];
+    const rect = computeBuildingHitTarget(bbox, scale);
+    assert.ok(rect, code);
+    assert.ok(rect.width * scale >= MIN_TOUCH_TARGET_PX - 1e-9, code);
+    assert.ok(rect.height * scale >= MIN_TOUCH_TARGET_PX - 1e-9, code);
+    assert.ok(
+      Math.abs(rect.x + rect.width / 2 - (bbox.x + bbox.width / 2)) < 1e-9,
+    );
+    assert.ok(
+      Math.abs(rect.y + rect.height / 2 - (bbox.y + bbox.height / 2)) < 1e-9,
+    );
+    assert.ok(rect.width >= bbox.width && rect.height >= minMapSize - 1e-9);
+  }
+});
+
+test("hit targets are skipped once the shape already covers 44px and keep the larger side", () => {
+  assert.equal(
+    computeBuildingHitTarget({ x: 0, y: 0, width: 100, height: 100 }, 1),
+    null,
+  );
+  assert.deepEqual(
+    computeBuildingHitTarget({ x: 10, y: 20, width: 80, height: 20 }, 1),
+    { x: 10, y: 8, width: 80, height: 44 },
+  );
+  assert.equal(
+    computeBuildingHitTarget({ x: 0, y: 0, width: 1, height: 1 }, 0),
+    null,
+  );
 });
