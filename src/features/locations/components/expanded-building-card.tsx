@@ -102,7 +102,7 @@ export function ExpandedBuildingCard({
       tabIndex={-1}
       aria-current="true"
       aria-label={`${building.code} ${building.name}`}
-      className={styles.container}
+      className={`@container ${styles.container}`}
     >
       <div className={buildingSummaryGridClass}>
         <BuildingSummary
@@ -124,8 +124,10 @@ export function ExpandedBuildingCard({
           {buildingHoursLabel}
         </p>
       )}
-      <div className="flex items-center gap-1 px-1.5 pb-2">
-        <div className="flex min-w-0 flex-1 flex-col items-stretch">
+      <div
+        className={`mx-1.5 flex flex-wrap items-stretch gap-x-1 border-t border-solid pt-1.5 @min-[24rem]:flex-nowrap @min-[24rem]:pb-1.5 ${styles.statsDivider}`}
+      >
+        <div className="flex min-w-0 basis-full flex-col justify-center @min-[24rem]:basis-0 @min-[24rem]:flex-1">
           <FloorSummary
             floors={floors}
             floor={selectedFloor}
@@ -135,12 +137,12 @@ export function ExpandedBuildingCard({
         </div>
         <span
           aria-hidden="true"
-          className={`h-[38px] w-px shrink-0 ${styles.verticalDivider}`}
+          className={`hidden w-px shrink-0 @min-[24rem]:block ${styles.verticalDivider}`}
         />
         <button
           type="button"
           onClick={() => onViewDetail?.(building.id, selectedFloor?.id)}
-          className="flex h-11 shrink-0 cursor-pointer items-center gap-0.5 rounded-lg border-0 bg-transparent px-1 text-xs font-bold whitespace-nowrap text-black focus-visible:outline-2 focus-visible:outline-[#ff5815]"
+          className="flex h-11 w-full shrink-0 cursor-pointer items-center justify-center gap-0.5 rounded-lg border-0 bg-transparent px-1 text-xs font-bold whitespace-nowrap text-black focus-visible:outline-2 focus-visible:outline-[#ff5815] @min-[24rem]:w-auto"
         >
           <ArticleOutlined aria-hidden="true" sx={{ fontSize: 16 }} />
           ดูรายละเอียด
@@ -180,7 +182,7 @@ function FloorDropdown({
         aria-expanded={anchor !== null}
         aria-controls={anchor ? menuId : undefined}
         onClick={(event) => setAnchor(event.currentTarget)}
-        className={`flex h-11 shrink-0 cursor-pointer items-center gap-0.5 rounded-[7px] border-0 pr-1 pl-2 text-xs whitespace-nowrap text-black focus-visible:outline-2 focus-visible:outline-[#ff5815] ${bgClassName}`}
+        className={`mt-0.5 flex h-11 shrink-0 cursor-pointer items-center gap-0.5 rounded-[7px] border-0 pr-1 pl-2 text-xs whitespace-nowrap text-black focus-visible:outline-2 focus-visible:outline-[#ff5815] ${bgClassName}`}
       >
         ชั้น {selected?.label}
         <KeyboardArrowDown aria-hidden="true" sx={{ fontSize: 16 }} />
