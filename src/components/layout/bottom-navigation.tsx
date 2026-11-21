@@ -15,7 +15,7 @@ const navigationItems = [
     id: "scan",
     label: "สแกน QR Code",
     icon: QrCodeScannerRounded,
-    href: "/scan",
+    href: "/check-in",
     primary: true,
   },
   { id: "rewards", label: "แลกรางวัล", icon: StarRounded, href: "/rewards" },

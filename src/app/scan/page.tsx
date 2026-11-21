@@ -1,24 +1,5 @@
-import type { Metadata } from "next";
-import { MobileShell } from "@/components/layout/mobile-shell";
-import { ProtectedContent } from "@/features/auth/components/guest-state";
-import { CheckInFlow } from "@/features/crowd-report/components/check-in-flow";
-import { CheckInSkeleton } from "@/features/crowd-report/components/check-in-skeleton";
-
-export const metadata: Metadata = {
-  title: "เช็คอิน — TeeWangMai?",
-};
+import { redirect } from "next/navigation";
 
 export default function Scan() {
-  return (
-    <MobileShell variant="app">
-      <ProtectedContent
-        title="เช็คอิน"
-        description="เข้าสู่ระบบเพื่อสแกน QR Code ประจำชั้นและรายงานความหนาแน่น"
-        selected="scan"
-        loading={<CheckInSkeleton />}
-      >
-        <CheckInFlow />
-      </ProtectedContent>
-    </MobileShell>
-  );
+  redirect("/check-in");
 }

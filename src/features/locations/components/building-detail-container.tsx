@@ -101,7 +101,7 @@ export function BuildingDetailContainer({
       state={state}
       initialFloorId={initialFloorId}
       onSelectFloor={handleSelectFloor}
-      onCheckIn={() => router.push("/scan")}
+      onCheckIn={() => router.push("/check-in")}
       onRetry={handleRetry}
     />
   );
