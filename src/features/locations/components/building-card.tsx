@@ -86,7 +86,7 @@ export interface BuildingCardProps {
 }
 
 export const buildingSummaryGridClass =
-  "grid w-full grid-cols-[clamp(64px,24%,112px)_minmax(0,1fr)_auto] grid-rows-[auto_auto] items-center gap-x-2.5 gap-y-1 px-1.5 py-2 text-left text-black";
+  "grid w-full grid-cols-[clamp(64px,24%,112px)_minmax(0,1fr)_auto] items-center gap-x-2.5 px-1.5 py-2 text-left text-black";
 
 export function BuildingCard({ building, onSelect }: BuildingCardProps) {
   return (
@@ -121,26 +121,28 @@ export function BuildingSummary({
         imageUrl={building.imageUrl}
         sizes="112px"
         fallbackSize={36}
-        className="row-span-2 aspect-[112/87]"
+        className="aspect-[112/87]"
       />
-      <span className="self-end truncate text-[clamp(1.125rem,5.2vw,1.5rem)] leading-tight font-bold">
-        {building.code}
-      </span>
-      <span className="self-end justify-self-end">
-        <CrowdTag level={building.crowdLevel} />
-      </span>
-      <span className="flex min-w-0 items-center gap-x-2 self-start">
-        <span className="min-w-0 truncate text-xs leading-normal">
+      <span className="flex min-w-0 flex-col items-start gap-0.5">
+        <span className="max-w-full truncate text-[clamp(1.125rem,5.2vw,1.5rem)] leading-tight font-bold">
+          {building.code}
+        </span>
+        <span className="line-clamp-2 max-w-full text-xs leading-normal break-words">
           {building.name}
         </span>
         {floorControl}
       </span>
-      <span className="flex items-center gap-1 self-start justify-self-end text-xs leading-normal whitespace-nowrap text-[#b9b9b9]">
+      <span className="flex flex-col items-end gap-1">
+        <CrowdTag level={building.crowdLevel} />
         {updatedTime && (
-          <>
-            <AccessTime aria-hidden="true" sx={{ fontSize: 12 }} />
+          <span className="flex items-start justify-end gap-1 text-right text-xs leading-normal whitespace-nowrap text-[#b9b9b9] max-[399px]:max-w-[7.5rem] max-[399px]:whitespace-normal">
+            <AccessTime
+              aria-hidden="true"
+              sx={{ fontSize: 12 }}
+              className="mt-[3px] shrink-0"
+            />
             {updatedTime}
-          </>
+          </span>
         )}
       </span>
     </>
