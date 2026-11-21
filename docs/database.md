@@ -170,14 +170,17 @@ null or HTTP(S). This migration does not modify Auth. BE-010 adds the public
 Storage bucket `avatars` (JPEG/PNG, 2 MB) with per-user folder policies; uploads
 go through `POST /api/profile/avatar` (see `frontend-integration.md`).
 
-All nine tables have RLS. Clients can read only their own user profile and update
-only name/avatar. Ownership policies and column grants protect points/email/
+All nine tables have RLS. Among user rows, clients read only their own profile and
+update only name/avatar. Ownership policies and column grants protect points/email/
 identity. BE-005 additionally permits anon/authenticated SELECT on active
 buildings, active floors of active buildings, and their schedules (including
 disabled schedule rows so closed differs from unknown). Floor reads are limited
 to catalog columns; `qr_code_id` is not granted. There are no public catalog
-writes or sequence grants. The other five application tables still have no
-client policies. `search_locations` is a parameterized SECURITY INVOKER function
+writes or sequence grants. `badges` and `user_badges` add authenticated SELECT
+policies for active or own earned badges (BE-013), and the `avatars` storage
+bucket has own-folder policies (BE-010). The remaining three tables
+(`checkins`, `rewards`, `redemptions`) have no client policies and are reached
+only through `SECURITY DEFINER` RPCs. `search_locations` is a parameterized SECURITY INVOKER function
 subject to the caller's RLS, not a privileged bypass. See [Location API](location-api.md).
 Trusted server access can use `service_role`; never expose that key in browser
 code. Future access rules must not let direct writes bypass business checks.
