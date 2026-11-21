@@ -49,8 +49,9 @@ export async function getLocation(id: number, now: Date) {
 export async function getLocationFloor(locationId: number, floorId: number, now: Date) {
   const client = await createClient();
   const { data, error } = await client.from("floors")
-    .select("id, location_id, floor_name, capacity, floor_hours(day_of_week, open_time, close_time, is_active)")
-    .eq("location_id", locationId).eq("id", floorId).eq("is_active", true).maybeSingle();
+    .select("id, location_id, floor_name, capacity, floor_hours(day_of_week, open_time, close_time, is_active), locations!inner(is_active)")
+    .eq("location_id", locationId).eq("id", floorId).eq("is_active", true)
+    .eq("locations.is_active", true).maybeSingle();
   if (error) throw new Error("Catalog query failed");
   return data ? floorDto(data, now) : null;
 }
