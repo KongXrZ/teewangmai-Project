@@ -202,6 +202,8 @@ function BuildingList({
               <ExpandedBuildingCard
                 building={building}
                 floors={expandedBuilding.floors}
+                initialFloorId={expandedBuilding.defaultFloorId ?? undefined}
+                buildingAvailability={expandedBuilding.buildingAvailability}
                 onSelectFloor={onSelectFloor}
                 onViewDetail={onViewBuildingDetail}
               />
