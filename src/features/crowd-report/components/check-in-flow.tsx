@@ -13,7 +13,7 @@ import {
   type CheckInScanState,
 } from "../check-in-flow";
 import { getErrorCopy } from "../crowd-report";
-import { unavailableCheckInGateway } from "../gateway";
+import { httpCheckInGateway } from "../gateway";
 import { requestGpsEvidence, type GpsResult } from "../location";
 import type { CheckInGateway, CrowdLevel } from "../types";
 import {
@@ -39,7 +39,7 @@ function toVerification(scan: CheckInScanState): QuickScanVerification {
 }
 
 export function CheckInFlow({
-  gateway = unavailableCheckInGateway,
+  gateway = httpCheckInGateway,
   requestGps = requestGpsEvidence,
 }: CheckInFlowProps) {
   const router = useRouter();
@@ -169,12 +169,16 @@ export function CheckInFlow({
   }, [cancelRequest]);
 
   const errorExit = getErrorExit(state.submission);
+  const scanAuthRejected =
+    state.phase === "scan" &&
+    state.scan.status === "rejected" &&
+    state.scan.reason === "auth";
 
   useEffect(() => {
-    if (errorExit === "login") {
+    if (errorExit === "login" || scanAuthRejected) {
       void refreshAuth();
     }
-  }, [errorExit, refreshAuth]);
+  }, [errorExit, scanAuthRejected, refreshAuth]);
 
   const errorAction = useMemo<CrowdReportErrorAction | null>(() => {
     switch (errorExit) {
@@ -211,6 +215,7 @@ export function CheckInFlow({
       onConfirmLevel={handleConfirmLevel}
       onSubmit={handleSubmit}
       onDone={handleDone}
+      onViewHistory={() => router.push("/profile/reports")}
       errorAction={errorAction}
     />
   );
