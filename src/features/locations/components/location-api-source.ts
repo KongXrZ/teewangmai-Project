@@ -9,18 +9,13 @@ import {
 } from "../../campus-map/map-api-adapter.ts";
 import {
   toAvailabilityModel,
-  toOpeningHours,
   type ApiAvailabilityDto,
 } from "../api/availability-display.ts";
 import type {
   BuildingFloorsResult,
   LocationDataSource,
 } from "./location-data-source";
-import type {
-  BuildingCardModel,
-  BuildingId,
-  FloorModel,
-} from "./location-view-models";
+import type { BuildingId } from "./location-view-models";
 
 const pageSize = 20;
 const filterFetchPageSize = 50;
@@ -127,33 +122,6 @@ async function fetchAllMatchingBuildings(
     buildings.push(...next.data);
   }
   return buildings;
-}
-
-export function toBuildingCard(
-  building: ApiLocationBuilding,
-  crowd?: ApiCrowdBuilding,
-): BuildingCardModel {
-  return mergeBuildingWithCrowd(building, crowd);
-}
-
-export function toFloor(floor: ApiLocationFloor): FloorModel {
-  return {
-    id: String(floor.id),
-    label: floor.floor_name,
-    openingHours: toOpeningHours(floor.availability),
-    availabilityStatus: floor.availability.status,
-    crowd: {
-      status: "ready",
-      level: null,
-      updatedAt: null,
-      estimatedPeople: null,
-      densityPercent: null,
-    },
-    details:
-      typeof floor.capacity === "number"
-        ? [{ label: "ความจุชั้น", value: `${floor.capacity} คน` }]
-        : [],
-  };
 }
 
 export function createLocationApiSource(
