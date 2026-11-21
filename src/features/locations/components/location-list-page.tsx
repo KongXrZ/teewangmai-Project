@@ -24,6 +24,8 @@ export interface LocationListPageProps {
   initialCrowdFilter?: CrowdLevelFilterValue;
   onSearchChange?: (query: string) => void;
   onCrowdFilterChange?: (value: CrowdLevelFilterValue) => void;
+  onClearFilters?: () => void;
+  onRetry?: () => void;
   onSelectBuilding?: BuildingSelectHandler;
   expandedBuilding?: ExpandedBuildingModel;
   onSelectFloor?: FloorSelectHandler;
@@ -40,6 +42,8 @@ export function LocationListPage({
   initialCrowdFilter = "all",
   onSearchChange,
   onCrowdFilterChange,
+  onClearFilters,
+  onRetry,
   onSelectBuilding,
   onLoadMore,
   loadingMore = false,
@@ -60,6 +64,12 @@ export function LocationListPage({
   function handleCrowdFilterChange(value: CrowdLevelFilterValue) {
     setCrowdFilter(value);
     onCrowdFilterChange?.(value);
+  }
+
+  function handleClearFilters() {
+    setQuery("");
+    setCrowdFilter("all");
+    onClearFilters?.();
   }
 
   return (
@@ -116,6 +126,8 @@ export function LocationListPage({
           <ListContent
             state={state}
             isFiltering={isFiltering}
+            onClearFilters={onClearFilters && handleClearFilters}
+            onRetry={onRetry}
             onSelectBuilding={onSelectBuilding}
             {...expandedProps}
             onLoadMore={onLoadMore}
@@ -140,10 +152,15 @@ type BuildingListProps = Pick<
   | "loadingMore"
   | "loadMoreFailed"
   | "onRetryLoadMore"
-> & { isFiltering: boolean };
+> & {
+  isFiltering: boolean;
+  onClearFilters?: () => void;
+  onRetry?: () => void;
+};
 
 function ListContent({
   state,
+  onRetry,
   ...listProps
 }: BuildingListProps & { state: LocationListState }) {
   switch (state.status) {
@@ -162,6 +179,7 @@ function ListContent({
           role="alert"
           title="โหลดรายการสถานที่ไม่สำเร็จ"
           description="เกิดข้อผิดพลาด โปรดลองใหม่อีกครั้ง"
+          action={onRetry && <ActionButton label="ลองใหม่" onClick={onRetry} />}
         />
       );
     case "ready":
@@ -172,6 +190,7 @@ function ListContent({
 function BuildingList({
   buildings,
   isFiltering,
+  onClearFilters,
   onSelectBuilding,
   expandedBuilding,
   onSelectFloor,
@@ -194,6 +213,11 @@ function BuildingList({
         }
         title="ไม่พบสถานที่ที่ค้นหา"
         description="ลองค้นหาด้วยชื่ออาคาร รหัสอาคาร หรือคำอื่นๆ อีกครั้ง"
+        action={
+          onClearFilters && (
+            <ActionButton label="ล้างตัวกรอง" onClick={onClearFilters} />
+          )
+        }
       />
     ) : (
       <ListMessage
@@ -235,13 +259,7 @@ function BuildingList({
           <p role="alert" className="text-[13px] leading-normal text-[#dc2626]">
             โหลดรายการเพิ่มไม่สำเร็จ กรุณาลองอีกครั้ง
           </p>
-          <button
-            type="button"
-            onClick={onRetryLoadMore}
-            className="min-h-11 cursor-pointer touch-manipulation rounded-full border-2 border-[#ff5815] bg-white px-6 text-sm font-semibold text-[#ff5815] transition-colors hover:bg-[#fff1ea] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#081828] active:bg-[#ffe2d4]"
-          >
-            ลองอีกครั้ง
-          </button>
+          <ActionButton label="ลองอีกครั้ง" onClick={onRetryLoadMore} />
         </div>
       )}
     </>
@@ -290,16 +308,36 @@ function LoadMoreTrigger({
   );
 }
 
+function ActionButton({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="min-h-11 cursor-pointer touch-manipulation rounded-full border-2 border-[#ff5815] bg-white px-6 text-sm font-semibold text-[#ff5815] transition-colors hover:bg-[#fff1ea] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#081828] active:bg-[#ffe2d4]"
+    >
+      {label}
+    </button>
+  );
+}
+
 function ListMessage({
   image,
   title,
   description,
   role,
+  action,
 }: {
   image?: ReactNode;
   title: string;
   description?: string;
   role?: "status" | "alert";
+  action?: ReactNode;
 }) {
   return (
     <div
@@ -313,6 +351,7 @@ function ListMessage({
       {description && (
         <p className="mt-1 text-[13px] leading-normal">{description}</p>
       )}
+      {action && <div className="mt-4">{action}</div>}
     </div>
   );
 }
