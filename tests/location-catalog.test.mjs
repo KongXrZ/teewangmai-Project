@@ -83,3 +83,11 @@ test('DTO keeps array metadata, orders floors naturally and omits internal field
   assert.equal('qr_code_id' in result.floors[0], false);
   assert.equal('floors' in buildingDto(source, monday), false);
 });
+
+test('overnight spillover into a day without a schedule is closed after it ends, not unknown', () => {
+  const saturdayAfterFridayNight = new Date('2026-11-20T20:00:00Z');
+  const result = floorAvailability([hours(5, '20:00:00', '02:00:00')], saturdayAfterFridayNight);
+  assert.equal(result.status, 'closed');
+  assert.deepEqual(result.today_intervals, [{ open_time: '00:00:00', close_time: '02:00:00' }]);
+  assert.equal(floorAvailability([hours(5, '20:00:00', '02:00:00')], new Date('2026-11-20T18:30:00Z')).status, 'open');
+});
