@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useVoucherCollection } from "../hooks/use-vouchers";
 import {
+  parseVoucherEntrySource,
   parseVoucherIdParam,
   resolveVoucherCollectionBackHref,
   type VoucherId,
@@ -16,6 +17,7 @@ export function VoucherCollectionContainer() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const from = searchParams.get("from");
+  const entrySource = parseVoucherEntrySource(from);
   const requestedVoucherId = parseVoucherIdParam(searchParams.get("voucher"));
 
   const { state, activeUses, usePending, useError, clearUseError, submitUse } =
@@ -69,6 +71,7 @@ export function VoucherCollectionContainer() {
     <>
       <VoucherCollectionPage
         state={state}
+        entrySource={entrySource}
         expandedVoucherId={expandedVoucherId}
         focusVoucherId={requestedVoucherId ?? undefined}
         activeUseVoucherIds={activeUseVoucherIds}

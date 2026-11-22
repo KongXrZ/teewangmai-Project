@@ -10,6 +10,7 @@ import {
   formatVoucherDateTime,
   getVoucherDetailView,
   type VoucherDetailState,
+  type VoucherEntrySource,
   type VoucherModel,
   type VoucherSelectHandler,
 } from "../vouchers";
@@ -26,6 +27,7 @@ export interface VoucherDetailPageProps {
   onUseVoucher?: VoucherSelectHandler;
   usePending?: boolean;
   useError?: string;
+  entrySource?: VoucherEntrySource;
 }
 
 export function VoucherDetailPage({
@@ -34,12 +36,14 @@ export function VoucherDetailPage({
   onUseVoucher,
   usePending,
   useError,
+  entrySource = "rewards",
 }: VoucherDetailPageProps) {
   return (
     <VoucherPageLayout
       title="รายละเอียดสิทธิ์"
       onBack={onBack}
       focusTitleOnMount
+      entrySource={entrySource}
     >
       <VoucherDetailContent
         state={state}
@@ -58,7 +62,7 @@ function VoucherDetailContent({
   onUseVoucher,
   usePending,
   useError,
-}: VoucherDetailPageProps) {
+}: Omit<VoucherDetailPageProps, "entrySource">) {
   switch (state.status) {
     case "loading":
       return (

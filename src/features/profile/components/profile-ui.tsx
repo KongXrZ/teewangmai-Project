@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode, RefObject } from "react";
 import ArrowBackIosNewRounded from "@mui/icons-material/ArrowBackIosNewRounded";
 
 export const primaryButtonClass =
@@ -73,21 +73,33 @@ export function StateMessage({
 export function PageHeader({
   title,
   onBack,
+  titleRef,
+  focusTitleOnMount,
 }: {
   title: string;
-  onBack: () => void;
+  onBack?: () => void;
+  titleRef?: RefObject<HTMLHeadingElement | null>;
+  focusTitleOnMount?: boolean;
 }) {
   return (
     <header className="-mx-5 flex items-center gap-1 border-b border-[#e5e7eb] px-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))] pb-2 sm:-mx-8 sm:px-6">
-      <button
-        type="button"
-        onClick={onBack}
-        aria-label="ย้อนกลับ"
-        className="flex h-11 w-11 shrink-0 cursor-pointer touch-manipulation items-center justify-center rounded-full border-0 bg-transparent text-[#141414] transition-colors duration-150 [-webkit-tap-highlight-color:transparent] hover:bg-[#f0f1f3] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#ea580c]"
+      {onBack && (
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="ย้อนกลับ"
+          className="flex h-11 w-11 shrink-0 cursor-pointer touch-manipulation items-center justify-center rounded-full border-0 bg-transparent text-[#141414] transition-colors duration-150 [-webkit-tap-highlight-color:transparent] hover:bg-[#f0f1f3] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#ea580c]"
+        >
+          <ArrowBackIosNewRounded aria-hidden="true" sx={{ fontSize: 20 }} />
+        </button>
+      )}
+      <h1
+        ref={titleRef}
+        tabIndex={focusTitleOnMount ? -1 : undefined}
+        className={`min-w-0 truncate text-[22px] leading-tight font-semibold text-[#141414] outline-none ${
+          onBack ? "" : "px-2 py-2"
+        }`}
       >
-        <ArrowBackIosNewRounded aria-hidden="true" sx={{ fontSize: 20 }} />
-      </button>
-      <h1 className="min-w-0 truncate text-[22px] leading-tight font-semibold text-[#141414]">
         {title}
       </h1>
     </header>

@@ -18,18 +18,20 @@ export interface RewardsCatalogProps {
   state: RewardsCatalogState;
   onSelectReward?: RewardSelectHandler;
   selectionDisabled?: boolean;
+  vouchersHref?: string;
 }
 
 export function RewardsCatalog({
   state,
   onSelectReward,
   selectionDisabled,
+  vouchersHref,
 }: RewardsCatalogProps) {
   switch (state.status) {
     case "loading":
       return (
         <div aria-busy="true" className="flex flex-col gap-11">
-          <PointsSummary points={null} />
+          <PointsSummary points={null} vouchersHref={vouchersHref} />
           <RewardSection title="รางวัลที่แลกได้ตอนนี้">
             <RewardCardSkeleton />
             <RewardCardSkeleton />
@@ -82,6 +84,7 @@ export function RewardsCatalog({
           rewards={state.rewards}
           onSelectReward={onSelectReward}
           selectionDisabled={selectionDisabled}
+          vouchersHref={vouchersHref}
         />
       );
   }
@@ -92,17 +95,19 @@ function ReadyCatalog({
   rewards,
   onSelectReward,
   selectionDisabled,
+  vouchersHref,
 }: {
   points: number;
   rewards: RewardCardModel[];
   onSelectReward?: RewardSelectHandler;
   selectionDisabled?: boolean;
+  vouchersHref?: string;
 }) {
   const { redeemable, locked, upcoming } = groupRewardsForCatalog(rewards);
 
   return (
     <div className="flex flex-col gap-11">
-      <PointsSummary points={points} />
+      <PointsSummary points={points} vouchersHref={vouchersHref} />
 
       {rewards.length === 0 ? (
         <CatalogMessage

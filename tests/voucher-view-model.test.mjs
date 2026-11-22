@@ -168,6 +168,14 @@ test("voucher route helpers preserve ?from=profile return navigation", () => {
   assert.equal(resolveVoucherCollectionBackHref(undefined), "/rewards");
 });
 
+test("voucher entry source selects profile navigation only for ?from=profile", () => {
+  assert.equal(parseVoucherEntrySource("profile"), "profile");
+  assert.equal(parseVoucherEntrySource("rewards"), "rewards");
+  assert.equal(parseVoucherEntrySource("other"), "rewards");
+  assert.equal(parseVoucherEntrySource(""), "rewards");
+  assert.equal(parseVoucherEntrySource(undefined), "rewards");
+});
+
 test("parseVoucherIdParam and buildVoucherCollectionHref handle expandable voucher query params", () => {
   assert.equal(parseVoucherIdParam("42"), 42);
   assert.equal(parseVoucherIdParam(" 123 "), 123);
