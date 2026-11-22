@@ -8,7 +8,8 @@ import { useAuth } from "@/features/auth/components/auth-provider";
 import { buildVoucherCollectionHref } from "@/features/rewards/vouchers";
 import { fetchCheckinHistory } from "./checkin-history-client";
 import { ProfilePage } from "./profile-page";
-import type { ProfileState } from "./profile-view-models";
+import { fetchProfileStreak } from "./profile-streak-client";
+import type { ProfileState, ProfileStreakModel } from "./profile-view-models";
 
 export function ProfileContainer() {
   const router = useRouter();
@@ -16,6 +17,10 @@ export function ProfileContainer() {
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const [reportTotal, setReportTotal] = useState<{ userId: string; total: number } | null>(null);
   const [badgeTotal, setBadgeTotal] = useState<{ userId: string; total: number } | null>(null);
+  const [streakData, setStreakData] = useState<{
+    userId: string;
+    streak: ProfileStreakModel;
+  } | null>(null);
   const userId = auth.status === "authenticated" ? (auth.user?.id ?? null) : null;
   const { refresh } = auth;
 
@@ -42,6 +47,16 @@ export function ProfileContainer() {
         }
       })
       .catch(() => {});
+    fetchProfileStreak({ signal: controller.signal })
+      .then((result) => {
+        if (controller.signal.aborted) return;
+        if (result.ok) {
+          setStreakData({ userId, streak: result.streak });
+        } else if (result.unauthorized) {
+          void refresh();
+        }
+      })
+      .catch(() => {});
     return () => controller.abort();
   }, [userId, refresh]);
 
@@ -61,6 +76,7 @@ export function ProfileContainer() {
         points: auth.profile.points,
         reportCount: reportTotal?.userId === userId ? reportTotal.total : null,
         badgeCount: badgeTotal?.userId === userId ? badgeTotal.total : null,
+        streak: streakData?.userId === userId ? streakData.streak : null,
       },
     };
   }
