@@ -1,11 +1,19 @@
 import type { CrowdLevel } from "@/features/locations/components/location-view-models";
 
+export interface ProfileStreakModel {
+  current: number;
+  longest: number;
+  checkedInToday: boolean;
+  lastCheckinDate: string | null;
+}
+
 export interface ProfileModel {
   name: string;
   avatarUrl: string | null;
   points: number;
   reportCount: number | null;
   badgeCount: number | null;
+  streak?: ProfileStreakModel | null;
 }
 
 export type ProfileState =
