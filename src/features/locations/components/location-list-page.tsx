@@ -1,0 +1,357 @@
+"use client";
+
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import Image from "next/image";
+import { BottomNavigation } from "@/components/layout/bottom-navigation";
+import {
+  CrowdLevelFilter,
+  type CrowdLevelFilterValue,
+} from "@/components/ui/crowd-level-filter";
+import { SearchInput } from "@/components/ui/search-input";
+import type {
+  BuildingCardModel,
+  BuildingSelectHandler,
+  ExpandedBuildingModel,
+  FloorSelectHandler,
+  LocationListState,
+} from "./location-view-models";
+import { BuildingCard } from "./building-card";
+import { ExpandedBuildingCard } from "./expanded-building-card";
+
+export interface LocationListPageProps {
+  state: LocationListState;
+  initialQuery?: string;
+  initialCrowdFilter?: CrowdLevelFilterValue;
+  onSearchChange?: (query: string) => void;
+  onCrowdFilterChange?: (value: CrowdLevelFilterValue) => void;
+  onClearFilters?: () => void;
+  onRetry?: () => void;
+  onSelectBuilding?: BuildingSelectHandler;
+  expandedBuilding?: ExpandedBuildingModel;
+  onSelectFloor?: FloorSelectHandler;
+  onViewBuildingDetail?: BuildingSelectHandler;
+  onLoadMore?: () => void;
+  loadingMore?: boolean;
+  loadMoreFailed?: boolean;
+  onRetryLoadMore?: () => void;
+}
+
+export function LocationListPage({
+  state,
+  initialQuery = "",
+  initialCrowdFilter = "all",
+  onSearchChange,
+  onCrowdFilterChange,
+  onClearFilters,
+  onRetry,
+  onSelectBuilding,
+  onLoadMore,
+  loadingMore = false,
+  loadMoreFailed = false,
+  onRetryLoadMore,
+  ...expandedProps
+}: LocationListPageProps) {
+  const [query, setQuery] = useState(initialQuery);
+  const [crowdFilter, setCrowdFilter] =
+    useState<CrowdLevelFilterValue>(initialCrowdFilter);
+  const isFiltering = query.trim() !== "" || crowdFilter !== "all";
+
+  function handleQueryChange(value: string) {
+    setQuery(value);
+    onSearchChange?.(value);
+  }
+
+  function handleCrowdFilterChange(value: CrowdLevelFilterValue) {
+    setCrowdFilter(value);
+    onCrowdFilterChange?.(value);
+  }
+
+  function handleClearFilters() {
+    setQuery("");
+    setCrowdFilter("all");
+    onClearFilters?.();
+  }
+
+  return (
+    <>
+      <main className="flex min-w-0 flex-1 flex-col px-4 pt-[max(0.75rem,env(safe-area-inset-top,0px))] pb-[calc(7.625rem+env(safe-area-inset-bottom,0px))] text-black min-[400px]:px-[22px]">
+        <header className="flex gap-1.5 pl-1.5">
+          <span
+            aria-hidden="true"
+            className="mt-1.5 h-[55px] w-2 shrink-0 rounded-full bg-[#ff5815]"
+          />
+          <div className="min-w-0">
+            <h1 className="text-[clamp(2rem,8vw,2.375rem)] leading-[1.2] font-bold">
+              รายการสถานที่
+            </h1>
+            <p className="text-base leading-snug font-medium text-[#878787]">
+              ดูรายชื่ออาคารทั้งหมด พร้อมระดับความหนาแน่นล่าสุด
+            </p>
+          </div>
+        </header>
+
+        <div className="mt-3 px-1.5">
+          <SearchInput
+            id="location-list-search"
+            label="ค้นหาสถานที่"
+            placeholder="ค้นหาอาคารด้วยชื่อหรือรหัสอาคาร (เช่น N7)"
+            value={query}
+            onChange={(event) => handleQueryChange(event.target.value)}
+          />
+        </div>
+
+        <div className="mt-3.5 px-2">
+          <CrowdLevelFilter
+            selected={crowdFilter}
+            onChange={handleCrowdFilterChange}
+          />
+        </div>
+
+        {state.status === "ready" && (
+          <div className="mt-1.5 flex items-center gap-2.5 px-3">
+            <p
+              role="status"
+              className="shrink-0 text-base leading-snug font-medium text-[#878787]"
+            >
+              พบ {state.totalCount ?? state.buildings.length} สถานที่
+            </p>
+            <span aria-hidden="true" className="h-px flex-1 bg-[#acacac]" />
+          </div>
+        )}
+
+        <section
+          aria-label="รายการอาคาร"
+          className="mt-2 flex flex-1 flex-col rounded-2xl bg-white"
+        >
+          <ListContent
+            state={state}
+            isFiltering={isFiltering}
+            onClearFilters={onClearFilters && handleClearFilters}
+            onRetry={onRetry}
+            onSelectBuilding={onSelectBuilding}
+            {...expandedProps}
+            onLoadMore={onLoadMore}
+            loadingMore={loadingMore}
+            loadMoreFailed={loadMoreFailed}
+            onRetryLoadMore={onRetryLoadMore}
+          />
+        </section>
+      </main>
+      <BottomNavigation selected="places" />
+    </>
+  );
+}
+
+type BuildingListProps = Pick<
+  LocationListPageProps,
+  | "onSelectBuilding"
+  | "expandedBuilding"
+  | "onSelectFloor"
+  | "onViewBuildingDetail"
+  | "onLoadMore"
+  | "loadingMore"
+  | "loadMoreFailed"
+  | "onRetryLoadMore"
+> & {
+  isFiltering: boolean;
+  onClearFilters?: () => void;
+  onRetry?: () => void;
+};
+
+function ListContent({
+  state,
+  onRetry,
+  ...listProps
+}: BuildingListProps & { state: LocationListState }) {
+  switch (state.status) {
+    case "loading":
+      return <ListMessage role="status" title="กำลังโหลดรายการสถานที่..." />;
+    case "unavailable":
+      return (
+        <ListMessage
+          title="ยังไม่มีข้อมูลสถานที่"
+          description="ระบบรายการสถานที่ยังไม่พร้อมใช้งาน โปรดกลับมาอีกครั้ง"
+        />
+      );
+    case "error":
+      return (
+        <ListMessage
+          role="alert"
+          title="โหลดรายการสถานที่ไม่สำเร็จ"
+          description="เกิดข้อผิดพลาด โปรดลองใหม่อีกครั้ง"
+          action={onRetry && <ActionButton label="ลองใหม่" onClick={onRetry} />}
+        />
+      );
+    case "ready":
+      return <BuildingList buildings={state.buildings} {...listProps} />;
+  }
+}
+
+function BuildingList({
+  buildings,
+  isFiltering,
+  onClearFilters,
+  onSelectBuilding,
+  expandedBuilding,
+  onSelectFloor,
+  onViewBuildingDetail,
+  onLoadMore,
+  loadingMore,
+  loadMoreFailed,
+  onRetryLoadMore,
+}: BuildingListProps & { buildings: BuildingCardModel[] }) {
+  if (buildings.length === 0) {
+    return isFiltering ? (
+      <ListMessage
+        image={
+          <Image
+            src="/images/location-empty-state.png"
+            alt=""
+            width={175}
+            height={175}
+          />
+        }
+        title="ไม่พบสถานที่ที่ค้นหา"
+        description="ลองค้นหาด้วยชื่ออาคาร รหัสอาคาร หรือคำอื่นๆ อีกครั้ง"
+        action={
+          onClearFilters && (
+            <ActionButton label="ล้างตัวกรอง" onClick={onClearFilters} />
+          )
+        }
+      />
+    ) : (
+      <ListMessage
+        title="ยังไม่มีสถานที่"
+        description="ยังไม่มีอาคารในระบบ โปรดกลับมาอีกครั้ง"
+      />
+    );
+  }
+
+  return (
+    <>
+      <ul className="m-0 flex list-none flex-col p-0">
+        {buildings.map((building) => (
+          <li key={building.id}>
+            {building.id === expandedBuilding?.buildingId ? (
+              <ExpandedBuildingCard
+                building={building}
+                floors={expandedBuilding.floors}
+                initialFloorId={expandedBuilding.defaultFloorId ?? undefined}
+                buildingAvailability={expandedBuilding.buildingAvailability}
+                onSelectFloor={onSelectFloor}
+                onViewDetail={onViewBuildingDetail}
+              />
+            ) : (
+              <BuildingCard building={building} onSelect={onSelectBuilding} />
+            )}
+          </li>
+        ))}
+      </ul>
+      {onLoadMore && (
+        <LoadMoreTrigger
+          key={buildings.length}
+          onLoadMore={onLoadMore}
+          loading={loadingMore}
+        />
+      )}
+      {loadMoreFailed && onRetryLoadMore && (
+        <div className="flex flex-col items-center gap-2 px-6 pt-2 pb-6 text-center">
+          <p role="alert" className="text-[13px] leading-normal text-[#dc2626]">
+            โหลดรายการเพิ่มไม่สำเร็จ กรุณาลองอีกครั้ง
+          </p>
+          <ActionButton label="ลองอีกครั้ง" onClick={onRetryLoadMore} />
+        </div>
+      )}
+    </>
+  );
+}
+
+function LoadMoreTrigger({
+  onLoadMore,
+  loading,
+}: {
+  onLoadMore: () => void;
+  loading?: boolean;
+}) {
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const onLoadMoreRef = useRef(onLoadMore);
+
+  useEffect(() => {
+    onLoadMoreRef.current = onLoadMore;
+  }, [onLoadMore]);
+
+  useEffect(() => {
+    const trigger = triggerRef.current;
+    if (!trigger || loading) {
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          onLoadMoreRef.current();
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(trigger);
+    return () => observer.disconnect();
+  }, [loading]);
+
+  return (
+    <div
+      ref={triggerRef}
+      role="status"
+      className="min-h-8 px-6 py-2 text-center text-[13px] leading-normal text-[#878787]"
+    >
+      {loading ? "กำลังโหลดเพิ่ม..." : ""}
+    </div>
+  );
+}
+
+function ActionButton({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="min-h-11 cursor-pointer touch-manipulation rounded-full border-2 border-[#ff5815] bg-white px-6 text-sm font-semibold text-[#ff5815] transition-colors hover:bg-[#fff1ea] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#081828] active:bg-[#ffe2d4]"
+    >
+      {label}
+    </button>
+  );
+}
+
+function ListMessage({
+  image,
+  title,
+  description,
+  role,
+  action,
+}: {
+  image?: ReactNode;
+  title: string;
+  description?: string;
+  role?: "status" | "alert";
+  action?: ReactNode;
+}) {
+  return (
+    <div
+      role={role}
+      className={`flex flex-col items-center px-6 pb-8 text-center text-black ${
+        image ? "pt-4.5" : "pt-24"
+      }`}
+    >
+      {image}
+      <p className="mt-2 text-2xl leading-snug font-bold">{title}</p>
+      {description && (
+        <p className="mt-1 text-[13px] leading-normal">{description}</p>
+      )}
+      {action && <div className="mt-4">{action}</div>}
+    </div>
+  );
+}

@@ -1,0 +1,226 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/features/auth/components/auth-provider";
+import { QuickScanPanel } from "@/features/quick-scan/components/quick-scan-panel";
+import type { QuickScanVerification } from "@/features/quick-scan/types";
+import {
+  canStartSubmit,
+  checkInFlowReducer,
+  getErrorExit,
+  initialCheckInFlowState,
+  type CheckInScanState,
+} from "../check-in-flow";
+import { getErrorCopy } from "../crowd-report";
+import { httpCheckInGateway } from "../gateway";
+import { requestGpsEvidence, type GpsResult } from "../location";
+import type { CheckInGateway, CrowdLevel } from "../types";
+import {
+  CrowdReportForm,
+  type CrowdReportErrorAction,
+} from "./crowd-report-form";
+
+const LOGIN_ROUTE = "/login?next=%2Fcheck-in";
+
+export interface CheckInFlowProps {
+  gateway?: CheckInGateway;
+  requestGps?: (signal: AbortSignal) => Promise<GpsResult>;
+}
+
+function toVerification(scan: CheckInScanState): QuickScanVerification {
+  if (scan.status === "rejected") {
+    return {
+      status: "rejected",
+      message: scan.message || getErrorCopy(scan.reason).description,
+    };
+  }
+  return scan;
+}
+
+export function CheckInFlow({
+  gateway = httpCheckInGateway,
+  requestGps = requestGpsEvidence,
+}: CheckInFlowProps) {
+  const router = useRouter();
+  const { refresh: refreshAuth } = useAuth();
+  const [state, dispatch] = useReducer(
+    checkInFlowReducer,
+    initialCheckInFlowState,
+  );
+  const stateRef = useRef(state);
+  const requestRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  useEffect(
+    () => () => {
+      requestRef.current?.abort();
+      requestRef.current = null;
+    },
+    [],
+  );
+
+  const cancelRequest = useCallback(() => {
+    requestRef.current?.abort();
+    requestRef.current = null;
+  }, []);
+
+  const beginRequest = useCallback(() => {
+    if (requestRef.current) return null;
+    const controller = new AbortController();
+    requestRef.current = controller;
+    return controller;
+  }, []);
+
+  const endRequest = useCallback((controller: AbortController) => {
+    if (requestRef.current === controller) {
+      requestRef.current = null;
+    }
+  }, []);
+
+  const handleConfirmLevel = useCallback((level: CrowdLevel) => {
+    dispatch({ type: "confirm_level", level });
+  }, []);
+
+  const handleDetect = useCallback(
+    (rawValue: string) => {
+      const current = stateRef.current;
+      if (current.phase !== "scan" || current.scan.status === "verifying") {
+        return;
+      }
+      const controller = beginRequest();
+      if (!controller) return;
+      dispatch({ type: "resolve_start" });
+
+      gateway
+        .resolveQr(rawValue, controller.signal)
+        .then((result) => {
+          if (!controller.signal.aborted) {
+            dispatch({ type: "resolve_done", result });
+          }
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) {
+            dispatch({
+              type: "resolve_done",
+              result: { kind: "rejected", reason: "network" },
+            });
+          }
+        })
+        .finally(() => endRequest(controller));
+    },
+    [beginRequest, endRequest, gateway],
+  );
+
+  const handleRescan = useCallback(() => {
+    cancelRequest();
+    dispatch({ type: "rescan" });
+  }, [cancelRequest]);
+
+  const handleLevelChange = useCallback((level: CrowdLevel) => {
+    dispatch({ type: "set_level", level });
+  }, []);
+
+  const handleSubmit = useCallback(
+    (level: CrowdLevel) => {
+      const current = stateRef.current;
+      const floor = current.floor;
+      if (!canStartSubmit(current) || !floor) return;
+      const controller = beginRequest();
+      if (!controller) return;
+      const { signal } = controller;
+      dispatch({ type: "submit_start" });
+
+      (async () => {
+        const gps = await requestGps(signal);
+        if (signal.aborted) return;
+        if (gps.kind === "failed") {
+          dispatch({ type: "gps_failed", reason: gps.reason });
+          return;
+        }
+        const result = await gateway.submitCheckIn(
+          { floorRef: floor.floorRef, level, gps: gps.evidence },
+          signal,
+        );
+        if (!signal.aborted) {
+          dispatch({ type: "submit_done", result });
+        }
+      })()
+        .catch(() => {
+          if (!signal.aborted) {
+            dispatch({
+              type: "submit_done",
+              result: { kind: "rejected", reason: "network" },
+            });
+          }
+        })
+        .finally(() => endRequest(controller));
+    },
+    [beginRequest, endRequest, gateway, requestGps],
+  );
+
+  const handleDone = useCallback(() => {
+    cancelRequest();
+    dispatch({ type: "reset" });
+  }, [cancelRequest]);
+
+  const handleScanAgain = useCallback(() => {
+    cancelRequest();
+    dispatch({ type: "scan_again" });
+  }, [cancelRequest]);
+
+  const errorExit = getErrorExit(state.submission);
+  const scanAuthRejected =
+    state.phase === "scan" &&
+    state.scan.status === "rejected" &&
+    state.scan.reason === "auth";
+
+  useEffect(() => {
+    if (errorExit === "login" || scanAuthRejected) {
+      void refreshAuth();
+    }
+  }, [errorExit, scanAuthRejected, refreshAuth]);
+
+  const errorAction = useMemo<CrowdReportErrorAction | null>(() => {
+    switch (errorExit) {
+      case "rescan":
+        return { label: "สแกนใหม่", onAction: handleScanAgain };
+      case "login":
+        return {
+          label: "เข้าสู่ระบบ",
+          onAction: () => router.replace(LOGIN_ROUTE),
+        };
+      case "restart":
+        return { label: "กลับ", onAction: handleDone };
+      default:
+        return null;
+    }
+  }, [errorExit, handleDone, handleScanAgain, router]);
+
+  return (
+    <CrowdReportForm
+      key={state.formKey}
+      context={state.phase === "ready" ? (state.floor?.context ?? null) : null}
+      submission={state.submission}
+      initialLevel={state.level}
+      onConfirmLevel={handleConfirmLevel}
+      onSubmit={handleSubmit}
+      onDone={handleDone}
+      onViewHistory={() => router.push("/profile/reports")}
+      errorAction={errorAction}
+      onLevelChange={handleLevelChange}
+      scanner={
+        state.phase === "scan" ? (
+          <QuickScanPanel
+            verification={toVerification(state.scan)}
+            onDetect={handleDetect}
+            onRescan={handleRescan}
+          />
+        ) : undefined
+      }
+    />
+  );
+}

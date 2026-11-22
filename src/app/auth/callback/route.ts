@@ -1,0 +1,50 @@
+import { createClient } from "@/lib/supabase/server";
+import { NextResponse } from "next/server";
+import { getSafeRedirectPath, resolveSiteOrigin } from "@/features/auth/redirects";
+import { AUTH_UNAVAILABLE } from "@/features/auth/errors";
+
+const LOGIN_ERROR = "verification_failed";
+
+function getRedirectBase(requestUrl: string): URL | null {
+  const origin = resolveSiteOrigin({
+    devFallbackOrigin: new URL(requestUrl).origin,
+  });
+  return origin ? new URL(origin) : null;
+}
+
+export async function GET(request: Request) {
+  const requestUrl = new URL(request.url);
+  const base = getRedirectBase(request.url);
+  if (!base) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: AUTH_UNAVAILABLE,
+      },
+      { status: 503, headers: { "Cache-Control": "private, no-store" } },
+    );
+  }
+
+  const code = requestUrl.searchParams.get("code");
+  const next = requestUrl.searchParams.get("next") ?? "/";
+
+  if (code) {
+    try {
+      const supabase = await createClient();
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      if (!error) {
+        return NextResponse.redirect(new URL(getSafeRedirectPath(next), base), {
+          headers: { "Cache-Control": "private, no-store" },
+        });
+      }
+    } catch {
+      // Keep network/configuration errors out of the redirect query and UI.
+    }
+  }
+
+  const errorUrl = new URL("/login", base);
+  errorUrl.searchParams.set("error", LOGIN_ERROR);
+  return NextResponse.redirect(errorUrl, {
+    headers: { "Cache-Control": "private, no-store" },
+  });
+}

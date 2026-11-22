@@ -1,7 +1,15 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { Noto_Sans_Thai } from "next/font/google";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
+import { AuthProvider } from "@/features/auth/components/auth-provider";
 import "./globals.css";
+
+const notoSansThai = Noto_Sans_Thai({
+  subsets: ["thai", "latin"],
+  display: "swap",
+  variable: "--font-noto-sans-thai",
+});
 
 export const metadata: Metadata = {
   title: "TeeWangMai? — KMUTT Student Density Map",
@@ -17,9 +25,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="th">
+    <html lang="th" className={notoSansThai.variable}>
       <body>
-        <AppRouterCacheProvider>{children}</AppRouterCacheProvider>
+        <AppRouterCacheProvider options={{ enableCssLayer: true }}>
+          <AuthProvider>{children}</AuthProvider>
+        </AppRouterCacheProvider>
       </body>
     </html>
   );

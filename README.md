@@ -6,7 +6,7 @@
 
 A web application for monitoring and visualizing student density across locations at **King Mongkut's University of Technology Thonburi (KMUTT)**, including cafeterias, libraries, study spaces, and common areas.
 
-The system collects crowd-level reports through user check-ins and summarizes them by location on a custom campus mockup map. The map will be supplied as an image or a 3D model, with selectable zones representing campus locations. The planned check-in flow verifies presence with GPS and a QR code before users report a crowd level from 1 to 5.
+The system collects crowd-level reports through user check-ins and summarizes them by location on a custom campus mockup map. The map will be supplied as an image or a 3D model, with selectable zones representing campus locations. The check-in flow verifies presence with GPS and a QR code before users report a crowd level from 1 to 5.
 
 The product is a **mobile-first web application**. Smartphone browsers are the primary target; tablet and desktop layouts will adapt from the mobile experience.
 
@@ -19,14 +19,18 @@ The product is a **mobile-first web application**. Smartphone browsers are the p
 - Make viewing a location and reporting its crowd level easy to complete on a phone. Plan compact location details and short report forms.
 - Keep map assets lightweight. If a 3D map is chosen, plan a lightweight image or location-list fallback for devices that cannot render it smoothly.
 
-The starter includes a responsive landing page, viewport configuration, and a reusable safe-area padding utility. Map interactions and reporting flows will be implemented with these mobile requirements in mind. The existing wireframes are mid-fidelity references; final colors and icons are not defined yet.
+The app uses a mobile shell with a maximum width of 476 CSS pixels and viewport
+height that follows the device, including safe-area handling. Home with the
+campus map, Auth, Location List/Detail, Scan, Profile, Rewards/Vouchers and
+Achievements UI exist. Orange `#FF5815`, dark `#081828` and MUI icons are already
+used by shared navigation. Follow the supplied Figma for each UI task.
 
 ## Development Setup
 
 The project uses **Next.js App Router, React, TypeScript, Tailwind CSS, and ESLint**.
 
 The following supporting libraries are installed. They are ready for feature
-development; forms, validation schemas, and Supabase clients are not wired up yet.
+development; Auth forms, validation schemas, and Supabase clients already exist.
 
 | Library | Purpose |
 | --- | --- |
@@ -72,36 +76,70 @@ Docker running, use `npm run db:start`; stop it with `npm run db:stop`.
 
 ```text
 src/
-├── app/           Next.js pages, layouts, and future API routes
+├── app/           Next.js pages, layouts, and API routes
 ├── components/    Shared UI and mobile layout components
-├── features/      Campus map, locations, and crowd reports
+├── features/      Feature modules: auth, home, campus-map, locations,
+│                  crowd, crowd-report, quick-scan, checkins, profile,
+│                  rewards, achievements (reports/ is a reserved placeholder)
 ├── hooks/         Shared React hooks
-├── lib/supabase/  Planned Supabase connection layer
-└── types/         Shared and future generated database types
+├── lib/supabase/  Browser/server Supabase connection layer
+└── types/         Shared and generated database types
 public/maps/
 ├── images/        Custom map images
 └── models/        Optional 3D map assets
 supabase/
-├── migrations/    Future PostgreSQL schema and access policies
-└── seed.sql       Future local development sample data
-docs/              Architecture and development notes
+├── migrations/    Versioned PostgreSQL schema and access policies
+├── tests/         SQL schema and access assertions (13 files)
+└── seed.sql       Approved building and floor reference data
+scripts/
+├── generate-database-types.mjs  Local database type generation
+└── generate-floor-qr.mjs        Floor QR print assets (npm run qr:generate)
+docs/              Architecture, API contracts, database and setup guides
 ```
 
 See [the architecture guide](docs/architecture.md) for folder responsibilities and conventions. Empty folders are tracked with `.gitkeep`; they are preparation for future implementation.
 
-The starter currently contains a landing page only. Sign-up/login, verified check-ins, database integration, report aggregation, the interactive map, and participation/reward features are planned. Add their feature folders when implementation starts. The map format is still undecided; a 3D renderer can be added when a model format is selected.
+Pages present and connected to their APIs: Home with the SVG campus map and crowd
+summaries, Location List/Detail with crowd levels and a crowd filter, Scan (QR resolve and verified check-in), Profile (edit, avatar
+upload/delete, report history), Rewards (catalog, redemption, vouchers and voucher
+QR) and Achievements, plus Login/Signup. Protected pages show
+a guest state when signed out. BE-005 to BE-015 provide the building, crowd,
+check-in, history, avatar, reward, voucher and badge APIs; see
+[Backend Handoff](docs/backend-handoff.md). No mock application data is included.
 
-## Planned Database
+## Database
 
-The planned primary database is **PostgreSQL hosted by Supabase**. See [Supabase's database documentation](https://supabase.com/docs/guides/database/overview).
+The primary database is **PostgreSQL hosted by Supabase**. See [Supabase's database documentation](https://supabase.com/docs/guides/database/overview).
 
-The September 30, 2026 ER/DBML baseline has **nine application tables**: `users`, `locations`, `location_hours`, `location_profiles`, `checkins`, `badges`, `user_badges`, `rewards`, and `redemptions`. The latest `users` model does not contain `trust_score` or `current_streak`. Its UUID identity links to Supabase `auth.users`, which owns authentication and is the source of truth for email.
+The current migrations define **nine application tables**: `users`, `locations`,
+`floors`, `floor_hours`, `checkins`, `badges`, `user_badges`,
+`rewards`, and `redemptions`. Locations represent buildings; each floor has its
+own QR identifier, and reports reference `checkins.floor_id`. `users.id` is an
+integer application key; `users.auth_id` links to Supabase `auth.users` by UUID.
+Auth owns credentials and is the email source of truth. The model has no
+`trust_score` or `current_streak` fields.
 
-`location_profiles` is a weak/dependent entity with a shared location primary/foreign key and PostgreSQL `jsonb` details. `location_hours` is a strong entity with its own primary key and a unique `(location_id, day_of_week)` pair. See [the database design](docs/database.md) for the fields, relationships, constraints, and remaining decisions.
+Buildings have required unique N/S codes, category arrays, search aliases and `locations.details`
+JSON. `floor_hours` has a unique `(floor_id, day_of_week)` pair; Monday is 1 and
+Sunday is 7. Rewards have a last redemption time (`expires_at`) and a per-user
+limit (`max_per_user`); each voucher expires `valid_days` (default 7) after its own
+redemption. Redemptions record successful exchanges separately from use. See [Database Design](docs/database.md),
+[Reference Data](docs/reference-data.md) and [Backend Handoff](docs/backend-handoff.md).
 
 `.env.example` lists the planned connection variables. When a Supabase project is available, copy it to `.env.local` and fill in the project URL and publishable key. The current landing page runs without these values. Keep database passwords and Supabase secret/service-role keys out of browser code and `NEXT_PUBLIC_` variables.
 
-The Supabase SDK, SSR library, and CLI are installed, and local CLI configuration is included. Client initialization, application SQL migrations, and authentication flows are not implemented yet. See [Backend Development Setup](docs/backend-setup.md) for local startup, migrations, and generated types. Local reference files in `*LocalDocs-dont-commit/` are excluded from Git.
+Supabase clients, Auth endpoints, versioned migrations and RLS policies exist:
+six tables have client SELECT policies and `checkins`, `rewards` and
+`redemptions` are reached only through `SECURITY DEFINER` RPCs. Migrations are
+applied locally; nothing is deployed to Cloud. See [Backend Development Setup](docs/backend-setup.md)
+for local startup, migrations, SQL assertions, and generated types. Local reference
+files in `*LocalDocs-dont-commit/` are excluded from Git.
+
+Local contains 35 approved buildings and 224 floors, with S7 inactive and blank source categories
+set to อาคารเรียน. Database types have been regenerated for the current schema,
+including `locations.category: string[]`. Floor rows have stable QR identifiers.
+Hours/rewards/badges await their
+reference records. Check-in +10 point awarding is deferred for this round.
 
 Setup references: [Next.js installation](https://nextjs.org/docs/app/getting-started/installation) and [Tailwind CSS with Next.js](https://tailwindcss.com/docs/installation/framework-guides/nextjs).
 
@@ -132,7 +170,7 @@ The system aims to:
 - Display each location's reported density level on a custom interactive campus map
 - Update density information periodically and show the last update time
 - Help users understand how crowded a location is before visiting
-- Store historical report summaries to show how density changes over time
+- Retain individual check-in history; historical summary charts are a future extension
 - Encourage participation through points, badges, and reward redemption
 - Support future analysis of campus usage patterns
 
@@ -143,7 +181,7 @@ Prediction and location recommendations are possible future extensions of this c
 ## System Concept
 
 ```text
-User Selects a Location
+User Logs In and Scans a Floor QR
     │
     ▼
 Verify Presence with GPS + QR
@@ -155,7 +193,7 @@ User Reports Crowd Level (1–5)
 Validate and Store Report
     │
     ▼
-Aggregate Recent Reports by Zone
+Aggregate Recent Reports by Floor
     │
     ▼
 Location Density Summary
@@ -167,7 +205,8 @@ Web Application
 Custom Campus Map (Image or 3D)
 ```
 
-Each monitored location at KMUTT is represented as a **Zone**.
+Each monitored building is a `location`, with individual `floors` beneath it.
+Map zones are a presentation layer connected to these records.
 
 For example:
 
@@ -194,7 +233,11 @@ Example:
 ⚪ Unknown   No recent reports
 ```
 
-Reports use a confirmed 1–5 scale; the labels above illustrate map summaries, with the exact mapping still to be defined. Aggregation windows, agreement thresholds, and expiry rules remain TBD. Older presentation examples are not fixed requirements. Zones without sufficient recent reports should show an unknown status.
+Reports use a confirmed 1–5 scale. Each floor's current summary is the arithmetic
+mean of reports from the **latest 30 minutes**, recalculated **every 10 minutes**.
+No reports means null/unknown. BE-006 implements scheduled snapshots, score-based
+labels and check-in-count/capacity percentages; building cards use the busiest
+floor by count. See [Crowd API](docs/crowd-api.md) and [Check-in Rules](docs/check-in-rules.md).
 
 ---
 
@@ -202,17 +245,17 @@ Reports use a confirmed 1–5 scale; the labels above illustrate map summaries, 
 
 The primary data source is **reports submitted by users** about conditions at a selected campus location.
 
-Users will select a location, complete GPS and QR verification, and report a crowd level from **1 (empty) to 5 (very crowded)**. The wireframe includes QR scanning and manual code entry. The backend must create a check-in only after **GPS AND QR verification both succeed**; the row itself represents a verified check-in, without separate verification-result columns. Verification parameters, cooldown, and aggregation rules remain TBD.
+Users scan a floor QR, see its building/floor, select a crowd level from
+**1 (empty) to 5 (very crowded)**, and submit. GPS verifies building proximity;
+QR identifies the floor. The backend must accept the report only after **GPS AND
+QR verification both succeed**, using a server timestamp. Raw user coordinates
+and verification flags are not stored. The agreed cooldown is **30 minutes per
+user per floor**, independent across floors/buildings. BE-008 implements this
+in `POST /api/checkins/resolve` and `POST /api/checkins`.
 
-Example:
-
-```json
-{
-  "location_id": 2,
-  "crowd_level": 3,
-  "created_at": "2026-09-28T14:30:00+07:00"
-}
-```
+The stored report contains `user_id`, resolved `floor_id`, `crowd_level`, and
+server-assigned `created_at`. See [Check-in Rules](docs/check-in-rules.md) for the
+GPS limits and error contract.
 
 ---
 
@@ -233,11 +276,13 @@ Sports Complex ⚪ No recent reports
 
 ### Accounts and Verified Check-ins
 
-The wireframes include sign-up and login through Supabase Auth. Users will select a location, complete GPS and QR verification, and submit its observed crowd level from 1 to 5. Auth integration, access policies, and detailed verification rules still need implementation.
+Supabase Auth endpoints and own-profile policies are implemented. Verified floor
+check-ins (BE-008) validate the QR, GPS accuracy and distance, and enforce the
+30-minute user/floor cooldown on the server before a report is accepted.
 
 ### Search and Filters
 
-Users will be able to search locations, view them as a list, and filter by building, category, and whether a location is currently open.
+Users can search buildings by code, name, category or alias and view them on the map or as a list. Both the map and the list filter by crowd level. Filtering by whether a location is currently open is not implemented yet.
 
 ### Periodic Updates
 
@@ -250,19 +295,30 @@ Selecting a location can display additional information such as:
 - Reported density level
 - Number of recent reports
 - Time of the latest report
-- Historical density summaries
+- Historical density summaries, if implemented in a later extension
 - Building, floor, category, and opening hours
 - Flexible details such as Wi-Fi, charging facilities, and food menus
 
 ### Profile, Participation, and Rewards
 
-The planned profile shows points, earned badges, check-in history, and redemption history. Separate screens show available rewards and earned or locked badges. Users will be able to spend points on rewards; detailed earning and redemption rules remain to be defined. Streak and trust-score behavior from older wireframes remains TBD and adds no fields to the current schema. Integration with real partner-store databases is outside the current scope.
+Profile shows points, report count, earned badges and report history, and
+supports name and avatar edits. Rewards, vouchers and badges are
+connected to their APIs. Exchange is an immediate atomic deduction of points and
+stock with a completed redemption, limited by `max_per_user`. Each voucher expires
+`valid_days` (default 7) after its own redemption; actual use is recorded separately.
+Check-in +10 point awarding is deferred, and no earning mechanism is introduced
+in this round. Streak/trust-score behavior from older wireframes remains outside
+the current schema. Partner-store database integration is outside this scope.
+See [Database Design](docs/database.md) and [Backend Handoff](docs/backend-handoff.md).
 
 ### Historical Data
 
-The system will store historical report summaries so users can explore how reported crowd levels change over time.
+Individual check-ins remain as historical logs after leaving the summary window,
+and users can read their own history (BE-009). BE-006 keeps only the current
+per-floor snapshot, refreshed by pg_cron every 10 minutes; a summary-history table
+and density charts are future extensions.
 
-Example:
+Illustration of a possible future history display:
 
 ```text
 Canteen
@@ -330,7 +386,12 @@ rather than:
 
 > "Who is currently at this location?"
 
-Any account information used for report validation should be kept separate from public map data. Store a check-in only after both verification steps pass; do not add verification-result columns or raw personal GPS coordinates to the check-in model. Location reference coordinates belong to the location record. Supabase Auth integration, access policies, and report retention policies still need to be defined.
+Any account information used for report validation should be kept separate from
+public map data. Store a check-in only after both verification steps pass; do not
+add verification-result columns or raw personal GPS coordinates. Reference
+coordinates belong to the building. Reports are read and written only through
+`SECURITY DEFINER` RPCs that return the caller's own data (`get_my_checkins`,
+`submit_checkin`); a retention policy still needs agreement.
 
 ---
 
@@ -341,11 +402,11 @@ Several technical challenges need to be investigated during development:
 - Handling subjective or conflicting reports
 - Preventing spam and duplicate submissions
 - Verifying GPS and QR check-ins while handling unavailable device permissions
-- Defining consistent point, streak, trust-score, and reward rules
+- Defining point earning and badge requirements; implementing the agreed reward transactions
 - Defining selectable zones on the custom map
 - Choosing an image or 3D representation that works on mobile devices
-- Setting report expiry and handling locations with no recent reports
-- Defining aggregation rules and showing report freshness
+- Implementing the 30-minute lookback, 10-minute refresh and unknown/empty state
+- Deciding summary boundaries, labels/rounding and showing report freshness
 - Collecting enough reports for useful summaries
 - Scaling to many campus locations
 - Privacy and data protection
@@ -389,18 +450,23 @@ The implementation order and release boundary for participation and reward featu
 
 ## Project Status
 
-**Status:** Project foundation set up; mid-fidelity wireframes and a nine-entity ER/DBML design are available. Product features and database integration are not implemented yet.
+**Status:** The core journey works locally: Auth, the campus map and location
+pages with crowd summaries, verified QR check-in, profile with history and
+avatar, rewards and vouchers, and badges. The nine-table schema is verified
+locally with 35 approved buildings, 224 floors and regenerated types. Real floor
+hours and approved reward/badge records are still pending. Local verification
+does not imply a Cloud deployment.
 
 Current priorities:
 
-1. Define campus zones and choose the custom map format
-2. Prepare the map image or 3D model
-3. Implement Supabase Auth integration after defining GPS/QR verification, aggregation, and expiry rules
-4. Prepare migrations for the nine-table PostgreSQL design and define access policies
-5. Build check-in, summary, participation, and reward operations
-6. Connect location summaries to the interactive map
-7. Test report quality, touch interactions, and map performance on mobile devices
-8. Expand to additional campus locations
+1. Import real floor hours and approved reward/badge reference data
+2. Fix open bugs and keep docs in step with the code
+3. Verify the core journey, mobile permissions, transactions and error handling
+   on real devices (FE-024/FE-025)
+4. Plan the Cloud deployment and production configuration
+
+These priorities describe work streams, not a requirement to wait for every
+earlier item. UI work and APIs with independent inputs can proceed in parallel.
 
 ---
 

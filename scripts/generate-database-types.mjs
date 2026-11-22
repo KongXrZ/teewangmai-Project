@@ -1,6 +1,11 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync, renameSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { parseArgs } from "node:util";
+import { format } from "prettier";
+
+const { values } = parseArgs({ options: { workdir: { type: "string" } } });
+const workdirArgs = values.workdir ? ["--workdir", values.workdir] : [];
 
 const root = new URL("../", import.meta.url);
 const packageUrl = new URL("node_modules/supabase/package.json", root);
@@ -8,7 +13,11 @@ const cliPackage = JSON.parse(readFileSync(packageUrl, "utf8"));
 const cliEntry = new URL(cliPackage.bin.supabase, packageUrl);
 const result = spawnSync(
   process.execPath,
-  [fileURLToPath(cliEntry), "gen", "types", "--local", "--lang", "typescript", "--schema", "public"],
+  [
+    fileURLToPath(cliEntry),
+    "gen", "types", "--local", "--lang", "typescript", "--schema", "public",
+    ...workdirArgs,
+  ],
   { cwd: fileURLToPath(root), encoding: "utf8", maxBuffer: 10 * 1024 * 1024 },
 );
 
@@ -24,6 +33,7 @@ if (!/export type Database\s*=/.test(result.stdout)) {
 
 const destination = new URL("src/types/database.ts", root);
 const temporary = new URL("src/types/database.ts.tmp", root);
-writeFileSync(temporary, result.stdout, "utf8");
+const formatted = await format(result.stdout, { parser: "typescript" });
+writeFileSync(temporary, formatted, "utf8");
 renameSync(temporary, destination);
 console.log("Generated src/types/database.ts from the local public schema.");

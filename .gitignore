@@ -145,3 +145,6 @@ vite.config.ts.timestamp-*
 
 # Local reference documents are not part of the repository
 /*LocalDocs-dont-commit/
+
+# Operator-generated floor QR print batches
+/artifacts/floor-qr/
