@@ -147,6 +147,9 @@ export function CheckInFlow({
         );
         if (!signal.aborted) {
           dispatch({ type: "submit_done", result });
+          if (result.kind === "recorded") {
+            void refreshAuth();
+          }
         }
       })()
         .catch(() => {
@@ -159,7 +162,7 @@ export function CheckInFlow({
         })
         .finally(() => endRequest(controller));
     },
-    [beginRequest, endRequest, gateway, requestGps],
+    [beginRequest, endRequest, gateway, refreshAuth, requestGps],
   );
 
   const handleDone = useCallback(() => {

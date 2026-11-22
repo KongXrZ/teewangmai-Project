@@ -3,6 +3,7 @@
 import { useId, useRef } from "react";
 import Dialog from "@mui/material/Dialog";
 import CheckRounded from "@mui/icons-material/CheckRounded";
+import StarsRounded from "@mui/icons-material/StarsRounded";
 import { formatRecordedAt, getCrowdLevelLabel } from "../crowd-report";
 import type { CrowdReportRecord } from "../types";
 
@@ -77,6 +78,21 @@ export function CrowdReportSuccessDialog({
                 </dd>
               </div>
             </dl>
+            {typeof record.pointsAwarded === "number" &&
+              record.pointsAwarded > 0 && (
+                <div className="mt-1 flex flex-col items-center gap-1 rounded-2xl bg-[#fff7ed] px-4 py-2.5 text-[#c2410c]">
+                  <p className="m-0 inline-flex items-center gap-1.5 text-base font-bold">
+                    <StarsRounded aria-hidden="true" sx={{ fontSize: 20 }} />
+                    ได้รับ +{record.pointsAwarded.toLocaleString("th-TH")} แต้ม
+                  </p>
+                  {typeof record.pointsBalance === "number" && (
+                    <p className="m-0 text-xs font-medium text-[#9a3412]">
+                      แต้มสะสมปัจจุบัน{" "}
+                      {record.pointsBalance.toLocaleString("th-TH")} แต้ม
+                    </p>
+                  )}
+                </div>
+              )}
             {recordedAt && (
               <p className="text-[15px] leading-[1.6] text-[#697386]">
                 {recordedAt}
