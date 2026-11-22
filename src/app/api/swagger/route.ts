@@ -192,6 +192,36 @@ export async function GET() {
           },
         },
       },
+      '/api/profile/streak': {
+        get: {
+          tags: ['Users'],
+          summary: 'Own daily check-in streak summary',
+          description:
+            'Computes current_streak, longest_streak, checked_in_today, and last_checkin_date from own check-ins using Asia/Bangkok calendar days. Streak remains active if the latest check-in was today or yesterday.',
+          security: [{ cookieAuth: [] }],
+          responses: {
+            200: {
+              description: 'Streak summary',
+              content: {
+                'application/json': {
+                  example: {
+                    success: true,
+                    data: {
+                      current_streak: 3,
+                      longest_streak: 7,
+                      checked_in_today: true,
+                      last_checkin_date: '2026-11-22',
+                    },
+                  },
+                },
+              },
+            },
+            400: { description: 'Query parameters are not supported (code: validation)' },
+            401: { description: 'No session, expired session or no profile (code: unauthorized)' },
+            503: { description: 'Database or Auth unavailable (code: unavailable)' },
+          },
+        },
+      },
       '/api/auth/signup': {
         post: {
           tags: ['Auth'],

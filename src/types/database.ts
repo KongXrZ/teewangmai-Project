@@ -402,6 +402,15 @@ export type Database = {
           matching_count: number;
         }[];
       };
+      get_my_streak: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          checked_in_today: boolean;
+          current_streak: number;
+          last_checkin_date: string | null;
+          longest_streak: number;
+        }[];
+      };
       get_my_vouchers: {
         Args: Record<PropertyKey, never>;
         Returns: {
