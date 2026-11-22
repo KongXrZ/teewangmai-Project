@@ -34,8 +34,10 @@ remain future implementation. BE-006 implements scheduled summaries; see
    next scheduled crowd-summary calculation, rather than replacing the summary
    directly with this user's score.
 
-Check-in point awarding is deferred. Do not add +10 points or an awarding trigger
-in this round. The point balance remains available for reward eligibility.
+Each accepted check-in awards **+10 points** to `public.users.points` via the
+`award_points_after_checkin` trigger on `public.checkins` (BE-023), and
+`POST /api/checkins` returns `points_awarded` and `points_balance`. Rejected or
+cooldown submissions award 0 points.
 
 BE-007 owns printable QR provisioning, BE-008 owns QR resolution and trusted
 submission, BE-006 owns summaries, and BE-009 owns personal check-in history.

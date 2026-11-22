@@ -497,6 +497,8 @@ export type Database = {
           location_name: string;
           next_eligible_at: string;
           outcome: string;
+          points_awarded: number | null;
+          points_balance: number | null;
         }[];
       };
       use_voucher: {

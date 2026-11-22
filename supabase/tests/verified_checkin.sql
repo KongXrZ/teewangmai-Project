@@ -100,17 +100,20 @@ begin
   select * into v_result from public.submit_checkin(v_floor_one, 4, 13.65 + 0.001079, 100.49, 30);
   if v_result.outcome <> 'recorded' or v_result.crowd_level <> 4 or v_result.floor_name <> '1'
     or v_result.building <> 'N999997'
+    or v_result.points_awarded <> 10 or v_result.points_balance <> 10
     or v_result.next_eligible_at <> v_result.created_at + interval '30 minutes' then
-    raise exception '120 m with 30 m accuracy must be recorded: %', row_to_json(v_result);
+    raise exception '120 m with 30 m accuracy must be recorded with +10 points: %', row_to_json(v_result);
   end if;
 
   select * into v_result from public.submit_checkin(v_floor_one, 2, 13.65, 100.49, 10);
-  if v_result.outcome <> 'cooldown' or v_result.next_eligible_at <> now() + interval '30 minutes' then
-    raise exception 'same floor within 30 minutes must hit cooldown: %', row_to_json(v_result);
+  if v_result.outcome <> 'cooldown' or v_result.next_eligible_at <> now() + interval '30 minutes'
+    or v_result.points_awarded is not null then
+    raise exception 'same floor within 30 minutes must hit cooldown without points: %', row_to_json(v_result);
   end if;
 
-  if (select outcome from public.submit_checkin('00000000-0000-4000-8000-0000000c0002', 2, 13.65, 100.49, 10)) <> 'recorded' then
-    raise exception 'another floor must have its own cooldown';
+  select * into v_result from public.submit_checkin('00000000-0000-4000-8000-0000000c0002', 2, 13.65, 100.49, 10);
+  if v_result.outcome <> 'recorded' or v_result.points_awarded <> 10 or v_result.points_balance <> 20 then
+    raise exception 'another floor must have its own cooldown and award +10 points: %', row_to_json(v_result);
   end if;
 end;
 $$;
