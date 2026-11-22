@@ -128,16 +128,36 @@ export function formatVoucherDateTime(value: string): string {
 
 export type VoucherEntrySource = "profile" | "rewards";
 
+const MAX_PG_INT = 2147483647;
+
+export function parseVoucherIdParam(value?: string | null): VoucherId | null {
+  const trimmed = value?.trim();
+  if (!trimmed || !/^[1-9]\d*$/.test(trimmed)) {
+    return null;
+  }
+  const id = Number(trimmed);
+  return Number.isSafeInteger(id) && id <= MAX_PG_INT ? id : null;
+}
+
 export function parseVoucherEntrySource(
   from?: string | null,
 ): VoucherEntrySource {
   return from?.trim() === "profile" ? "profile" : "rewards";
 }
 
-export function buildVoucherCollectionHref(from?: string | null): string {
-  return parseVoucherEntrySource(from) === "profile"
-    ? "/rewards/vouchers?from=profile"
-    : "/rewards/vouchers";
+export function buildVoucherCollectionHref(
+  from?: string | null,
+  voucherId?: VoucherId | null,
+): string {
+  const params = new URLSearchParams();
+  if (parseVoucherEntrySource(from) === "profile") {
+    params.set("from", "profile");
+  }
+  if (voucherId != null) {
+    params.set("voucher", String(voucherId));
+  }
+  const query = params.toString();
+  return query ? `/rewards/vouchers?${query}` : "/rewards/vouchers";
 }
 
 export function buildVoucherDetailHref(

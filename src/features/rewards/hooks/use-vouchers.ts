@@ -24,7 +24,7 @@ import type {
 const USE_CODE_LIFETIME_MS = 30 * 60 * 1000;
 const USE_RETRY_MESSAGE = "ยังยืนยันผลการใช้สิทธิ์ไม่ได้ โปรดลองใหม่อีกครั้ง";
 
-interface ActiveVoucherUse {
+export interface ActiveVoucherUse {
   id: VoucherId;
   usedAt: string;
   useCode: string;
@@ -34,55 +34,257 @@ function millisecondsUntil(deadline: number) {
   return Math.max(deadline - Date.now(), 0);
 }
 
-export function useVoucherCollection(): VoucherCollectionState {
+export interface VoucherCollectionController {
+  state: VoucherCollectionState;
+  activeUses: Readonly<Record<VoucherId, ActiveVoucherUse>>;
+  usePending: boolean;
+  useError?: string;
+  clearUseError: () => void;
+  submitUse: (voucher: VoucherModel) => void;
+}
+
+export function useVoucherCollection(): VoucherCollectionController {
   const { status: authStatus, refresh: refreshAuth } = useAuth();
   const enabled = authStatus === "authenticated" || authStatus === "error";
   const [result, setResult] = useState<VouchersResult | null>(null);
   const [requestId, setRequestId] = useState(0);
+  const [activeUses, setActiveUses] = useState<
+    Record<VoucherId, ActiveVoucherUse>
+  >({});
+  const [usePending, setUsePending] = useState(false);
+  const [useError, setUseError] = useState<string>();
+  const useControllerRef = useRef<AbortController | null>(null);
 
   const retry = useCallback(() => {
     setResult(null);
     setRequestId((id) => id + 1);
   }, []);
 
+  const clearUseError = useCallback(() => {
+    setUseError(undefined);
+  }, []);
+
   useEffect(() => {
     if (!enabled) return;
     const controller = new AbortController();
+    const { signal } = controller;
 
-    fetchVouchers(fetch, controller.signal)
-      .then((next) => {
-        if (controller.signal.aborted) {
-          return;
+    async function load() {
+      const next = await fetchVouchers(fetch, signal);
+      if (signal.aborted) {
+        return;
+      }
+      if (next.kind === "unauthenticated") {
+        await refreshAuth();
+        if (!signal.aborted) {
+          setResult({ kind: "unauthenticated" });
         }
-        if (next.kind === "unauthenticated") {
-          void refreshAuth().finally(() => {
-            if (!controller.signal.aborted) {
+        return;
+      }
+
+      if (next.kind === "ok") {
+        const recoverable = next.vouchers
+          .map((voucher) => ({
+            voucher,
+            scope: voucherUseAttemptScope(voucher.id),
+            key:
+              voucher.usedAt !== null
+                ? readAttemptKey(voucherUseAttemptScope(voucher.id))
+                : null,
+          }))
+          .filter(
+            (
+              entry,
+            ): entry is { voucher: VoucherModel; scope: string; key: string } =>
+              entry.key !== null,
+          );
+
+        if (recoverable.length > 0) {
+          const recoveredMap: Record<VoucherId, ActiveVoucherUse> = {};
+          let sawUnauthenticated = false;
+
+          await Promise.all(
+            recoverable.map(async ({ voucher, scope, key }) => {
+              const recovered = await requestVoucherUse(
+                voucher.id,
+                key,
+                fetch,
+                signal,
+              );
+              if (signal.aborted) {
+                return;
+              }
+              if (recovered.kind === "ok") {
+                recoveredMap[recovered.id] = {
+                  id: recovered.id,
+                  usedAt: recovered.usedAt,
+                  useCode: recovered.useCode,
+                };
+              } else if (recovered.kind === "unauthenticated") {
+                sawUnauthenticated = true;
+              } else if (shouldClearVoucherUseKey(recovered.kind)) {
+                clearAttemptKey(scope);
+              }
+            }),
+          );
+
+          if (signal.aborted) {
+            return;
+          }
+          if (sawUnauthenticated) {
+            await refreshAuth();
+            if (!signal.aborted) {
               setResult({ kind: "unauthenticated" });
             }
-          });
-          return;
+            return;
+          }
+          setActiveUses(recoveredMap);
         }
-        setResult(next);
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) {
-          setResult({ kind: "error" });
-        }
-      });
+      }
+
+      setResult(next);
+    }
+
+    load().catch(() => {
+      if (!signal.aborted) {
+        setResult({ kind: "error" });
+      }
+    });
 
     return () => controller.abort();
   }, [enabled, refreshAuth, requestId]);
 
+  useEffect(() => () => useControllerRef.current?.abort(), []);
+
+  useEffect(() => {
+    const entries = Object.values(activeUses);
+    if (entries.length === 0) {
+      return;
+    }
+    const vouchersById = new Map(
+      result?.kind === "ok"
+        ? result.vouchers.map((voucher) => [voucher.id, voucher])
+        : [],
+    );
+
+    const timers = entries.map((active) => {
+      const useDeadline =
+        new Date(active.usedAt).getTime() + USE_CODE_LIFETIME_MS;
+      const voucherExpiresAt = vouchersById.get(active.id)?.expiresAt;
+      const voucherDeadline = voucherExpiresAt
+        ? new Date(voucherExpiresAt).getTime()
+        : useDeadline;
+      return setTimeout(
+        () => {
+          clearAttemptKey(voucherUseAttemptScope(active.id));
+          setActiveUses((current) => {
+            if (!(active.id in current)) {
+              return current;
+            }
+            const next = { ...current };
+            delete next[active.id];
+            return next;
+          });
+        },
+        millisecondsUntil(Math.min(useDeadline, voucherDeadline)),
+      );
+    });
+
+    return () => {
+      timers.forEach((timer) => clearTimeout(timer));
+    };
+  }, [activeUses, result]);
+
+  const submitUse = useCallback(
+    (target: VoucherModel) => {
+      if (useControllerRef.current) {
+        return;
+      }
+      const controller = new AbortController();
+      const { signal } = controller;
+      const scope = voucherUseAttemptScope(target.id);
+      useControllerRef.current = controller;
+      setUsePending(true);
+      setUseError(undefined);
+
+      requestVoucherUse(target.id, getAttemptKey(scope), fetch, signal)
+        .then((next) => {
+          if (signal.aborted) {
+            return;
+          }
+          switch (next.kind) {
+            case "ok":
+              setActiveUses((current) => ({
+                ...current,
+                [next.id]: {
+                  id: next.id,
+                  usedAt: next.usedAt,
+                  useCode: next.useCode,
+                },
+              }));
+              return;
+            case "unauthenticated":
+              setUseError(USE_RETRY_MESSAGE);
+              void refreshAuth();
+              return;
+            case "conflict":
+              clearAttemptKey(scope);
+              setUseError(
+                next.message ?? "สิทธิ์นี้ถูกใช้หรือหมดอายุแล้ว โปรดตรวจสอบอีกครั้ง",
+              );
+              setRequestId((id) => id + 1);
+              return;
+            case "rejected":
+              clearAttemptKey(scope);
+              setUseError(next.message ?? USE_RETRY_MESSAGE);
+              return;
+            case "unknown":
+              setUseError(next.message ?? USE_RETRY_MESSAGE);
+              return;
+          }
+        })
+        .catch(() => {
+          if (!signal.aborted) {
+            setUseError(USE_RETRY_MESSAGE);
+          }
+        })
+        .finally(() => {
+          if (useControllerRef.current === controller) {
+            useControllerRef.current = null;
+            setUsePending(false);
+          }
+        });
+    },
+    [refreshAuth],
+  );
+
+  let state: VoucherCollectionState;
   if (result === null) {
-    return { status: "loading" };
+    state = { status: "loading" };
+  } else if (result.kind === "unauthenticated") {
+    state = { status: "unauthenticated" };
+  } else if (result.kind === "error") {
+    state = { status: "error", message: result.message, onRetry: retry };
+  } else {
+    state = {
+      status: "ready",
+      vouchers: result.vouchers.map((voucher) => {
+        const active = activeUses[voucher.id];
+        return active
+          ? { ...voucher, usedAt: active.usedAt, status: "used" }
+          : voucher;
+      }),
+    };
   }
-  if (result.kind === "unauthenticated") {
-    return { status: "unauthenticated" };
-  }
-  if (result.kind === "error") {
-    return { status: "error", message: result.message, onRetry: retry };
-  }
-  return { status: "ready", vouchers: result.vouchers };
+
+  return {
+    state,
+    activeUses,
+    usePending,
+    useError,
+    clearUseError,
+    submitUse,
+  };
 }
 
 export interface VoucherDetailController {

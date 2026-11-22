@@ -10,6 +10,7 @@ import {
   getVoucherDisplayStatus,
   getVoucherStatusLabel,
   parseVoucherEntrySource,
+  parseVoucherIdParam,
   resolveVoucherCollectionBackHref,
 } from "../src/features/rewards/vouchers.ts";
 
@@ -173,4 +174,27 @@ test("voucher entry source selects profile navigation only for ?from=profile", (
   assert.equal(parseVoucherEntrySource("other"), "rewards");
   assert.equal(parseVoucherEntrySource(""), "rewards");
   assert.equal(parseVoucherEntrySource(undefined), "rewards");
+});
+
+test("parseVoucherIdParam and buildVoucherCollectionHref handle expandable voucher query params", () => {
+  assert.equal(parseVoucherIdParam("42"), 42);
+  assert.equal(parseVoucherIdParam(" 123 "), 123);
+  assert.equal(parseVoucherIdParam("0"), null);
+  assert.equal(parseVoucherIdParam("-5"), null);
+  assert.equal(parseVoucherIdParam("abc"), null);
+  assert.equal(parseVoucherIdParam("2147483648"), null);
+  assert.equal(parseVoucherIdParam(null), null);
+
+  assert.equal(
+    buildVoucherCollectionHref("profile", 42),
+    "/rewards/vouchers?from=profile&voucher=42",
+  );
+  assert.equal(
+    buildVoucherCollectionHref("rewards", 42),
+    "/rewards/vouchers?voucher=42",
+  );
+  assert.equal(
+    buildVoucherCollectionHref(undefined, null),
+    "/rewards/vouchers",
+  );
 });

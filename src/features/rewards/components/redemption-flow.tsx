@@ -11,6 +11,7 @@ import {
 import { redeemReward, toRedemptionResult } from "../api/redemption-adapter";
 import type { RedemptionResult } from "../redemption";
 import type { RewardCardModel } from "../types";
+import { buildVoucherCollectionHref } from "../vouchers";
 import { RedemptionDialog } from "./redemption-dialog";
 import type { RedemptionFlowProps } from "./rewards-catalog-container";
 
@@ -85,7 +86,7 @@ export function RedemptionFlow({
       onViewVoucher={
         voucherId === null
           ? undefined
-          : () => router.push(`/rewards/vouchers/${voucherId}`)
+          : () => router.push(buildVoucherCollectionHref("rewards", voucherId))
       }
     />
   );
