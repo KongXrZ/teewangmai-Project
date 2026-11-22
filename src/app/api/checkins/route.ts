@@ -46,6 +46,8 @@ export async function POST(request: Request) {
         crowd_level: row.crowd_level,
         created_at: row.created_at,
         next_eligible_at: row.next_eligible_at,
+        points_awarded: row.points_awarded,
+        points_balance: row.points_balance,
       },
       201,
     );
