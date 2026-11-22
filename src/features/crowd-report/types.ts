@@ -22,6 +22,8 @@ export interface CrowdReportRecord {
   floorLabel: string;
   level: CrowdLevel;
   recordedAt: string;
+  pointsAwarded?: number;
+  pointsBalance?: number;
 }
 
 export type CrowdReportSubmission =

@@ -58,6 +58,8 @@ const submitResponseSchema = z.object({
     crowd_level: z.number().int().min(1).max(5),
     created_at: z.string().min(1),
     next_eligible_at: z.string().min(1).optional(),
+    points_awarded: z.number().int().nonnegative().nullable().optional(),
+    points_balance: z.number().int().nonnegative().nullable().optional(),
   }),
 });
 
@@ -197,7 +199,14 @@ export function parseSubmitCheckInResponse(
     if (!parsed.success) {
       return { kind: "rejected", reason: "network" };
     }
-    const { location, floor, crowd_level, created_at } = parsed.data.data;
+    const {
+      location,
+      floor,
+      crowd_level,
+      created_at,
+      points_awarded,
+      points_balance,
+    } = parsed.data.data;
     return {
       kind: "recorded",
       record: {
@@ -205,6 +214,12 @@ export function parseSubmitCheckInResponse(
         floorLabel: formatFloorLabel(floor.name),
         level: crowd_level as CrowdLevel,
         recordedAt: created_at,
+        ...(typeof points_awarded === "number"
+          ? { pointsAwarded: points_awarded }
+          : {}),
+        ...(typeof points_balance === "number"
+          ? { pointsBalance: points_balance }
+          : {}),
       },
     };
   }

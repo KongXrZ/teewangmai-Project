@@ -235,3 +235,31 @@ test("submitCheckIn maps BE-008 error codes accurately", () => {
     { kind: "rejected", reason: "network", message: "ระบบขัดข้อง" },
   );
 });
+
+test("parseSubmitCheckInResponse maps points_awarded and points_balance when present", () => {
+  const result = parseSubmitCheckInResponse(201, {
+    success: true,
+    data: {
+      id: 101,
+      location: { id: 7, building: "N7", name: "อาคารเรียนรวม 2" },
+      floor: { id: 31, name: "2" },
+      crowd_level: 3,
+      created_at: "2026-11-22T10:00:00.000Z",
+      next_eligible_at: "2026-11-22T10:30:00.000Z",
+      points_awarded: 10,
+      points_balance: 50,
+    },
+  });
+
+  assert.deepEqual(result, {
+    kind: "recorded",
+    record: {
+      buildingName: "อาคารเรียนรวม 2",
+      floorLabel: "ชั้น 2",
+      level: 3,
+      recordedAt: "2026-11-22T10:00:00.000Z",
+      pointsAwarded: 10,
+      pointsBalance: 50,
+    },
+  });
+});
