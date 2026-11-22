@@ -69,7 +69,7 @@ export const checkinPaths = {
       ...common,
       summary: "Submit one verified crowd report for the scanned floor",
       description:
-        "Accepted when the GPS accuracy is at most 100 m and the distance to the building is at most 100 m plus min(accuracy, 50 m) (never above 150 m). One report per user and floor every 30 minutes. Coordinates are checked, never stored. No points are awarded this round.",
+        "Accepted when the GPS accuracy is at most 100 m and the distance to the building is at most 100 m plus min(accuracy, 50 m) (never above 150 m). One report per user and floor every 30 minutes. Coordinates are checked, never stored. Each accepted check-in awards +10 points.",
       requestBody: {
         required: true,
         ...json({
@@ -94,6 +94,8 @@ export const checkinPaths = {
             crowd_level: { type: "integer" },
             created_at: { type: "string", format: "date-time" },
             next_eligible_at: { type: "string", format: "date-time" },
+            points_awarded: { type: "integer", example: 10 },
+            points_balance: { type: "integer", example: 10 },
           },
         }),
         400: error("Invalid body (code: validation)"),

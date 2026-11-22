@@ -402,6 +402,15 @@ export type Database = {
           matching_count: number;
         }[];
       };
+      get_my_streak: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          checked_in_today: boolean;
+          current_streak: number;
+          last_checkin_date: string | null;
+          longest_streak: number;
+        }[];
+      };
       get_my_vouchers: {
         Args: Record<PropertyKey, never>;
         Returns: {
@@ -497,6 +506,8 @@ export type Database = {
           location_name: string;
           next_eligible_at: string;
           outcome: string;
+          points_awarded: number | null;
+          points_balance: number | null;
         }[];
       };
       use_voucher: {

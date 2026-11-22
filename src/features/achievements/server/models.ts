@@ -1,4 +1,4 @@
-export const BADGE_REQUIREMENT_TYPES = ["checkin_count"] as const;
+export const BADGE_REQUIREMENT_TYPES = ["checkin_count", "streak_days"] as const;
 
 export interface BadgeRow {
   id: number;
@@ -16,7 +16,13 @@ export interface BadgeDto extends BadgeRow {
 }
 
 export function requirementText(type: string, value: number): string | null {
-  return type === "checkin_count" ? `เช็กอินครบ ${value} ครั้ง` : null;
+  if (type === "checkin_count") {
+    return `เช็กอินครบ ${value} ครั้ง`;
+  }
+  if (type === "streak_days") {
+    return `เช็กอินต่อเนื่อง ${value} วัน`;
+  }
+  return null;
 }
 
 export function toBadgeDto(row: BadgeRow): BadgeDto {

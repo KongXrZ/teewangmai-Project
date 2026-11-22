@@ -5,6 +5,7 @@ import Avatar from "@mui/material/Avatar";
 import type { SvgIconProps } from "@mui/material/SvgIcon";
 import ChevronRightRounded from "@mui/icons-material/ChevronRightRounded";
 import HistoryRounded from "@mui/icons-material/HistoryRounded";
+import LocalFireDepartmentRounded from "@mui/icons-material/LocalFireDepartmentRounded";
 import LogoutRounded from "@mui/icons-material/LogoutRounded";
 import PersonOutlineRounded from "@mui/icons-material/PersonOutlineRounded";
 import PhotoCameraOutlined from "@mui/icons-material/PhotoCameraOutlined";
@@ -14,7 +15,12 @@ import WorkspacePremiumOutlined from "@mui/icons-material/WorkspacePremiumOutlin
 import { BottomNavigation } from "@/components/layout/bottom-navigation";
 import { GuestState } from "@/features/auth/components/guest-state";
 import { Spinner } from "@/features/quick-scan/components/spinner";
-import type { ProfileModel, ProfileState } from "./profile-view-models";
+import { getProfileStreakSummary } from "./profile-streak-client";
+import type {
+  ProfileModel,
+  ProfileState,
+  ProfileStreakModel,
+} from "./profile-view-models";
 import {
   SkeletonBlock,
   StateMessage,
@@ -116,7 +122,7 @@ function ProfileOverview({
         aria-label="ข้อมูลบัญชี"
         className="rounded-[20px] border border-[#e5e7eb] p-4 sm:p-5"
       >
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <button
             type="button"
             onClick={onEdit}
@@ -146,6 +152,10 @@ function ProfileOverview({
           <p className="line-clamp-2 min-w-0 flex-1 text-lg leading-snug font-semibold break-words text-[#141414] min-[360px]:text-xl">
             {profile.name}
           </p>
+          <ProfileStreakPill
+            streak={profile.streak ?? null}
+            onClick={onBadges}
+          />
         </div>
         <dl className="mt-4 grid grid-cols-3 rounded-2xl bg-[#fff3ec] py-4">
           {stats.map((stat, index) => (
@@ -207,6 +217,71 @@ function ProfileOverview({
         </p>
       )}
     </fieldset>
+  );
+}
+
+function ProfileStreakPill({
+  streak,
+  onClick,
+}: {
+  streak: ProfileStreakModel | null;
+  onClick: () => void;
+}) {
+  const summary = getProfileStreakSummary(streak);
+  const styles = {
+    active: {
+      card: "border-[#fed7aa] bg-[#fff3ec] hover:bg-[#ffe8db]",
+      icon: "bg-[#ea580c] text-white",
+      value: "text-[#ea580c]",
+      label: "text-[#9a3412]",
+    },
+    "at-risk": {
+      card: "border-[#fde68a] bg-[#fffbeb] hover:bg-[#fef3c7]",
+      icon: "bg-[#fef3c7] text-[#d97706]",
+      value: "text-[#b45309]",
+      label: "text-[#b45309]",
+    },
+    idle: {
+      card: "border-[#e5e7eb] bg-[#f9fafb] hover:bg-[#f3f4f6]",
+      icon: "bg-[#e5e7eb] text-[#9ca3af]",
+      value: "text-[#4b5563]",
+      label: "text-[#6b7280]",
+    },
+    loading: {
+      card: "border-[#e5e7eb] bg-[#f9fafb] hover:bg-[#f3f4f6]",
+      icon: "bg-[#f3f4f6] text-[#9ca3af]",
+      value: "text-[#9ca3af]",
+      label: "text-[#9ca3af]",
+    },
+  }[summary.tone];
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={summary.ariaLabel}
+      data-streak-tone={summary.tone}
+      className={`flex shrink-0 cursor-pointer touch-manipulation items-center gap-2 rounded-2xl border px-2.5 py-2 text-left transition-colors duration-150 [-webkit-tap-highlight-color:transparent] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ea580c] disabled:cursor-not-allowed disabled:opacity-50 sm:px-3 ${styles.card}`}
+    >
+      <span
+        aria-hidden="true"
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${styles.icon}`}
+      >
+        <LocalFireDepartmentRounded sx={{ fontSize: 22 }} />
+      </span>
+      <span className="flex flex-col leading-tight">
+        <span
+          className={`text-base leading-tight font-bold whitespace-nowrap tabular-nums ${styles.value}`}
+        >
+          {summary.valueText}
+        </span>
+        <span
+          className={`text-[11px] leading-tight font-medium whitespace-nowrap ${styles.label}`}
+        >
+          {summary.subLabel}
+        </span>
+      </span>
+    </button>
   );
 }
 
@@ -281,9 +356,10 @@ function ProfileSkeleton() {
         กำลังโหลดโปรไฟล์
       </span>
       <div className="rounded-[20px] border border-[#e5e7eb] p-4 sm:p-5">
-        <div className="flex items-center gap-4">
-          <SkeletonBlock className="h-[72px] w-[72px] rounded-full" />
+        <div className="flex items-center gap-3 sm:gap-4">
+          <SkeletonBlock className="h-[72px] w-[72px] shrink-0 rounded-full" />
           <SkeletonBlock className="h-5 flex-1 rounded-md" />
+          <SkeletonBlock className="h-[52px] w-[112px] shrink-0 rounded-2xl" />
         </div>
         <SkeletonBlock className="mt-4 h-[84px] w-full rounded-2xl" />
       </div>
