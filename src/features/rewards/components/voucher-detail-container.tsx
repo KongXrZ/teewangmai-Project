@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useVoucherDetail } from "../hooks/use-vouchers";
 import {
   buildVoucherCollectionHref,
+  parseVoucherEntrySource,
   type VoucherDetailState,
   type VoucherId,
   type VoucherModel,
@@ -24,6 +25,7 @@ function parseVoucherId(value: string): VoucherId | null {
 export function VoucherDetailContainer({ voucherId }: { voucherId: string }) {
   const router = useRouter();
   const from = useSearchParams().get("from");
+  const entrySource = parseVoucherEntrySource(from);
   const { state, useCode, usePending, useError, submitUse } = useVoucherDetail(
     parseVoucherId(voucherId),
   );
@@ -38,6 +40,7 @@ export function VoucherDetailContainer({ voucherId }: { voucherId: string }) {
     <>
       <VoucherDetailPage
         state={viewState}
+        entrySource={entrySource}
         onBack={() => router.push(buildVoucherCollectionHref(from))}
         onUseVoucher={setConfirming}
         usePending={usePending}
