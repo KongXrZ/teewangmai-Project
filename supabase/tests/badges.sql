@@ -97,6 +97,34 @@ begin
   end if;
   update public.badges set is_active = false where id = inactive_badge;
   delete from public.user_badges where user_id = user_b and badge_id = inactive_badge;
+
+  -- Verify streak_days badge awarding and gap handling (Asia/Bangkok days)
+  declare
+    streak_badge integer;
+    day_three_at timestamptz := (date_trunc('day', now() at time zone 'Asia/Bangkok') + interval '9 hours') at time zone 'Asia/Bangkok';
+    day_two_at timestamptz := day_three_at - interval '1 day';
+    day_one_at timestamptz := day_three_at - interval '2 days';
+    gap_day_at timestamptz := day_three_at - interval '4 days';
+  begin
+    insert into public.badges (name, requirement_type, requirement_value)
+      values ('Badge test streak 3', 'streak_days', 3) returning id into streak_badge;
+    perform set_config('badge_test.streak_badge', streak_badge::text, true);
+
+    insert into public.checkins (user_id, floor_id, crowd_level, created_at) values
+      (user_b, floor_one, 2, gap_day_at),
+      (user_b, floor_one, 2, day_one_at),
+      (user_b, floor_one, 2, day_two_at);
+    if exists (select 1 from public.user_badges where user_id = user_b and badge_id = streak_badge) then
+      raise exception 'Streak badge awarded across a gap before 3 consecutive days';
+    end if;
+
+    insert into public.checkins (user_id, floor_id, crowd_level, created_at)
+      values (user_b, floor_one, 2, day_three_at);
+    if not exists (select 1 from public.user_badges where user_id = user_b
+      and badge_id = streak_badge and earned_at = day_three_at) then
+      raise exception 'Streak badge not awarded on reaching 3 consecutive Bangkok days';
+    end if;
+  end;
 end;
 $$;
 
@@ -156,6 +184,14 @@ begin
   if exists (select 1 from public.badges where id = inactive_badge) then
     raise exception 'Unearned inactive badge readable';
   end if;
+  declare
+    streak_row record;
+  begin
+    select * into streak_row from public.get_my_streak();
+    if streak_row.current_streak <> 3 or streak_row.longest_streak <> 3 or not streak_row.checked_in_today then
+      raise exception 'Unexpected streak summary for user_b: %', row_to_json(streak_row);
+    end if;
+  end;
 end;
 $$;
 
