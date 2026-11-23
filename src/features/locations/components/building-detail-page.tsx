@@ -7,13 +7,13 @@ import AccessTime from "@mui/icons-material/AccessTime";
 import ArrowBackIosNewRounded from "@mui/icons-material/ArrowBackIosNewRounded";
 import InfoOutlined from "@mui/icons-material/InfoOutlined";
 import Layers from "@mui/icons-material/Layers";
-import WhereToVoteOutlined from "@mui/icons-material/WhereToVoteOutlined";
 import { BottomNavigation } from "@/components/layout/bottom-navigation";
 import {
   formatBuildingHoursLabel,
   formatCrowdTimestampLines,
 } from "../api/availability-display";
 import { formatUpdatedTime } from "./format-updated-time";
+import { BuildingCheckInButton } from "./building-check-in-button";
 import type {
   BuildingDetailModel,
   BuildingDetailState,
@@ -307,15 +307,7 @@ function BuildingDetail({
             ยังไม่มีข้อมูลชั้นของอาคารนี้
           </p>
         )}
-        <button
-          type="button"
-          onClick={onCheckIn}
-          disabled={!onCheckIn}
-          className="flex h-[58px] w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border-0 bg-[#ff5815] font-[family-name:var(--font-noto-sans-thai)] text-lg font-semibold text-white transition-colors duration-150 hover:bg-[#e94e10] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5815] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <WhereToVoteOutlined aria-hidden="true" sx={{ fontSize: 26 }} />
-          เช็คอินที่นี่
-        </button>
+        <BuildingCheckInButton floorId={selectedFloor?.id} onCheckIn={onCheckIn} />
       </section>
     </>
   );
